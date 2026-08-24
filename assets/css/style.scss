@@ -104,7 +104,7 @@ body {
 
 .button:hover,
 .button:focus {
-  box-shadow: 0 0 0 3px rgb(9 105 218 / 20%);
+  box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.2);
   text-decoration: none;
 }
 
