@@ -13,9 +13,9 @@ Read `.github/copilot-instructions.md`,
 Use the Terraform track for the bounded outcome in the learner's current
 request. Do not infer the next task from repository state or implement later
 tasks. Before editing, summarize the requested resource graph, message routing,
-identity and RBAC boundaries, retry and failure behavior, expected files, and
-validation commands. Stop for approval when the learner asks for an approval
-boundary.
+hosting-foundation mode and ownership boundary, identity and RBAC boundaries,
+retry and failure behavior, expected files, and validation commands. Stop for
+approval when the learner asks for an approval boundary.
 
 Pin provider constraints and use AzAPI only where AzureRM lacks the required
 workflow representation. Follow the shared standards and lab requirements

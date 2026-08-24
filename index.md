@@ -38,7 +38,7 @@ contract-first, evidence-driven workflow with GitHub Copilot.
   <article class="workshop-card">
     <span class="step-number">4</span>
     <h3>Build event fan-out</h3>
-    <p>Route one Service Bus event to three independently authorized workflows.</p>
+    <p>Route one Service Bus event to three independently routed workflows.</p>
     <a href="{{ '/labs/02-topic-fanout/' | relative_url }}">Open Lab 2</a>
   </article>
 </div>

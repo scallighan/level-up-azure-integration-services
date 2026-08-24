@@ -16,13 +16,32 @@ Both IaC tracks must create behaviorally equivalent resources:
 | Cosmos DB account | Serverless capacity with local authentication disabled |
 | SQL database and container | `workshop` / `items` with partition key `/id` |
 | Logic App hosting | Complete private Logic App Standard baseline |
-| Logic App | One Standard site with dual identities, VNet route-all, and an HTTP request trigger |
+| Logic App site | One Standard site with dual identities and VNet route-all |
+| Logic App workflow | One HTTP-triggered workflow implementing the OpenAPI operations |
 | Cosmos RBAC | System-assigned Logic App identity can read and write data only at the required scope |
 | Static Web App | Free SKU hosting the starter UI |
 | Application Insights | Request and workflow observability |
 
 The user-assigned identity accesses only Logic App host storage. The
 system-assigned identity accesses Cosmos DB. Do not use Cosmos account keys.
+
+## Implementation sequence
+
+Keep infrastructure provisioning separate from workflow behavior in both IaC
+tracks:
+
+1. Deploy the complete backend infrastructure foundation: resource group,
+   private Logic App Standard hosting baseline, empty Standard site with both
+   identities, Application Insights, Cosmos account, database, container, and
+   least-privilege Cosmos RBAC. Do not add a workflow definition, Static Web
+   App, or API Management resources in this phase.
+2. Add only the HTTP-triggered CRUD workflow and the configuration it needs to
+   use the existing Cosmos container through the site's system-assigned
+   identity. Do not recreate or replace foundation resources.
+3. Add the Static Web App and restrict workflow CORS to its deployed origin.
+
+The API Management modes below remain available when API Management is
+explicitly requested; they are not part of the three-phase direct browser path.
 
 ## API Management modes
 

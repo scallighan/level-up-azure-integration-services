@@ -63,23 +63,40 @@ Logic App's system-assigned identity for lab workload access:
 
 - Lab 1 grants its Logic App system identity only the required Cosmos DB
   data-plane access.
-- Lab 2 grants each Logic App system identity access only to its assigned
-  Service Bus subscription.
+- Lab 2 grants the selected Logic App system identity receiver access
+  separately at each required Service Bus subscription scope, never at
+  namespace or topic scope.
 
 Do not replace either identity boundary with shared keys or broaden the
 user-assigned identity to all lab data-plane resources.
 
 ## Lab 2 shared foundation
 
-Lab 2 creates one VNet, one host storage account, four storage private
-endpoints, one host-storage user-assigned identity, and one WS1 plan. Audit,
-fulfillment, and notification remain three separate Logic App Standard sites
-on that shared plan. Each site:
+Lab 2 must explicitly select a `new` or `existing` shared hosting foundation.
+`new` creates one Lab 2-owned VNet, host storage account, four storage private
+endpoints, host-storage user-assigned identity, WS1 plan, observability
+foundation, and empty Logic App Standard site. `existing` references a
+compatible deployed foundation and site, such as Lab 1's, without importing,
+modifying, retagging, or deleting the foundation or taking ownership of the
+parent site.
 
-- attaches to the same delegated Logic App subnet;
-- uses the shared host-storage identity and managed-identity host settings;
-- has its own system-assigned identity and Service Bus RBAC assignment; and
-- remains independently deployable and bound to exactly one subscription.
+Audit, fulfillment, and notification remain three independently deployable
+workflows in that one site. The site's system identity receives three separate
+Service Bus role assignments, each scoped to one subscription. Never broaden
+those assignments to the topic or namespace. The host-storage user-assigned
+identity remains limited to host storage.
+
+When Lab 1's site is reused, its system identity retains the Lab 1 Cosmos role
+and gains the three Lab 2 subscription-scoped Service Bus roles. This is an
+intentional workshop cost tradeoff and must be explained before deployment.
+Lab 2 may manage its child workflows and role assignments, but not the existing
+parent site.
+
+Existing mode requires explicit references to the integration subnet, host
+storage, host-storage identity, WS1 plan, observability resources, and Standard
+site. Validate that they remain compatible with this baseline and in the
+current subscription and region. Lab 2 cleanup must never remove an existing
+foundation or parent site.
 
 The shared hosting foundation does not change peek-lock, completion, retry, or
 dead-letter requirements.

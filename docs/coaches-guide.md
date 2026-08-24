@@ -98,10 +98,15 @@ The user-assigned identity is for host storage. The system-assigned identity is
 for the lab workload: Cosmos DB in Lab 1 and the assigned Service Bus
 subscription in Lab 2.
 
-For Lab 2, learners create one shared hosting foundation and three separate
-Logic App Standard sites on the shared plan. Do not let a learner collapse
-audit, fulfillment, and notification into one site or give all three system
-identities broad namespace access.
+For Lab 2, learners explicitly create a new shared hosting foundation or
+reference the compatible foundation from Lab 1. Existing resources remain
+owned by Lab 1 and must not appear as managed or deleted in the Lab 2 preview.
+In either mode, learners create three separate Lab 2-owned Logic App Standard
+workflows in one selected Logic App Standard site. The site's system identity
+receives three separate subscription-scoped roles; do not allow topic- or
+namespace-scoped receiver access. In existing mode, Lab 2 may add child
+workflows and its own role assignments but must not manage the Lab 1 parent
+site.
 
 ## Lab 1 coaching map
 
@@ -230,7 +235,23 @@ from the exact response body.
 
 ## Lab 2 coaching map
 
-### Checkpoint 1: broker topology
+### Checkpoint 0: shared hosting foundation
+
+**Learner should explain**
+
+- Why `new` is required when Lab 1 was skipped or cleaned up.
+- Which deployed Lab 1 resources are referenced by `existing`.
+- Which resources Lab 2 owns and what its cleanup is allowed to delete.
+
+**Coach checks**
+
+- The mode is explicit rather than inferred from repository or Azure state.
+- Existing mode references a compatible integration subnet, host storage,
+  host-storage identity, WS1 plan, and observability foundation.
+- The preview never modifies, imports, retags, replaces, or deletes reused
+  resources.
+
+### Checkpoint 1: integration infrastructure
 
 **Learner should explain**
 
@@ -238,6 +259,8 @@ from the exact response body.
 - How one published message becomes three independent subscription copies.
 - How `MessageId`, duplicate detection, lock duration, maximum delivery count,
   and TTL interact.
+- Why one site identity needs three subscription-scoped roles and why namespace
+  scope is too broad.
 
 **Coach checks**
 
@@ -246,8 +269,11 @@ from the exact response body.
 - `$Default` is removed before the `eventType = 'order.created'` SQL rule is
   added.
 - Required tags are `workshop=agentic-ais` and `lab=02`.
+- The selected Logic App Standard site is part of the resolved foundation.
+- Its system identity has one receiver assignment per subscription.
+- No workflow definition is present yet.
 
-### Checkpoint 2: workflow identities and connections
+### Checkpoint 2: isolated receiver workflows
 
 **Learner should explain**
 
@@ -259,9 +285,8 @@ from the exact response body.
 
 **Coach checks**
 
-- There are three separate Logic App Standard sites on the shared reference
-  foundation.
-- Each system identity can receive only from its assigned subscription.
+- All three workflows are deployed to the selected Logic App Standard site.
+- Each workflow references only its assigned Service Bus subscription.
 - Connections use managed identity rather than a namespace connection string.
 - Full event payloads and sensitive customer data are not emitted to run
   history.

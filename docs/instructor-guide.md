@@ -49,6 +49,7 @@ behavior should match even when implementation details differ.
 
 **Lab 2**
 
+- The shared hosting foundation mode and ownership boundary are explicit.
 - One topic has three subscriptions with explicit filters.
 - Each workflow uses its own subscription.
 - A workflow failure does not prevent the other subscriptions from processing.

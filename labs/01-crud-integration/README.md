@@ -78,10 +78,11 @@ Copilot can resolve every relative path.
 3. Enter the prompt file name followed by the first task:
 
    ```text
-   /01-crud-terraform Create the Terraform deployment foundation for Lab 1.
-   Add only provider constraints, variables, naming, tags, and the resource
-   group. Before editing, summarize the proposed files and resource graph,
-   then wait for my approval.
+   /01-crud-terraform Create the backend infrastructure foundation for Lab 1.
+   Include the complete private Logic App Standard hosting baseline, the empty
+   Logic App site, Cosmos DB, identities, RBAC, and observability. Do not add
+   workflow definitions, Static Web Apps, or API Management. Before editing,
+   summarize the proposed files and resource graph, then wait for my approval.
    ```
 
 4. Select the workspace prompt when it appears in autocomplete, then send the
@@ -99,10 +100,12 @@ Copilot can resolve every relative path.
 2. At the interactive Copilot prompt, mention the file with `@`:
 
    ```text
-   @.github/prompts/01-crud-terraform.prompt.md Create the Terraform deployment
-   foundation for Lab 1. Add only provider constraints, variables, naming,
-   tags, and the resource group. Before editing, summarize the proposed files
-   and resource graph, then wait for my approval.
+   @.github/prompts/01-crud-terraform.prompt.md Create the backend
+   infrastructure foundation for Lab 1. Include the complete private Logic App
+   Standard hosting baseline, the empty Logic App site, Cosmos DB, identities,
+   RBAC, and observability. Do not add workflow definitions, Static Web Apps,
+   or API Management. Before editing, summarize the proposed files and
+   resource graph, then wait for my approval.
    ```
 
    Typing `@` opens file autocomplete; select the Terraform prompt rather than
@@ -116,10 +119,10 @@ for the reusable pattern.
 Create your selected directory when Copilot begins the first task. Keep local
 parameter values and Terraform state untracked.
 
-## Task 1: define the deployment foundation
+## Task 1: deploy the backend infrastructure foundation
 
-**Outcome:** establish the contract and an independently valid deployment
-foundation without creating application resources.
+**Outcome:** deploy the complete private hosting, data, identity, and
+observability foundation so the next task can focus only on workflow behavior.
 
 **Prompt Copilot**
 
@@ -127,17 +130,25 @@ foundation without creating application resources.
 Read the OpenAPI contract and inspect the starter app. Summarize every request,
 response, and required Azure resource.
 
-Then create the deployment foundation for my selected IaC track. Add only
-provider or template metadata, parameters or variables, deterministic naming,
-required tags, and the resource group. Do not add networking, storage,
-Cosmos DB, Logic Apps, Static Web Apps, or API Management.
+Then create the backend infrastructure foundation for my selected IaC track.
+Include provider or template metadata, parameters or variables, deterministic
+naming, required tags, the resource group, the complete private Logic App
+Standard hosting baseline, an empty Standard site with both identities,
+Application Insights, the serverless Cosmos DB account, the workshop database
+and items container, and least-privilege Cosmos RBAC.
+
+Do not add a workflow definition, Static Web App, or API Management resources.
 
 Before editing, summarize the proposed files, resource graph, non-secret
-outputs, and validation commands. Wait for my approval.
+outputs, identity boundaries, cost-bearing resources, and validation commands.
+Wait for my approval.
 ```
 
-**Review before approving:** the proposed resource graph contains only the
-resource group. Correct any contract, naming, identity, or output drift before
+**Review before approving:** confirm that the complete private Standard
+baseline is present, the Standard site has no workflow definition, the
+user-assigned identity is limited to host storage, the system-assigned identity
+has only the required Cosmos data-plane role, and no keys or callback URLs are
+outputs. Correct any contract, naming, identity, or output drift before
 allowing edits.
 
 **Validate**
@@ -161,36 +172,10 @@ terraform -chdir=labs/01-crud-integration/iac/terraform init
 terraform -chdir=labs/01-crud-integration/iac/terraform fmt -check
 terraform -chdir=labs/01-crud-integration/iac/terraform validate
 terraform -chdir=labs/01-crud-integration/iac/terraform plan \
+  -var="subscription_id=<your-subscription-id>" \
   -var="prefix=<your-prefix>" -var="location=eastus2" \
   -var="api_management_mode=none"
 ```
-
-**Done when:** the preview contains one new resource group with no secrets in
-parameters, variables, or outputs.
-
-## Task 2: add the data and workflow path
-
-**Outcome:** deploy the private Logic App Standard hosting foundation, Cosmos
-DB, workflow, identities, and least-privilege RBAC.
-
-**Prompt Copilot**
-
-```text
-Add the private Logic App Standard hosting foundation and Cosmos DB integration
-to the CRUD deployment. Include only the baseline hosting resources, Cosmos DB,
-the workflow, identities, RBAC, and observability required for this request.
-Do not add Static Web Apps or API Management.
-
-Before editing, explain the resource graph and identity flow; why /id works as
-the identifier and partition key; the Cosmos data-plane role and scope; how the
-workflow routes each operationId; the HTTP error mapping; write retry behavior;
-cost-bearing resources; and the validation commands. Wait for my approval.
-```
-
-**Review before approving:** confirm that the complete private Standard
-baseline is present, the user-assigned identity is limited to host storage, the
-system-assigned identity accesses Cosmos DB, and no keys or callback URLs are
-outputs.
 
 **Deploy after reviewing the preview**
 
@@ -205,12 +190,70 @@ az deployment sub create \
 
 # Terraform
 terraform -chdir=labs/01-crud-integration/iac/terraform apply \
+  -var="subscription_id=<your-subscription-id>" \
   -var="prefix=<your-prefix>" -var="location=eastus2" \
   -var="api_management_mode=none"
 ```
 
-**Done when:** Azure shows a system-assigned workflow identity and a Cosmos
-data-plane role assignment, and no account key appears in workflow parameters.
+**Done when:** Azure contains the complete backend infrastructure foundation,
+the Logic App site has both identities but no workflow definition, Cosmos local
+authentication is disabled, and no secret appears in parameters, variables, or
+outputs.
+
+## Task 2: implement the CRUD workflow
+
+**Outcome:** add the HTTP-triggered CRUD workflow to the deployed Standard site
+without changing the hosting or data foundation.
+
+**Prompt Copilot**
+
+```text
+Use the deployed Lab 1 infrastructure foundation to add the HTTP-triggered CRUD
+workflow. Add only the workflow definition and the configuration needed to
+route the starter app's canonical request by operationId and access the
+existing Cosmos items container through the Logic App system identity.
+
+Do not add or replace networking, host storage, private endpoints, private DNS,
+the service plan, the Logic App site, Cosmos DB resources, identities, RBAC,
+Static Web Apps, or API Management.
+
+Before editing, explain the workflow resource and request flow; why /id works
+as the identifier and partition key; how each operationId maps to Cosmos
+actions; the HTTP status and error mapping; validation, correlation, and safe
+write retry behavior; non-secret outputs; files that will change; and the
+validation commands. Wait for my approval.
+```
+
+**Review before approving:** confirm that the change adds one workflow to the
+existing site, uses only the system-assigned identity for Cosmos access,
+implements every OpenAPI operation and response, and does not expose account
+keys or the callback URL.
+
+**Validate:** repeat the format, build or validate, and preview commands from
+Task 1. The preview must add the workflow behavior without replacing the
+deployed hosting or data foundation.
+
+**Deploy after reviewing the preview**
+
+```bash
+# Bicep
+az deployment sub create \
+  --name "crud-<your-prefix>" \
+  --location eastus2 \
+  --template-file labs/01-crud-integration/iac/bicep/main.bicep \
+  --parameters prefix="<your-prefix>" location="eastus2" \
+    apiManagementMode="none"
+
+# Terraform
+terraform -chdir=labs/01-crud-integration/iac/terraform apply \
+  -var="subscription_id=<your-subscription-id>" \
+  -var="prefix=<your-prefix>" -var="location=eastus2" \
+  -var="api_management_mode=none"
+```
+
+**Done when:** create, list, get, update, and delete return the contracted
+status and body through the deployed workflow, correlation IDs are preserved,
+and no account key appears in workflow parameters.
 
 ## Task 3: connect the frontend
 
@@ -283,6 +326,7 @@ az group delete --name "<resource-group-name>" --yes --no-wait
 
 # Terraform
 terraform -chdir=labs/01-crud-integration/iac/terraform destroy \
+  -var="subscription_id=<your-subscription-id>" \
   -var="prefix=<your-prefix>" -var="location=eastus2" \
   -var="api_management_mode=none"
 ```

@@ -6,7 +6,7 @@ permalink: /labs/02-topic-fanout/
 # Lab 2: Service Bus topic fan-out
 
 Publish one `order.created` event to an Azure Service Bus topic and process an
-independent copy in three Logic Apps: audit, fulfillment, and notification.
+independent copy in three workflows: audit, fulfillment, and notification.
 
 **Time:** 75 minutes
 
@@ -27,9 +27,14 @@ flowchart LR
     T --> A[audit subscription]
     T --> F[fulfillment subscription]
     T --> N[notification subscription]
-    A --> WA[Audit Logic App]
-    F --> WF[Fulfillment Logic App]
-    N --> WN[Notification Logic App]
+    subgraph LA[One Logic App Standard site]
+        WA[Audit workflow]
+        WF[Fulfillment workflow]
+        WN[Notification workflow]
+    end
+    A --> WA
+    F --> WF
+    N --> WN
     WA --> AI[Application Insights]
     WF --> AI
     WN --> AI
@@ -38,12 +43,13 @@ flowchart LR
 Each workflow receives from exactly one subscription. A failure in notification
 must not remove the audit or fulfillment copies.
 
-All three workflows are separate private-networked Logic App Standard sites on
-the shared hosting foundation defined in
+All three workflows run in one private-networked Logic App Standard site on the
+hosting foundation defined in
 [`docs/logic-app-standard-baseline.md`](../../docs/logic-app-standard-baseline.md).
-They share the VNet, host storage, storage private endpoints, host-storage
-identity, and WS1 plan, but keep separate system identities and Service Bus
-authorization boundaries.
+Lab 2 can create the complete foundation and site or reuse the compatible
+deployed Lab 1 foundation and site. The site's system identity receives access
+at each subscription scope, never at namespace scope. The host-storage identity
+remains limited to host storage.
 
 ## Event contract
 
@@ -80,52 +86,110 @@ guardrails.
 The prompt file loads the selected track and mandatory references. Follow it
 with the actual task request shown below; it does not infer what to build next.
 
-## Task 1: build the broker topology
+## Step 0: resolve the shared hosting foundation
 
-**Outcome:** create the Service Bus namespace, topic, subscriptions, and rules
-without adding workflow infrastructure.
+**Outcome:** explicitly select a new or existing private Logic App Standard
+hosting foundation before creating Lab 2 integration resources.
+
+Use `existing` when the compatible Lab 1 foundation is still deployed. Use
+`new` when Lab 1 was skipped or cleaned up. Lab 2 always owns its resource
+group; in existing mode it must not own or modify the referenced foundation.
 
 **Prompt Copilot**
 
 ```text
-Create the Service Bus broker topology for Lab 2 in my selected IaC track. Add
-only the resource group, namespace, orders topic, audit, fulfillment, and
-notification subscriptions, and their rules. Do not add networking, storage,
-Logic Apps, identities, RBAC, or Application Insights.
+Prepare the shared Logic App Standard hosting foundation for Lab 2 in my
+selected IaC track. Require an explicit hosting foundation mode of new or
+existing.
+
+In new mode, create the Lab 2 resource group, complete private Logic App
+Standard hosting and observability foundation, and one empty Standard site. In
+existing mode, create the Lab 2 resource group and reference the compatible
+deployed Lab 1 integration subnet, host storage, host-storage identity, WS1
+plan, observability resources, and Standard site without taking ownership of
+the parent site or foundation.
+
+Do not add Service Bus, receiver RBAC, connections, or workflow definitions.
+
+Before editing, explain both resource graphs, required mode-specific inputs,
+compatibility checks, ownership and cleanup boundaries, cost-bearing resources,
+non-secret outputs, expected files, and validation commands. Wait for my
+approval.
+```
+
+**Review before approving:** mode selection must be explicit. New mode must
+match the complete private Standard baseline. Existing mode must reject missing
+references and must not import, retag, modify, replace, or delete Lab 1
+foundation resources or the parent Logic App site. Lab 2 may later own child
+workflows and subscription-scoped RBAC associated with that site. No storage
+credential or observability connection string may be an output.
+
+**Validate:** preview with the same native commands used in Lab 1, changing the
+path, deployment name, variables, and hosting foundation mode as appropriate.
+In existing mode, the preview contains only the Lab 2 resource group and
+references to the existing site and foundation. In new mode, it also contains
+the complete Lab 2-owned shared foundation and one empty Standard site.
+
+**Done when:** the selected foundation is ready, its ownership is unambiguous,
+and Lab 2 cleanup cannot remove reused Lab 1 resources.
+
+## Task 1: deploy the integration infrastructure
+
+**Outcome:** create the broker topology and authorize the selected Logic App
+site without adding receiver workflow definitions.
+
+**Prompt Copilot**
+
+```text
+Using the selected shared hosting foundation, create the Lab 2 integration
+infrastructure in my selected IaC track. Add the Standard Service Bus
+namespace, orders topic, audit, fulfillment, and notification subscriptions
+and rules; managed-identity connection configuration for the selected Logic App
+site; three receiver role assignments for its system identity, each scoped to
+one subscription; and correlated observability.
+
+Do not add audit, fulfillment, or notification workflow definitions.
 
 Before editing, provide a routing diagram or table and explain the SKU,
 default-rule removal, SQL filters, duplicate detection, lock duration, maximum
-delivery count, message TTL, expected files, and validation commands. Wait for
-my approval.
+delivery count, message TTL, the site and workflow resource graph, the shared
+system-identity tradeoff, RBAC scopes, expected files, non-secret outputs, and
+validation commands.
+Wait for my approval.
 ```
 
 **Review before approving:** confirm that Standard SKU supports the requested
 features, duplicate detection uses `MessageId`, each `$Default` rule is removed,
-and all delivery settings are deliberate.
+all delivery settings are deliberate, the site identity receives only at the
+three subscription scopes rather than namespace scope, and no workflow
+definition or connection string is present.
 
 **Validate:** preview and deploy with the same native commands used in Lab 1,
 changing the path, deployment name, and variables as appropriate.
 
 **Done when:** Service Bus Explorer shows the topic, exactly three
-subscriptions, and the intended rule on each.
+subscriptions, and the intended rule on each; Azure shows three
+subscription-scoped receiver assignments for the selected site identity.
 
-## Task 2: add isolated workflow receivers
+## Task 2: implement isolated workflow receivers
 
-**Outcome:** deploy the shared private hosting foundation and three independently
-authorized workflow receivers.
+**Outcome:** add only the three independently deployable receiver workflows to
+the selected Logic App Standard site.
 
 **Prompt Copilot**
 
 ```text
-Add the shared private Logic App Standard hosting foundation and one
-independently deployable receiver for each Service Bus subscription. Include
-managed identities, least-privilege receiver RBAC, required connections, and
-correlated telemetry.
+Add audit, fulfillment, and notification as three independently deployable
+workflows in the selected Logic App Standard site. Each workflow must use the
+site's managed-identity connection and receive from exactly one assigned
+Service Bus subscription.
 
-Before editing, explain the shared and per-workflow resource graph, identity and
-RBAC boundaries, peek-lock flow, processing and failure scopes, completion and
-dead-letter behavior, cost-bearing resources, expected files, and validation
-commands. Wait for my approval.
+Do not create or replace the shared hosting foundation, Service Bus resources,
+parent Logic App site, identity, RBAC, connections, or observability resources.
+
+Before editing, explain the per-workflow resource and file changes, peek-lock
+flow, processing and failure scopes, completion and dead-letter behavior,
+correlation handling, and validation commands. Wait for my approval.
 ```
 
 **Review before approving:** each workflow must receive from exactly one
@@ -133,7 +197,7 @@ subscription, complete only after processing succeeds, and preserve retries and
 dead lettering. Keep the audit, fulfillment, and notification actions within
 the lightweight core-lab boundary.
 
-**Done when:** each Logic App references only its assigned subscription and no
+**Done when:** each workflow references only its assigned subscription and no
 connection string appears in source, parameters, state output, or run history.
 
 ## Task 3: publish and trace one event
@@ -201,7 +265,9 @@ that cleanup could orphan.
 
 Use `az group delete` for a Bicep-created workshop resource group or
 `terraform destroy` for Terraform. Preview the deletion first and confirm the
-resource group disappears.
+Lab 2 resource group disappears. In existing hosting-foundation mode, confirm
+the preview does not delete or modify any reused Lab 1 resource before
+approving cleanup.
 
 ## Stretch goals
 
