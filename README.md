@@ -45,11 +45,13 @@ People assisting learners should use the
 ```text
 .github/
   copilot-instructions.md       Repository-wide Copilot context
-  prompts/                      Reusable workshop prompt files
-docs/                           Setup and facilitation guidance
+  prompts/                      IaC track context bootstrap files
+docs/
+  implementation-standards.md  Shared engineering guardrails
+  logic-app-standard-baseline.md
 labs/
-  01-crud-integration/          Static Web Apps -> optional APIM -> Logic Apps
-  02-topic-fanout/              Service Bus topic -> three Logic Apps
+  01-crud-integration/          Lab tasks, requirements, and API contract
+  02-topic-fanout/              Lab tasks, requirements, and event contract
 scripts/                        Local workshop checks
 ```
 

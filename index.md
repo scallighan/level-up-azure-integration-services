@@ -56,7 +56,7 @@ identity boundaries, and runtime behavior.
 
 > **Cost notice:** The labs create billable resources, including Windows WS1
 > Workflow Standard plans and private endpoints. Use a non-production
-> subscription and complete each lab's cleanup checkpoint.
+> subscription and complete each lab's cleanup task.
 
 ## Facilitator resources
 

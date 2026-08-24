@@ -1,25 +1,21 @@
 ---
-description: Build the topic fan-out lab incrementally with Bicep
+description: Load Bicep context for bounded fan-out lab tasks
 ---
 
 Read `.github/copilot-instructions.md`,
+`docs/implementation-standards.md`,
 `docs/logic-app-standard-baseline.md`, the current files under
 `https://github.com/scallighan/logic-app-doc-processing/tree/main/bicep`,
-`labs/02-topic-fanout/README.md`, and both files in
+`labs/02-topic-fanout/README.md`,
+`labs/02-topic-fanout/implementation-requirements.md`, and both files in
 `labs/02-topic-fanout/contracts/`.
 
-Work only on the next incomplete checkpoint in the Bicep track. First summarize
-the topic, subscriptions, filters, workflow identities, RBAC scopes, retry
-behavior, and validation command. Create one independently deployable Logic App
-per subscription. Receivers must use managed identity and peek-lock semantics;
-complete a message only after processing succeeds.
-
-Replicate the Bicep reference with one shared VNet, host storage account, four
-storage private endpoints and DNS resources, host-storage user-assigned
-identity, and Windows WS1 plan. Create three separate Logic App Standard sites
-on that plan. Each site uses the shared host-storage identity and its own
-system-assigned identity for its assigned Service Bus subscription. Preserve
-the reference VNet routing, host settings, and deployment dependencies. Never
-substitute Consumption Logic Apps.
+Use the Bicep track for the bounded outcome in the learner's current request.
+Do not infer the next task from repository state or implement later tasks.
+Before editing, summarize the requested resource graph, message routing,
+identity and RBAC boundaries, retry and failure behavior, expected files, and
+validation commands. Stop for approval when the learner asks for an approval
+boundary. Follow the shared standards and lab requirements rather than
+repeating or weakening them.
 
 After editing, format and compile the Bicep. Call out assumptions explicitly.

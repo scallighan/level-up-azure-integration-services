@@ -60,27 +60,13 @@ Publish these Service Bus application properties with the sample:
 | `schemaVersion` | `1.0` |
 | `correlationId` | Same value as the JSON body |
 
-## Target resource graph
+## Implementation reference
 
-| Resource | Workshop requirement |
-|---|---|
-| Resource group | Lab-specific tags and chosen location |
-| Service Bus namespace | Standard SKU for topics |
-| Topic | `orders`, duplicate detection enabled |
-| Subscriptions | `audit`, `fulfillment`, and `notification` |
-| Rules | SQL filter for `eventType = 'order.created'`; remove `$Default` |
-| Virtual network | One shared reference four-subnet layout |
-| Host storage | One shared keyless Standard_LRS account with four storage private endpoints and private DNS |
-| App Service plan | One shared Windows WS1 Workflow Standard plan; cost-bearing |
-| Logic Apps | Three independent Standard sites with VNet route-all and one stateful workflow each |
-| Host-storage identity | One shared user-assigned identity with the reference storage RBAC |
-| Workflow identities | Separate system-assigned identities |
-| Service Bus RBAC | Each receiver can access only what it needs |
-| Application Insights | Correlated workflow telemetry |
-
-Use peek-lock receive behavior. Complete a message only after the workflow's
-processing scope succeeds. Let repeated failures reach the dead-letter queue;
-do not silently discard a message.
+Read [`implementation-requirements.md`](implementation-requirements.md) before
+starting. It defines the broker topology, shared Logic App hosting foundation,
+identity boundaries, and message settlement behavior for both IaC tracks. The
+task prompts below intentionally describe outcomes rather than repeat those
+guardrails.
 
 ## Choose a track
 
@@ -91,52 +77,66 @@ do not silently discard a message.
   [`.github/prompts/02-fanout-terraform.prompt.md`](../../.github/prompts/02-fanout-terraform.prompt.md)
   and work in `labs/02-topic-fanout/iac/terraform/`.
 
-## Checkpoint 1: broker topology
+The prompt file loads the selected track and mandatory references. Follow it
+with the actual task request shown below; it does not infer what to build next.
 
-Ask Copilot to scaffold the selected track and add only the namespace, topic,
-subscriptions, and rules. Require a diagram or table of message routing before
-allowing edits.
+## Task 1: build the broker topology
 
-Important review questions:
+**Outcome:** create the Service Bus namespace, topic, subscriptions, and rules
+without adding workflow infrastructure.
 
-- Does Standard SKU support every requested feature?
-- Was the default true filter removed before adding a SQL filter?
-- Is duplicate detection based on `MessageId`, and what is its time window?
-- What are lock duration, delivery count, and message TTL?
+**Prompt Copilot**
 
-Preview and deploy with the same native commands used in Lab 1, changing the
-path, deployment name, and variables as appropriate.
+```text
+Create the Service Bus broker topology for Lab 2 in my selected IaC track. Add
+only the resource group, namespace, orders topic, audit, fulfillment, and
+notification subscriptions, and their rules. Do not add networking, storage,
+Logic Apps, identities, RBAC, or Application Insights.
 
-**Checkpoint:** Service Bus Explorer shows the topic, exactly three
+Before editing, provide a routing diagram or table and explain the SKU,
+default-rule removal, SQL filters, duplicate detection, lock duration, maximum
+delivery count, message TTL, expected files, and validation commands. Wait for
+my approval.
+```
+
+**Review before approving:** confirm that Standard SKU supports the requested
+features, duplicate detection uses `MessageId`, each `$Default` rule is removed,
+and all delivery settings are deliberate.
+
+**Validate:** preview and deploy with the same native commands used in Lab 1,
+changing the path, deployment name, and variables as appropriate.
+
+**Done when:** Service Bus Explorer shows the topic, exactly three
 subscriptions, and the intended rule on each.
 
-## Checkpoint 2: workflow identities and connections
+## Task 2: add isolated workflow receivers
 
-Ask Copilot to add the shared reference Logic App Standard hosting foundation,
-one site per subscription, managed identities, minimum receiver RBAC, and
-required Service Bus connections.
+**Outcome:** deploy the shared private hosting foundation and three independently
+authorized workflow receivers.
 
-For each workflow, request an explicit try/catch-style design using Logic App
-scopes:
+**Prompt Copilot**
 
-1. Receive and lock the message.
-2. Parse and validate the event.
-3. Perform the workflow-specific action.
-4. Complete the message only when the processing scope succeeds.
-5. Abandon or dead-letter according to the documented failure policy.
+```text
+Add the shared private Logic App Standard hosting foundation and one
+independently deployable receiver for each Service Bus subscription. Include
+managed identities, least-privilege receiver RBAC, required connections, and
+correlated telemetry.
 
-The workshop actions can be lightweight:
+Before editing, explain the shared and per-workflow resource graph, identity and
+RBAC boundaries, peek-lock flow, processing and failure scopes, completion and
+dead-letter behavior, cost-bearing resources, expected files, and validation
+commands. Wait for my approval.
+```
 
-- **Audit:** emit a structured telemetry record.
-- **Fulfillment:** compose a fulfillment request and emit telemetry.
-- **Notification:** compose a customer message and emit telemetry.
+**Review before approving:** each workflow must receive from exactly one
+subscription, complete only after processing succeeds, and preserve retries and
+dead lettering. Keep the audit, fulfillment, and notification actions within
+the lightweight core-lab boundary.
 
-Do not add email, databases, or other paid dependencies during the core lab.
-
-**Checkpoint:** each Logic App references only its assigned subscription and no
+**Done when:** each Logic App references only its assigned subscription and no
 connection string appears in source, parameters, state output, or run history.
 
-## Checkpoint 3: publish one event
+## Task 3: publish and trace one event
 
 In Azure Portal, open the `orders` topic and use **Service Bus Explorer** to send
 the sample JSON. Set:
@@ -146,16 +146,34 @@ the sample JSON. Set:
 - `CorrelationId` to the sample correlation ID; and
 - the application properties from the contract table.
 
-Before sending, ask Copilot to predict the message counts and workflow runs.
-Then send exactly one event.
+**Prompt Copilot**
 
-**Checkpoint:** all three workflows run once and preserve the same event ID and
+```text
+Using the committed event schema and sample, predict the subscription message
+counts and workflow runs after publishing exactly one order.created event.
+Explain how MessageId, CorrelationId, eventType, and schemaVersion affect
+routing, duplicate detection, and telemetry. Do not edit infrastructure.
+```
+
+Review the prediction, then send exactly one event.
+
+**Done when:** all three workflows run once and preserve the same event ID and
 correlation ID.
 
-## Checkpoint 4: failure isolation
+## Task 4: prove failure isolation
 
 Temporarily make the notification processing scope fail before its complete
 action. Send a new event with new IDs.
+
+**Prompt Copilot**
+
+```text
+Create a controlled failure-isolation test for the notification workflow.
+Describe the smallest temporary change, expected delivery-count progression,
+retry and dead-letter behavior, evidence to collect from all three
+subscriptions, and the exact revert. Do not weaken authentication, networking,
+or message settlement.
+```
 
 Observe:
 
@@ -168,6 +186,9 @@ Observe:
 Revert the deliberate failure. Ask Copilot to explain how a dead-letter replay
 tool should preserve `MessageId`, correlation, and diagnostic context without
 creating an infinite retry loop.
+
+**Done when:** audit and fulfillment complete independently, only notification
+retries and dead-letters its copy, and the deliberate failure has been reverted.
 
 ## Cross-track review
 

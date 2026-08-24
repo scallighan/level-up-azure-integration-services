@@ -13,7 +13,7 @@ Use the same loop for every exercise:
 4. **Validate** — format, lint, preview, and test with the native toolchain.
 5. **Iterate** — paste the exact error and relevant code back into Copilot; do
    not ask it to guess.
-6. **Commit** — save a small, working checkpoint.
+6. **Commit** — save a small, working change.
 
 ## Prompt pattern
 
@@ -64,22 +64,28 @@ In VS Code Copilot Chat, select **Agent** mode and enter the prompt filename
 without `.prompt.md` as a slash command:
 
 ```text
-/01-crud-terraform Work on Checkpoint 1 only. Stop after the pre-edit summary
-and wait for my approval.
+/01-crud-terraform Create the Terraform deployment foundation for Lab 1. Add
+only provider constraints, variables, naming, tags, and the resource group.
+Before editing, summarize the proposed files and resource graph, then wait for
+my approval.
 ```
 
 In GitHub Copilot CLI, start `copilot` from the repository root and use `@` to
 mention the prompt file:
 
 ```text
-@.github/prompts/01-crud-terraform.prompt.md Follow this prompt. Work on
-Checkpoint 1 only. Stop after the pre-edit summary and wait for my approval.
+@.github/prompts/01-crud-terraform.prompt.md Create the Terraform deployment
+foundation for Lab 1. Add only provider constraints, variables, naming, tags,
+and the resource group. Before editing, summarize the proposed files and
+resource graph, then wait for my approval.
 ```
 
 The prompt file is not executed by Bash or Terraform. Copilot reads it as task
-context. Review the requested pre-edit summary and correct any drift before
-replying `Proceed with Checkpoint 1 only.` Repeat the same approval boundary for
-each later checkpoint instead of asking Copilot to build the full lab.
+context. It loads the selected track and mandatory references; the request
+after the prompt name defines the actual work. Review the pre-edit summary,
+correct any drift, and approve the described bounded change. Use a new,
+task-specific request for the next outcome instead of asking Copilot to build
+the full lab.
 
 ## Review checklist
 

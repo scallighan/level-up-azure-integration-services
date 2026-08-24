@@ -8,10 +8,13 @@ required_files=(
   "_layouts/default.html"
   "assets/css/style.scss"
   "docs/coaches-guide.md"
+  "docs/implementation-standards.md"
   "docs/logic-app-standard-baseline.md"
   "docs/prerequisites.md"
   "index.md"
+  "labs/01-crud-integration/implementation-requirements.md"
   "labs/01-crud-integration/contracts/openapi.yaml"
+  "labs/02-topic-fanout/implementation-requirements.md"
   "labs/02-topic-fanout/contracts/order-created.schema.json"
   "labs/02-topic-fanout/contracts/sample-order-created.json"
 )

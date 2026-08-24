@@ -1,28 +1,25 @@
 ---
-description: Build the topic fan-out lab incrementally with Terraform
+description: Load Terraform context for bounded fan-out lab tasks
 ---
 
 Read `.github/copilot-instructions.md`,
+`docs/implementation-standards.md`,
 `docs/logic-app-standard-baseline.md`, the current files under
 `https://github.com/scallighan/logic-app-doc-processing/tree/main/terraform`,
-`labs/02-topic-fanout/README.md`, and both files in
+`labs/02-topic-fanout/README.md`,
+`labs/02-topic-fanout/implementation-requirements.md`, and both files in
 `labs/02-topic-fanout/contracts/`.
 
-Work only on the next incomplete checkpoint in the Terraform track. First
-summarize the topic, subscriptions, filters, workflow identities, RBAC scopes,
-retry behavior, and validation command. Pin provider constraints and use AzAPI
-only where AzureRM lacks the required workflow representation. Create one
-independently deployable Logic App per subscription. Receivers must use managed
-identity and peek-lock semantics; complete a message only after processing
-succeeds.
+Use the Terraform track for the bounded outcome in the learner's current
+request. Do not infer the next task from repository state or implement later
+tasks. Before editing, summarize the requested resource graph, message routing,
+identity and RBAC boundaries, retry and failure behavior, expected files, and
+validation commands. Stop for approval when the learner asks for an approval
+boundary.
 
-Replicate the Terraform reference with one shared VNet, host storage account,
-four storage private endpoints and DNS resources, host-storage user-assigned
-identity, and Windows WS1 plan. Create three separate Logic App Standard sites
-on that plan. Each site uses the shared host-storage identity and its own
-system-assigned identity for its assigned Service Bus subscription. Preserve
-the reference VNet routing, host settings, and deployment dependencies. Never
-substitute Consumption Logic Apps.
+Pin provider constraints and use AzAPI only where AzureRM lacks the required
+workflow representation. Follow the shared standards and lab requirements
+rather than repeating or weakening them.
 
 After editing, format and validate the Terraform. Call out assumptions
 explicitly.
