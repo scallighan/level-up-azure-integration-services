@@ -112,7 +112,6 @@ identities broad namespace access.
 - All CRUD operations and deliberate HTTP statuses in `openapi.yaml`.
 - The canonical backend request containing `operationId`, optional item ID,
   body, and correlation ID.
-- The selected API Management mode: `none`, `new`, or `existing`.
 - The Logic App Standard hosting foundation and identity boundaries.
 
 **Coach checks**
@@ -148,9 +147,7 @@ identities broad namespace access.
 - The Standard site waits for its plan, host-storage roles, and private
   endpoints.
 
-### Checkpoint 3: API path
-
-**Direct mode**
+### Checkpoint 3: direct frontend path
 
 - The learner retrieves the callback URL only for the current exercise.
 - The URL is not written to source, shell scripts, outputs, logs, or browser
@@ -158,21 +155,71 @@ identities broad namespace access.
 - CORS allows only the deployed Static Web App origin.
 - The workflow handles preflight and the canonical request shape.
 
-**New API Management**
+### Coach-led API Management extension
+
+API Management is not part of the learner path. Offer this extension only when
+the core direct flow works and the group has enough time. Keep the three modes
+consistent across both IaC tracks:
+
+| Mode | Behavior |
+|---|---|
+| `none` | Default. Creates no API Management resources. |
+| `new` | Creates a workshop API Management instance, API, operations, and API-scoped policies. |
+| `existing` | References an instance in the current subscription and creates only workshop-owned child resources. |
+
+Use these matching inputs:
+
+| Bicep | Terraform | Requirement |
+|---|---|---|
+| `apiManagementMode` | `api_management_mode` | `none`, `new`, or `existing`; default `none` |
+| `existingApimName` | `existing_apim_name` | Required only for `existing` |
+| `existingApimResourceGroupName` | `existing_apim_resource_group_name` | Required only for `existing` |
+
+**New instance checks**
 
 - The learner explicitly selected `new`.
 - The preview includes a new low-cost workshop instance and required child
   resources.
 
-**Existing API Management**
+**Existing instance checks**
 
 - The learner supplied the existing name and resource group.
 - The preview adds only the workshop API, operations, and API-scoped policies.
 - No service-wide policy, hostname, certificate, identity, diagnostic, SKU, or
   network setting changes.
 
-In both API Management modes, inspect policy XML for accidental callback URL
-exposure and verify every OpenAPI operation is mapped.
+For either API Management path, import `contracts/openapi.yaml`, map every
+operation to the canonical backend request, and apply:
+
+- a correlation ID when the client did not provide one;
+- JSON content-type enforcement for writes;
+- a small workshop rate limit;
+- removal of backend-only headers from responses; and
+- CORS restricted to the deployed Static Web App hostname.
+
+Inspect policy XML for callback URL exposure and verify every OpenAPI operation
+is mapped. In `existing` mode, stop if the preview replaces the service or
+changes service-wide policy, hostnames, certificates, identity, diagnostics,
+SKU, or networking.
+
+Example existing-instance inputs:
+
+```bash
+# Bicep
+--parameters apiManagementMode="existing" \
+  existingApimName="<apim-name>" \
+  existingApimResourceGroupName="<apim-resource-group>"
+
+# Terraform
+-var="api_management_mode=existing" \
+-var="existing_apim_name=<apim-name>" \
+-var="existing_apim_resource_group_name=<apim-resource-group>"
+```
+
+Use the API Management test console or contract-derived requests to prove
+create, list, get, update, and delete return the expected statuses. During
+cleanup, `existing` mode must remove only workshop API resources and never the
+API Management instance.
 
 ### Checkpoint 4: end-to-end test
 
