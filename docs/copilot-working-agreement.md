@@ -5,7 +5,7 @@
 Use the same loop for every exercise:
 
 1. **Context** — open the lab README, relevant source files, and
-   `.github/copilot-instructions.md`.
+   both `AGENTS.md` and `.github/copilot-instructions.md`.
 2. **Prompt** — request one bounded change with resources, constraints, and
    acceptance criteria.
 3. **Review** — inspect every proposed file and ask Copilot to explain unfamiliar

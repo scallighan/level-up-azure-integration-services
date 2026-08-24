@@ -43,8 +43,9 @@ People assisting learners should use the
 ## Repository layout
 
 ```text
+AGENTS.md                     Repository-wide agent instructions
 .github/
-  copilot-instructions.md       Repository-wide Copilot context
+  copilot-instructions.md       Copilot-specific safeguards
   prompts/                      IaC track context bootstrap files
 docs/
   implementation-standards.md  Shared engineering guardrails

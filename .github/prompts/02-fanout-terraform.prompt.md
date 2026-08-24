@@ -2,7 +2,7 @@
 description: Load Terraform context for bounded fan-out lab tasks
 ---
 
-Read `.github/copilot-instructions.md`,
+Read `AGENTS.md`, `.github/copilot-instructions.md`,
 `docs/implementation-standards.md`,
 `docs/logic-app-standard-baseline.md`, the current files under
 `https://github.com/scallighan/logic-app-doc-processing/tree/main/terraform`,

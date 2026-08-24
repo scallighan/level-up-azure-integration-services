@@ -27,8 +27,8 @@ destructive deployment, or use of the wrong Azure subscription.
 
 1. Complete [`prerequisites.md`](prerequisites.md) using the same workstation
    constraints as learners.
-2. Read `.github/copilot-instructions.md`, both lab READMEs, all committed
-   contracts, and
+2. Read `AGENTS.md`, `.github/copilot-instructions.md`, both lab READMEs, all
+   committed contracts, and
    [`logic-app-standard-baseline.md`](logic-app-standard-baseline.md).
 3. Review the current
    [Bicep](https://github.com/scallighan/logic-app-doc-processing/tree/main/bicep)
