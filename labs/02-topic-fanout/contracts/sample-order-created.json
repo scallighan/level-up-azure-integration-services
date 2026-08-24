@@ -1,0 +1,14 @@
+{
+  "eventId": "6fbf7248-63e5-4af5-97c2-85b8c8bee59e",
+  "eventType": "order.created",
+  "schemaVersion": "1.0",
+  "occurredAt": "2026-08-18T19:00:00Z",
+  "correlationId": "d52b3227-16cd-4d9a-aa75-a5dd635842f7",
+  "data": {
+    "orderId": "ORD-10042",
+    "customerId": "CUS-1042",
+    "customerEmail": "workshop@example.com",
+    "total": 149.95,
+    "currency": "USD"
+  }
+}
