@@ -3,6 +3,8 @@ description: Build the topic fan-out lab incrementally with Terraform
 ---
 
 Read `.github/copilot-instructions.md`,
+`docs/logic-app-standard-baseline.md`, the current files under
+`https://github.com/scallighan/logic-app-doc-processing/tree/main/terraform`,
 `labs/02-topic-fanout/README.md`, and both files in
 `labs/02-topic-fanout/contracts/`.
 
@@ -13,6 +15,14 @@ only where AzureRM lacks the required workflow representation. Create one
 independently deployable Logic App per subscription. Receivers must use managed
 identity and peek-lock semantics; complete a message only after processing
 succeeds.
+
+Replicate the Terraform reference with one shared VNet, host storage account,
+four storage private endpoints and DNS resources, host-storage user-assigned
+identity, and Windows WS1 plan. Create three separate Logic App Standard sites
+on that plan. Each site uses the shared host-storage identity and its own
+system-assigned identity for its assigned Service Bus subscription. Preserve
+the reference VNet routing, host settings, and deployment dependencies. Never
+substitute Consumption Logic Apps.
 
 After editing, format and validate the Terraform. Call out assumptions
 explicitly.

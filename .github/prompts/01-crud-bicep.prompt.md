@@ -3,6 +3,8 @@ description: Build the CRUD lab incrementally with Bicep
 ---
 
 Read `.github/copilot-instructions.md`,
+`docs/logic-app-standard-baseline.md`, the current files under
+`https://github.com/scallighan/logic-app-doc-processing/tree/main/bicep`,
 `labs/01-crud-integration/README.md`, and
 `labs/01-crud-integration/contracts/openapi.yaml`.
 
@@ -11,6 +13,12 @@ summarize the resource graph, identity flow, parameters, outputs, and validation
 command for that checkpoint. Use modules with a subscription-scoped entry point
 only when needed to create the resource group. Use managed identity for Logic
 Apps access to Cosmos DB. Never output or commit a Logic App callback URL.
+Replicate the Bicep reference's VNet and subnet layout, host storage account,
+four storage private endpoints and DNS resources, storage RBAC, Windows WS1
+plan, dual identities, VNet routing, host settings, and deployment
+dependencies. Do not substitute a Consumption Logic App. Use the
+system-assigned identity for Cosmos DB and the user-assigned identity for Logic
+App host storage.
 
 Implement `apiManagementMode` with allowed values `none`, `new`, and `existing`;
 default it to `none`. In `new` mode create APIM. In `existing` mode require its

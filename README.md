@@ -35,6 +35,8 @@ and test results remain the source of truth.
 6. Delete workshop resources using the cleanup steps in each lab.
 
 Instructors should also read the [instructor guide](docs/instructor-guide.md).
+People assisting learners should use the
+[coaches guide](docs/coaches-guide.md).
 
 ## Repository layout
 
@@ -51,12 +53,15 @@ scripts/                        Local workshop checks
 
 ## Source material
 
-The workshop patterns are adapted from the working Bicep and Terraform examples
-in
-[scallighan/logic-app-doc-processing](https://github.com/scallighan/logic-app-doc-processing).
-That project is useful as a capstone after the workshop because it adds private
-networking, managed identities, SQL, Document Intelligence, and Office 365
-connections.
+The Logic App hosting foundation must replicate the matching working
+[Bicep](https://github.com/scallighan/logic-app-doc-processing/tree/main/bicep)
+or
+[Terraform](https://github.com/scallighan/logic-app-doc-processing/tree/main/terraform)
+implementation in `scallighan/logic-app-doc-processing`. See the
+[Logic App Standard infrastructure baseline](docs/logic-app-standard-baseline.md)
+for the exact workshop boundary. The reference project's SQL, Document
+Intelligence, and Office 365 resources remain capstone material and are not
+implicitly part of these labs.
 
 ## Cost and safety
 

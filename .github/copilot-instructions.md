@@ -6,6 +6,11 @@ Services with GitHub Copilot. Favor clear teaching code over abstraction.
 ## Required engineering behavior
 
 - Read the active lab README and contract files before proposing changes.
+- Before creating or changing any Logic App infrastructure, read
+  `docs/logic-app-standard-baseline.md` and the matching implementation under
+  `scallighan/logic-app-doc-processing`. Treat that baseline as mandatory for
+  the VNet, host storage, storage private endpoints and DNS, Workflow Standard
+  plan, identities, host settings, and Logic App Standard site.
 - Make one bounded change at a time and explain the intended resource graph.
 - Never place credentials, connection strings, callback URLs, access keys, or
   populated local configuration in source control.
@@ -25,6 +30,9 @@ Services with GitHub Copilot. Favor clear teaching code over abstraction.
 - Use current stable Azure API versions and pinned Terraform provider version
   constraints. State any uncertainty instead of inventing a property.
 - Use the lowest practical workshop SKU and identify cost-bearing resources.
+- Logic Apps are the explicit exception to choosing a cheaper Consumption
+  topology: use the reference Windows WS1 Workflow Standard plan and identify
+  the plan and private endpoints as cost-bearing resources.
 - Do not weaken networking, authentication, TLS, or authorization to make a
   deployment pass.
 
@@ -43,6 +51,11 @@ works.
 
 ## Logic Apps
 
+- Never generate a Consumption Logic App for these labs. Use the private
+  Logic App Standard resource graph in
+  `docs/logic-app-standard-baseline.md`.
+- Use the user-assigned identity only for keyless host-storage access and keep
+  the system-assigned identity for lab workload data-plane access.
 - Use workflow managed identity for Azure data-plane access.
 - Make retry, timeout, duplicate, and failure behavior explicit.
 - Do not emit secrets or full sensitive payloads to run history.

@@ -33,6 +33,13 @@ flowchart LR
 Each workflow receives from exactly one subscription. A failure in notification
 must not remove the audit or fulfillment copies.
 
+All three workflows are separate private-networked Logic App Standard sites on
+the shared hosting foundation defined in
+[`docs/logic-app-standard-baseline.md`](../../docs/logic-app-standard-baseline.md).
+They share the VNet, host storage, storage private endpoints, host-storage
+identity, and WS1 plan, but keep separate system identities and Service Bus
+authorization boundaries.
+
 ## Event contract
 
 Use:
@@ -57,8 +64,12 @@ Publish these Service Bus application properties with the sample:
 | Topic | `orders`, duplicate detection enabled |
 | Subscriptions | `audit`, `fulfillment`, and `notification` |
 | Rules | SQL filter for `eventType = 'order.created'`; remove `$Default` |
-| Logic Apps | Three independent stateful workflows |
-| Workflow identities | System-assigned identities |
+| Virtual network | One shared reference four-subnet layout |
+| Host storage | One shared keyless Standard_LRS account with four storage private endpoints and private DNS |
+| App Service plan | One shared Windows WS1 Workflow Standard plan; cost-bearing |
+| Logic Apps | Three independent Standard sites with VNet route-all and one stateful workflow each |
+| Host-storage identity | One shared user-assigned identity with the reference storage RBAC |
+| Workflow identities | Separate system-assigned identities |
 | Service Bus RBAC | Each receiver can access only what it needs |
 | Application Insights | Correlated workflow telemetry |
 
@@ -96,8 +107,9 @@ subscriptions, and the intended rule on each.
 
 ## Checkpoint 2: workflow identities and connections
 
-Ask Copilot to add one Logic App per subscription, managed identity, minimum
-receiver RBAC, and required Service Bus connections.
+Ask Copilot to add the shared reference Logic App Standard hosting foundation,
+one site per subscription, managed identities, minimum receiver RBAC, and
+required Service Bus connections.
 
 For each workflow, request an explicit try/catch-style design using Logic App
 scopes:

@@ -15,6 +15,10 @@ By the end, participants can:
 - diagnose deployments by grounding Copilot in exact command output; and
 - manage the deployed solutions through safe previews and cleanup.
 
+In-room helpers should also read the
+[coaches guide](coaches-guide.md), which provides checkpoint questions, a hint
+ladder, troubleshooting guidance, and cleanup sign-off criteria.
+
 ## Facilitation plan
 
 | Time | Activity | Teaching point |

@@ -32,6 +32,11 @@ The workshop uses one HTTP-triggered Logic App with explicit operation handling.
 contract when APIM is enabled. The `items` Cosmos container uses `/id` as its
 partition key.
 
+The workflow is a private-networked Logic App Standard site and must follow
+[`docs/logic-app-standard-baseline.md`](../../docs/logic-app-standard-baseline.md).
+Its user-assigned identity accesses host storage; its system-assigned identity
+accesses Cosmos DB.
+
 All modes send one canonical backend request shape containing the OpenAPI
 `operationId`, optional item ID, body, and correlation ID. APIM policies perform
 that mapping in APIM modes; the starter app performs it in direct mode. The
@@ -70,7 +75,10 @@ Both IaC tracks must create behaviorally equivalent resources:
 | Resource group | Lab-specific tags and chosen location |
 | Cosmos DB account | Serverless capacity, local authentication disabled |
 | SQL database/container | `workshop` / `items`, partition key `/id` |
-| Logic App | System-assigned identity and HTTP request trigger |
+| Virtual network | Reference four-subnet layout with delegated Logic App and private-endpoint subnets |
+| Host storage | Keyless Standard_LRS account with blob, queue, table, and file private endpoints and private DNS |
+| App Service plan | Windows WS1 Workflow Standard; cost-bearing |
+| Logic App | Standard site with dual identities, VNet route-all, and HTTP request trigger |
 | Cosmos RBAC | Logic App can read and write data only at the needed scope |
 | API Management | Optional; none, a low-cost new instance, or an existing instance |
 | APIM policy | APIM modes only; maps operations without exposing the callback URL |
@@ -133,7 +141,8 @@ parameters, variables, or outputs.
 
 ## Checkpoint 2: data and workflow
 
-Ask Copilot to add only Cosmos DB, the workflow, identity, and RBAC.
+Ask Copilot to add only the reference Logic App Standard hosting foundation,
+Cosmos DB, the workflow, identities, and RBAC.
 
 Require it to explain:
 

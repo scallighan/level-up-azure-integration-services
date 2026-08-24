@@ -3,6 +3,8 @@ set -euo pipefail
 
 required_files=(
   ".github/copilot-instructions.md"
+  "docs/coaches-guide.md"
+  "docs/logic-app-standard-baseline.md"
   "docs/prerequisites.md"
   "labs/01-crud-integration/contracts/openapi.yaml"
   "labs/02-topic-fanout/contracts/order-created.schema.json"
