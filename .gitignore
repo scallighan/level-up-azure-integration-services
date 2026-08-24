@@ -51,3 +51,8 @@ terraform.rc
 **/main.parameters.json
 **/*.parameters.local.json
 *.deployment.json
+
+# Local GitHub Pages build artifacts
+_site/
+.jekyll-cache/
+.sass-cache/

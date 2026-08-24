@@ -1,3 +1,8 @@
+---
+title: "Lab 1: CRUD integration"
+permalink: /labs/01-crud-integration/
+---
+
 # Lab 1: CRUD integration
 
 Build a small item-management website backed by a Logic App and Azure Cosmos

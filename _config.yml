@@ -1,0 +1,29 @@
+title: Agentic Azure Integration Services Development
+description: A hands-on workshop for building Azure Integration Services with GitHub Copilot.
+url: https://scallighan.github.io
+baseurl: /level-up-azure-integration-services
+repository: scallighan/level-up-azure-integration-services
+theme: jekyll-theme-cayman
+
+plugins:
+  - jekyll-relative-links
+
+relative_links:
+  enabled: true
+  collections: true
+
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: default
+
+include:
+  - .github/prompts
+
+exclude:
+  - scripts
+  - "*.tfstate"
+  - "*.tfstate.*"
+  - "*.tfplan"
+  - "*.plan"

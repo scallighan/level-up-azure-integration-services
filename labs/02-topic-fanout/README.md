@@ -1,3 +1,8 @@
+---
+title: "Lab 2: Service Bus topic fan-out"
+permalink: /labs/02-topic-fanout/
+---
+
 # Lab 2: Service Bus topic fan-out
 
 Publish one `order.created` event to an Azure Service Bus topic and process an

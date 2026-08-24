@@ -3,6 +3,8 @@
 A half-day, hands-on workshop for using GitHub Copilot to design, provision,
 review, and operate Azure Integration Services solutions.
 
+**Workshop site:** <https://scallighan.github.io/level-up-azure-integration-services/>
+
 Participants build the same solutions with either **Bicep** or **Terraform**:
 
 1. A CRUD application using Azure Static Web Apps, Logic Apps, and Azure Cosmos
