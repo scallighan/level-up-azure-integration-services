@@ -54,6 +54,33 @@ provider behavior, or security assumptions.
 Avoid broad requests such as “build the entire lab.” Smaller requests are easier
 to verify and teach participants how to retain control.
 
+## Invoking workshop prompt files
+
+Files under `.github/prompts/` are reusable Copilot instructions. Invoke them
+from the repository root so their relative paths and the repository-wide
+instructions resolve correctly.
+
+In VS Code Copilot Chat, select **Agent** mode and enter the prompt filename
+without `.prompt.md` as a slash command:
+
+```text
+/01-crud-terraform Work on Checkpoint 1 only. Stop after the pre-edit summary
+and wait for my approval.
+```
+
+In GitHub Copilot CLI, start `copilot` from the repository root and use `@` to
+mention the prompt file:
+
+```text
+@.github/prompts/01-crud-terraform.prompt.md Follow this prompt. Work on
+Checkpoint 1 only. Stop after the pre-edit summary and wait for my approval.
+```
+
+The prompt file is not executed by Bash or Terraform. Copilot reads it as task
+context. Review the requested pre-edit summary and correct any drift before
+replying `Proceed with Checkpoint 1 only.` Repeat the same approval boundary for
+each later checkpoint instead of asking Copilot to build the full lab.
+
 ## Review checklist
 
 Do not deploy until you can answer:

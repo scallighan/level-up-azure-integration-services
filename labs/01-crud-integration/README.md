@@ -106,6 +106,66 @@ Use one track for implementation:
   [`.github/prompts/01-crud-terraform.prompt.md`](../../.github/prompts/01-crud-terraform.prompt.md)
   and work in `labs/01-crud-integration/iac/terraform/`.
 
+### Invoke the Terraform prompt
+
+The prompt file is a reusable set of Copilot instructions, not a Terraform or
+shell command. Start from the repository root so Copilot can load
+`.github/copilot-instructions.md` and resolve every relative path in the
+prompt.
+
+**VS Code Copilot Chat**
+
+1. Open this repository as the VS Code workspace.
+2. Open Copilot Chat and select **Agent** mode.
+3. Enter the prompt file name as a slash command:
+
+   ```text
+   /01-crud-terraform Work on Checkpoint 1 only. Stop after the pre-edit
+   summary and wait for my approval.
+   ```
+
+4. Select the workspace prompt when it appears in autocomplete, then send the
+   message.
+
+**GitHub Copilot CLI**
+
+1. In a terminal, change to the repository root and start Copilot:
+
+   ```bash
+   cd level-up-azure-integration-services
+   copilot
+   ```
+
+2. At the interactive Copilot prompt, mention the file with `@`:
+
+   ```text
+   @.github/prompts/01-crud-terraform.prompt.md Follow this prompt. Work on
+   Checkpoint 1 only. Stop after the pre-edit summary and wait for my approval.
+   ```
+
+   Typing `@` opens file autocomplete; select the Terraform prompt rather than
+   entering the text as a shell command.
+
+Copilot's first response should summarize the Checkpoint 1 resource graph,
+identity flow, variables, non-secret outputs, and validation commands without
+editing files. Check that it includes the mandatory Logic App Standard hosting
+foundation and that `api_management_mode` defaults to `none`. Correct the
+summary if necessary, then reply:
+
+```text
+Proceed with Checkpoint 1 only.
+```
+
+Review the proposed files before accepting edits. Checkpoint 1 must create only
+the Terraform provider configuration, variables, naming, tags, and resource
+group. It must not create the Logic App, storage, networking, Cosmos DB, or API
+Management resources yet.
+
+The same process works for Bicep by using `/01-crud-bicep` in VS Code or
+mentioning `@.github/prompts/01-crud-bicep.prompt.md` in Copilot CLI. See
+[Invoking workshop prompt files](../../docs/copilot-working-agreement.md#invoking-workshop-prompt-files)
+for the reusable pattern.
+
 Create your selected directory when Copilot begins the first checkpoint. Keep
 local parameter values and Terraform state untracked.
 
