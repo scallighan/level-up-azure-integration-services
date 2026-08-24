@@ -149,6 +149,35 @@ body {
   padding: 1rem;
 }
 
+.code-block {
+  position: relative;
+}
+
+.code-block pre {
+  padding-right: 5.5rem;
+}
+
+.copy-code-button {
+  background: #fff;
+  border: 1px solid var(--workshop-border);
+  border-radius: 0.375rem;
+  color: var(--workshop-blue-dark);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.35rem 0.55rem;
+  position: absolute;
+  right: 0.5rem;
+  top: 0.5rem;
+  z-index: 1;
+}
+
+.copy-code-button:hover,
+.copy-code-button:focus {
+  box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.2);
+}
+
 .site-footer {
   border-top: 1px solid var(--workshop-border);
   color: var(--workshop-muted);
