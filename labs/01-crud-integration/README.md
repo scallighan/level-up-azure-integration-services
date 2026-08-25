@@ -23,7 +23,8 @@ DB. The learner path connects the website directly to the workflow.
 flowchart LR
     U[Browser] --> SWA[Azure Static Web Apps]
     SWA -->|callback request| LA[Logic App]
-    LA -->|managed identity| DB[(Cosmos DB)]
+    LA -->|managed identity| PE[Cosmos private endpoint]
+    PE --> DB[(Cosmos DB)]
     AI -. telemetry .-> LA
 ```
 
@@ -35,7 +36,8 @@ key.
 The workflow is a private-networked Logic App Standard site and must follow
 [`docs/logic-app-standard-baseline.md`](../../docs/logic-app-standard-baseline.md).
 Its user-assigned identity accesses host storage; its system-assigned identity
-accesses Cosmos DB.
+accesses Cosmos DB through the Cosmos `Sql` private endpoint and private DNS
+zone.
 
 The starter app sends one canonical request shape containing the OpenAPI
 `operationId`, optional item ID, body, and correlation ID. The Logic App
@@ -126,7 +128,9 @@ Include provider or template metadata, parameters or variables, deterministic
 naming, required tags, the resource group, the complete private Logic App
 Standard hosting baseline, an empty Standard site with both identities,
 Application Insights, the serverless Cosmos DB account, the workshop database
-and items container, and least-privilege Cosmos RBAC.
+and items container, the Cosmos Sql private endpoint and private DNS path, and
+least-privilege Cosmos RBAC. Disable Cosmos local authentication and public
+network access.
 
 Do not add a workflow definition, Static Web App, or API Management resources.
 
@@ -138,9 +142,10 @@ Wait for my approval.
 **Review before approving:** confirm that the complete private Standard
 baseline is present, the Standard site has no workflow definition, the
 user-assigned identity is limited to host storage, the system-assigned identity
-has only the required Cosmos data-plane role, and no keys or callback URLs are
-outputs. Correct any contract, naming, identity, or output drift before
-allowing edits.
+has only the required Cosmos data-plane role, the VNet-integrated site has a
+private DNS route to Cosmos, and no keys or callback URLs are outputs. Correct
+any contract, naming, networking, identity, or output drift before allowing
+edits.
 
 **Validate**
 
@@ -188,8 +193,9 @@ terraform -chdir=labs/01-crud-integration/iac/terraform apply \
 
 **Done when:** Azure contains the complete backend infrastructure foundation,
 the Logic App site has both identities but no workflow definition, Cosmos local
-authentication is disabled, and no secret appears in parameters, variables, or
-outputs.
+authentication and public network access are disabled, the Cosmos private
+endpoint is approved with a private DNS record, and no secret appears in
+parameters, variables, or outputs.
 
 ## Task 2: implement the CRUD workflow
 
@@ -204,6 +210,11 @@ workflow. Add only the workflow definition and the configuration needed to
 route the starter app's canonical request by operationId and access the
 existing Cosmos items container through the Logic App system identity.
 
+Follow the tested Standard workflow artifact, built-in Cosmos managed-identity
+connection, retry, error-code, update, and response-projection requirements in
+implementation-requirements.md. Use the existing Cosmos private endpoint; do
+not enable public network access.
+
 Do not add or replace networking, host storage, private endpoints, private DNS,
 the service plan, the Logic App site, Cosmos DB resources, identities, RBAC,
 Static Web Apps, or API Management.
@@ -217,8 +228,11 @@ validation commands. Wait for my approval.
 
 **Review before approving:** confirm that the change adds one workflow to the
 existing site, uses only the system-assigned identity for Cosmos access,
-implements every OpenAPI operation and response, and does not expose account
-keys or the callback URL.
+uses `accountURI` in the built-in managed-identity connection, implements every
+OpenAPI operation and response, projects out Cosmos system properties, and
+does not expose account keys or the callback URL. For Terraform, confirm that
+workflow artifacts use `deployWorkflowArtifacts` rather than a child-resource
+`PUT`.
 
 **Validate:** repeat the format, build or validate, and preview commands from
 Task 1. The preview must add the workflow behavior without replacing the
@@ -244,7 +258,9 @@ terraform -chdir=labs/01-crud-integration/iac/terraform apply \
 
 **Done when:** create, list, get, update, and delete return the contracted
 status and body through the deployed workflow, correlation IDs are preserved,
-and no account key appears in workflow parameters.
+no Cosmos system property appears in a response, the workflow reaches Cosmos
+only through private connectivity, and no account key appears in workflow
+parameters.
 
 ## Task 3: connect the frontend
 

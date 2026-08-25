@@ -56,6 +56,20 @@ Private endpoints do not by themselves prove that public access is disabled.
 Review the reference account properties and deployment preview explicitly; do
 not invent or weaken a network-access setting.
 
+## Lab workload private connectivity
+
+The shared hosting baseline covers host storage. A lab-specific data service
+with public network access disabled also needs a complete private data-plane
+path from the Logic App integration subnet.
+
+Lab 1 must create a Cosmos DB `Sql` private endpoint in the private-endpoint
+subnet, the `privatelink.documents.azure.com` private DNS zone, a VNet link, and
+a private DNS zone group. Keep Cosmos public network access and local
+authentication disabled. Create this path in the backend foundation before
+deploying the CRUD workflow, and verify the endpoint connection, private A
+record, and VNet link after deployment. VNet integration and managed identity
+alone do not make a private Cosmos account reachable.
+
 ## Identity boundaries
 
 The user-assigned identity exists for Logic App host-storage access. Keep each

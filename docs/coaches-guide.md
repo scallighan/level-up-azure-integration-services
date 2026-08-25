@@ -146,11 +146,21 @@ site.
 **Coach checks**
 
 - Cosmos local authentication is disabled.
+- Cosmos public network access is disabled.
+- A Cosmos `Sql` private endpoint, `privatelink.documents.azure.com` zone,
+  VNet link, and DNS zone group provide the workflow's data-plane path.
 - Host storage uses the user-assigned identity and keyless app settings.
 - Cosmos DB access uses the Logic App system identity.
 - The callback URL is not an IaC output.
 - The Standard site waits for its plan, host-storage roles, and private
   endpoints.
+- Standard workflow artifacts are deployed with the supported artifact
+  operation, and the built-in Cosmos connection uses managed identity with
+  `accountURI`.
+- ServiceProvider retry policies are under `inputs`, fixed intervals are at
+  least `PT5S`, and `Conflict`/`NotFound` use the action `code`.
+- Responses contain only `id`, `name`, and `status`, never Cosmos system
+  properties.
 
 ### Checkpoint 3: direct frontend path
 
