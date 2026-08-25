@@ -150,9 +150,9 @@ allowing edits.
 az bicep format --file labs/01-crud-integration/iac/bicep/main.bicep
 az bicep build --file labs/01-crud-integration/iac/bicep/main.bicep
 az deployment sub what-if \
-  --location eastus2 \
+  --location westus \
   --template-file labs/01-crud-integration/iac/bicep/main.bicep \
-  --parameters prefix="<your-prefix>" location="eastus2" \
+  --parameters prefix="<your-prefix>" location="westus" \
    apiManagementMode="none"
 ```
 
@@ -164,7 +164,7 @@ terraform -chdir=labs/01-crud-integration/iac/terraform fmt -check
 terraform -chdir=labs/01-crud-integration/iac/terraform validate
 terraform -chdir=labs/01-crud-integration/iac/terraform plan \
   -var="subscription_id=<your-subscription-id>" \
-  -var="prefix=<your-prefix>" -var="location=eastus2" \
+  -var="prefix=<your-prefix>" -var="location=westus" \
   -var="api_management_mode=none"
 ```
 
@@ -174,15 +174,15 @@ terraform -chdir=labs/01-crud-integration/iac/terraform plan \
 # Bicep
 az deployment sub create \
   --name "crud-<your-prefix>" \
-  --location eastus2 \
+  --location westus \
   --template-file labs/01-crud-integration/iac/bicep/main.bicep \
-  --parameters prefix="<your-prefix>" location="eastus2" \
+  --parameters prefix="<your-prefix>" location="westus" \
     apiManagementMode="none"
 
 # Terraform
 terraform -chdir=labs/01-crud-integration/iac/terraform apply \
   -var="subscription_id=<your-subscription-id>" \
-  -var="prefix=<your-prefix>" -var="location=eastus2" \
+  -var="prefix=<your-prefix>" -var="location=westus" \
   -var="api_management_mode=none"
 ```
 
@@ -230,15 +230,15 @@ deployed hosting or data foundation.
 # Bicep
 az deployment sub create \
   --name "crud-<your-prefix>" \
-  --location eastus2 \
+  --location westus \
   --template-file labs/01-crud-integration/iac/bicep/main.bicep \
-  --parameters prefix="<your-prefix>" location="eastus2" \
+  --parameters prefix="<your-prefix>" location="westus" \
     apiManagementMode="none"
 
 # Terraform
 terraform -chdir=labs/01-crud-integration/iac/terraform apply \
   -var="subscription_id=<your-subscription-id>" \
-  -var="prefix=<your-prefix>" -var="location=eastus2" \
+  -var="prefix=<your-prefix>" -var="location=westus" \
   -var="api_management_mode=none"
 ```
 
@@ -318,7 +318,7 @@ az group delete --name "<resource-group-name>" --yes --no-wait
 # Terraform
 terraform -chdir=labs/01-crud-integration/iac/terraform destroy \
   -var="subscription_id=<your-subscription-id>" \
-  -var="prefix=<your-prefix>" -var="location=eastus2" \
+  -var="prefix=<your-prefix>" -var="location=westus" \
   -var="api_management_mode=none"
 ```
 

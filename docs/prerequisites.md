@@ -74,7 +74,7 @@ Suggested values:
 | Setting | Example |
 |---|---|
 | Prefix | `sc42` |
-| Location | `eastus2` |
+| Location | `westus` |
 | Environment | `workshop` |
 | Tags | `workshop=agentic-ais`, `owner=<alias>` |
 
