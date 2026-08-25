@@ -67,26 +67,22 @@ Use one track for implementation:
 
 ### Load the track context
 
-The prompt file loads the selected track and mandatory references. The text
-after the prompt name is the actual request. Start from the repository root so
-Copilot can resolve every relative path.
+Start from the repository root so Copilot can resolve every relative path.
+Invoke the prompt for your selected track, then ask Copilot to follow the
+current task in this README. The prompt file loads the mandatory repository,
+lab, contract, and Logic App hosting context.
 
 **VS Code Copilot Chat**
 
 1. Open this repository as the VS Code workspace.
 2. Open Copilot Chat and select **Agent** mode.
-3. Enter the prompt file name followed by the first task:
+3. Invoke the workspace prompt for your track:
 
    ```text
-   /01-crud-terraform Create the backend infrastructure foundation for Lab 1.
-   Include the complete private Logic App Standard hosting baseline, the empty
-   Logic App site, Cosmos DB, identities, RBAC, and observability. Do not add
-   workflow definitions, Static Web Apps, or API Management. Before editing,
-   summarize the proposed files and resource graph, then wait for my approval.
+   /01-crud-terraform Follow Task 1 in the Lab 1 README.
    ```
 
-4. Select the workspace prompt when it appears in autocomplete, then send the
-   message.
+   Use `/01-crud-bicep` for the Bicep track.
 
 **GitHub Copilot CLI**
 
@@ -100,19 +96,14 @@ Copilot can resolve every relative path.
 2. At the interactive Copilot prompt, mention the file with `@`:
 
    ```text
-   @.github/prompts/01-crud-terraform.prompt.md Create the backend
-   infrastructure foundation for Lab 1. Include the complete private Logic App
-   Standard hosting baseline, the empty Logic App site, Cosmos DB, identities,
-   RBAC, and observability. Do not add workflow definitions, Static Web Apps,
-   or API Management. Before editing, summarize the proposed files and
-   resource graph, then wait for my approval.
+   @.github/prompts/01-crud-terraform.prompt.md Follow Task 1 in the Lab 1 README.
    ```
 
-   Typing `@` opens file autocomplete; select the Terraform prompt rather than
-   entering the text as a shell command.
+   Use `@.github/prompts/01-crud-bicep.prompt.md` for the Bicep track. Typing
+   `@` opens file autocomplete; select the prompt rather than entering the text
+   as a shell command.
 
-The same process works for Bicep by using `/01-crud-bicep` in VS Code or
-mentioning `@.github/prompts/01-crud-bicep.prompt.md` in Copilot CLI. See
+See
 [Invoking workshop prompt files](../../docs/copilot-working-agreement.md#invoking-workshop-prompt-files)
 for the reusable pattern.
 
