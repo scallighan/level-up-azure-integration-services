@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1160 570" role="img" aria-labelledby="title description">
+  <title id="title">Required private Logic App Standard hosting resource graph</title>
+  <desc id="description">A Windows WS1 plan hosts a Logic App Standard site. The site integrates with a delegated subnet and uses a user-assigned identity for host storage. Blob, queue, table, and file private endpoints connect storage to private DNS zones linked to the virtual network.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2563eb"/>
+    </marker>
+    <style>
+      .box { fill: #eff6ff; stroke: #2563eb; stroke-width: 2; rx: 10; }
+      .network { fill: #f5f3ff; stroke: #7c3aed; stroke-width: 2; rx: 10; }
+      .storage { fill: #ecfdf5; stroke: #059669; stroke-width: 2; rx: 10; }
+      .label { fill: #111827; font: 600 16px system-ui, sans-serif; text-anchor: middle; }
+      .edge { fill: none; stroke: #2563eb; stroke-width: 2.4; marker-end: url(#arrow); }
+      .edge-label { fill: #374151; font: 14px system-ui, sans-serif; text-anchor: middle; }
+    </style>
+  </defs>
+
+  <rect class="box" x="40" y="45" width="240" height="75"/>
+  <text class="label" x="160" y="77">Windows WS1</text>
+  <text class="label" x="160" y="101">Workflow Standard plan</text>
+
+  <rect class="box" x="440" y="45" width="240" height="75"/>
+  <text class="label" x="560" y="77">Logic App</text>
+  <text class="label" x="560" y="101">Standard site</text>
+
+  <rect class="network" x="840" y="45" width="260" height="75"/>
+  <text class="label" x="970" y="77">Delegated Logic App</text>
+  <text class="label" x="970" y="101">integration subnet</text>
+
+  <rect class="storage" x="440" y="185" width="240" height="70"/>
+  <text class="label" x="560" y="227">Host storage account</text>
+
+  <rect class="network" x="25" y="345" width="210" height="65"/>
+  <text class="label" x="130" y="384">Blob private endpoint</text>
+  <rect class="network" x="320" y="345" width="210" height="65"/>
+  <text class="label" x="425" y="384">Queue private endpoint</text>
+  <rect class="network" x="615" y="345" width="210" height="65"/>
+  <text class="label" x="720" y="384">Table private endpoint</text>
+  <rect class="network" x="910" y="345" width="210" height="65"/>
+  <text class="label" x="1015" y="384">File private endpoint</text>
+
+  <rect class="network" x="420" y="490" width="280" height="60"/>
+  <text class="label" x="560" y="516">Private DNS zones</text>
+  <text class="label" x="560" y="538">linked to the VNet</text>
+
+  <path class="edge" d="M 280 82 H 440"/>
+  <path class="edge" d="M 680 82 H 840"/>
+  <text class="edge-label" x="760" y="66">VNet integration and route all</text>
+  <path class="edge" d="M 560 120 V 185"/>
+  <text class="edge-label" x="660" y="159">user-assigned identity</text>
+
+  <path class="edge" d="M 500 255 C 470 300, 180 300, 140 345"/>
+  <path class="edge" d="M 535 255 C 525 300, 450 300, 430 345"/>
+  <path class="edge" d="M 585 255 C 595 300, 690 300, 710 345"/>
+  <path class="edge" d="M 620 255 C 650 300, 965 300, 1005 345"/>
+
+  <path class="edge" d="M 130 410 C 155 460, 405 455, 470 490"/>
+  <path class="edge" d="M 425 410 C 430 450, 500 455, 525 490"/>
+  <path class="edge" d="M 720 410 C 710 450, 625 455, 595 490"/>
+  <path class="edge" d="M 1015 410 C 990 460, 730 455, 650 490"/>
+</svg>

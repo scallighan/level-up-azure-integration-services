@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1160 610" role="img" aria-labelledby="title description">
+  <title id="title">Lab 2 Service Bus topic fan-out architecture</title>
+  <desc id="description">Service Bus Explorer publishes an order-created event to the orders topic. Audit, fulfillment, and notification subscriptions deliver independent copies to three workflows in one Logic App Standard site. Each workflow sends telemetry to Application Insights.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2563eb"/>
+    </marker>
+    <style>
+      .box { fill: #eff6ff; stroke: #2563eb; stroke-width: 2; rx: 10; }
+      .subscription { fill: #ecfdf5; stroke: #059669; stroke-width: 2; rx: 10; }
+      .site { fill: #faf5ff; stroke: #7c3aed; stroke-width: 2; rx: 14; }
+      .workflow { fill: #f5f3ff; stroke: #7c3aed; stroke-width: 2; rx: 9; }
+      .monitor { fill: #fff7ed; stroke: #ea580c; stroke-width: 2; rx: 10; }
+      .label { fill: #111827; font: 600 16px system-ui, sans-serif; text-anchor: middle; }
+      .site-label { fill: #5b21b6; font: 700 17px system-ui, sans-serif; text-anchor: middle; }
+      .edge { fill: none; stroke: #2563eb; stroke-width: 2.4; marker-end: url(#arrow); }
+      .telemetry { fill: none; stroke: #ea580c; stroke-width: 2.3; marker-end: url(#arrow); }
+      .edge-label { fill: #374151; font: 14px system-ui, sans-serif; text-anchor: middle; }
+    </style>
+  </defs>
+
+  <rect class="box" x="35" y="255" width="190" height="70"/>
+  <text class="label" x="130" y="286">Service Bus</text>
+  <text class="label" x="130" y="310">Explorer</text>
+
+  <rect class="box" x="300" y="255" width="170" height="70"/>
+  <text class="label" x="385" y="297">orders topic</text>
+
+  <rect class="subscription" x="535" y="90" width="210" height="65"/>
+  <text class="label" x="640" y="129">audit subscription</text>
+  <rect class="subscription" x="535" y="255" width="210" height="65"/>
+  <text class="label" x="640" y="294">fulfillment subscription</text>
+  <rect class="subscription" x="535" y="420" width="210" height="65"/>
+  <text class="label" x="640" y="459">notification subscription</text>
+
+  <rect class="site" x="805" y="40" width="320" height="500"/>
+  <text class="site-label" x="965" y="72">One Logic App Standard site</text>
+
+  <rect class="workflow" x="850" y="95" width="230" height="65"/>
+  <text class="label" x="965" y="134">Audit workflow</text>
+  <rect class="workflow" x="850" y="245" width="230" height="65"/>
+  <text class="label" x="965" y="284">Fulfillment workflow</text>
+  <rect class="workflow" x="850" y="395" width="230" height="65"/>
+  <text class="label" x="965" y="434">Notification workflow</text>
+
+  <rect class="monitor" x="830" y="545" width="270" height="55"/>
+  <text class="label" x="965" y="579">Application Insights</text>
+
+  <path class="edge" d="M 225 290 H 300"/>
+  <text class="edge-label" x="263" y="274">order.created</text>
+  <path class="edge" d="M 470 290 C 495 290, 500 122, 535 122"/>
+  <path class="edge" d="M 470 290 H 535"/>
+  <path class="edge" d="M 470 290 C 495 290, 500 452, 535 452"/>
+  <path class="edge" d="M 745 122 H 850"/>
+  <path class="edge" d="M 745 287 H 850"/>
+  <path class="edge" d="M 745 452 H 850"/>
+
+  <path class="telemetry" d="M 965 160 V 545"/>
+  <path class="telemetry" d="M 965 310 V 545"/>
+  <path class="telemetry" d="M 965 460 V 545"/>
+</svg>

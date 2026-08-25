@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 300" role="img" aria-labelledby="title description">
+  <title id="title">Lab 1 CRUD integration architecture</title>
+  <desc id="description">A browser calls Azure Static Web Apps, which calls a Logic App. The Logic App uses managed identity through a private endpoint to reach Cosmos DB. Application Insights receives Logic App telemetry.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2563eb"/>
+    </marker>
+    <style>
+      .box { fill: #eff6ff; stroke: #2563eb; stroke-width: 2; rx: 10; }
+      .data { fill: #ecfdf5; stroke: #059669; stroke-width: 2; rx: 10; }
+      .monitor { fill: #fff7ed; stroke: #ea580c; stroke-width: 2; rx: 10; }
+      .label { fill: #111827; font: 600 17px system-ui, sans-serif; text-anchor: middle; }
+      .edge { fill: none; stroke: #2563eb; stroke-width: 2.5; marker-end: url(#arrow); }
+      .telemetry { fill: none; stroke: #ea580c; stroke-width: 2.5; stroke-dasharray: 7 6; marker-end: url(#arrow); }
+      .edge-label { fill: #374151; font: 14px system-ui, sans-serif; text-anchor: middle; }
+    </style>
+  </defs>
+
+  <rect class="box" x="30" y="70" width="150" height="70"/>
+  <text class="label" x="105" y="112">Browser</text>
+
+  <rect class="box" x="240" y="70" width="190" height="70"/>
+  <text class="label" x="335" y="101">Azure Static</text>
+  <text class="label" x="335" y="124">Web Apps</text>
+
+  <rect class="box" x="500" y="70" width="160" height="70"/>
+  <text class="label" x="580" y="112">Logic App</text>
+
+  <rect class="box" x="730" y="70" width="190" height="70"/>
+  <text class="label" x="825" y="101">Cosmos private</text>
+  <text class="label" x="825" y="124">endpoint</text>
+
+  <rect class="data" x="980" y="70" width="120" height="70"/>
+  <text class="label" x="1040" y="112">Cosmos DB</text>
+
+  <rect class="monitor" x="475" y="215" width="210" height="60"/>
+  <text class="label" x="580" y="251">Application Insights</text>
+
+  <path class="edge" d="M 180 105 H 240"/>
+  <path class="edge" d="M 430 105 H 500"/>
+  <text class="edge-label" x="465" y="90">callback request</text>
+  <path class="edge" d="M 660 105 H 730"/>
+  <text class="edge-label" x="695" y="90">managed identity</text>
+  <path class="edge" d="M 920 105 H 980"/>
+  <path class="telemetry" d="M 580 215 V 145"/>
+  <text class="edge-label" x="625" y="183">telemetry</text>
+</svg>

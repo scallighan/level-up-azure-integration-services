@@ -21,24 +21,7 @@ independent copy in three workflows: audit, fulfillment, and notification.
 
 ## Architecture
 
-```mermaid
-flowchart LR
-    P[Service Bus Explorer] -->|order.created| T[orders topic]
-    T --> A[audit subscription]
-    T --> F[fulfillment subscription]
-    T --> N[notification subscription]
-    subgraph LA[One Logic App Standard site]
-        WA[Audit workflow]
-        WF[Fulfillment workflow]
-        WN[Notification workflow]
-    end
-    A --> WA
-    F --> WF
-    N --> WN
-    WA --> AI[Application Insights]
-    WF --> AI
-    WN --> AI
-```
+![Lab 2 architecture showing Service Bus topic fan-out to three workflows in one Logic App Standard site](../../docs/assets/lab-02-topic-fanout-architecture.svg)
 
 Each workflow receives from exactly one subscription. A failure in notification
 must not remove the audit or fulfillment copies.

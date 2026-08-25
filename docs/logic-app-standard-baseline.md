@@ -16,20 +16,7 @@ connection string, or a simplified Standard deployment.
 
 Each lab has one shared Logic App hosting foundation:
 
-```mermaid
-flowchart LR
-    PLAN[Windows WS1 Workflow Standard plan] --> LA[Logic App Standard site]
-    LA -->|VNet integration and route all| LASUB[Delegated Logic App subnet]
-    LA -->|user-assigned identity| SA[Host storage account]
-    SA --> PEB[Blob private endpoint]
-    SA --> PEQ[Queue private endpoint]
-    SA --> PET[Table private endpoint]
-    SA --> PEF[File private endpoint]
-    PEB --> DNS[Private DNS zones linked to VNet]
-    PEQ --> DNS
-    PET --> DNS
-    PEF --> DNS
-```
+![Required private Logic App Standard hosting resource graph](assets/logic-app-standard-baseline.svg)
 
 The lab-specific Cosmos DB, Service Bus, APIM, Static Web App, and observability
 resources extend this graph; they do not replace or weaken it.

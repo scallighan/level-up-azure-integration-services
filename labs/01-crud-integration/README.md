@@ -19,14 +19,7 @@ DB. The learner path connects the website directly to the workflow.
 
 ## Architecture
 
-```mermaid
-flowchart LR
-    U[Browser] --> SWA[Azure Static Web Apps]
-    SWA -->|callback request| LA[Logic App]
-    LA -->|managed identity| PE[Cosmos private endpoint]
-    PE --> DB[(Cosmos DB)]
-    AI -. telemetry .-> LA
-```
+![Lab 1 architecture showing the browser, Static Web Apps, Logic App, Cosmos private endpoint, Cosmos DB, and Application Insights](../../docs/assets/lab-01-crud-architecture.svg)
 
 The workshop uses one HTTP-triggered Logic App with explicit operation handling.
 [`contracts/openapi.yaml`](contracts/openapi.yaml) defines the operations and
