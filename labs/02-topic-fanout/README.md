@@ -83,8 +83,11 @@ guardrails.
   [`.github/prompts/02-fanout-terraform.prompt.md`](../../.github/prompts/02-fanout-terraform.prompt.md)
   and work in `labs/02-topic-fanout/iac/terraform/`.
 
-The prompt file loads the selected track and mandatory references. Follow it
-with the actual task request shown below; it does not infer what to build next.
+Invoke the selected prompt once from the repository root. It creates only the
+initial file structure, minimal base files, and a path-local `AGENTS.md` with
+the track's mandatory references and guardrails. It does not implement Step 0
+or infer what to build next. Review the starter files, then use the bounded
+prompt under Step 0.
 
 ## Step 0: resolve the shared hosting foundation
 

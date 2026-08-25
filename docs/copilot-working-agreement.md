@@ -56,36 +56,30 @@ to verify and teach participants how to retain control.
 
 ## Invoking workshop prompt files
 
-Files under `.github/prompts/` are reusable Copilot instructions. Invoke them
-from the repository root so their relative paths and the repository-wide
-instructions resolve correctly.
+The four lab-and-track files under `.github/prompts/` are one-time starter
+prompts. Invoke the selected prompt from the repository root so its relative
+paths and repository-wide instructions resolve correctly. It creates the
+selected IaC directory, minimal base files, and a path-local `AGENTS.md`; it
+does not implement a numbered lab task.
 
 In VS Code Copilot Chat, select **Agent** mode and enter the prompt filename
 without `.prompt.md` as a slash command:
 
 ```text
-/01-crud-terraform Create the Terraform deployment foundation for Lab 1. Add
-only provider constraints, variables, naming, tags, and the resource group.
-Before editing, summarize the proposed files and resource graph, then wait for
-my approval.
+/01-crud-terraform
 ```
 
 In GitHub Copilot CLI, start `copilot` from the repository root and use `@` to
 mention the prompt file:
 
 ```text
-@.github/prompts/01-crud-terraform.prompt.md Create the Terraform deployment
-foundation for Lab 1. Add only provider constraints, variables, naming, tags,
-and the resource group. Before editing, summarize the proposed files and
-resource graph, then wait for my approval.
+@.github/prompts/01-crud-terraform.prompt.md
 ```
 
-The prompt file is not executed by Bash or Terraform. Copilot reads it as task
-context. It loads the selected track and mandatory references; the request
-after the prompt name defines the actual work. Review the pre-edit summary,
-correct any drift, and approve the described bounded change. Use a new,
-task-specific request for the next outcome instead of asking Copilot to build
-the full lab.
+The prompt file is not executed by Bash or Terraform. Copilot reads it as the
+starter task. Review its proposed file structure and generated files. Then use
+the task-specific prompt in the lab README for the next bounded outcome instead
+of appending a numbered task to the starter invocation.
 
 ## Review checklist
 

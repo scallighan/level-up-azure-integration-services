@@ -65,12 +65,12 @@ Use one track for implementation:
   [`.github/prompts/01-crud-terraform.prompt.md`](../../.github/prompts/01-crud-terraform.prompt.md)
   and work in `labs/01-crud-integration/iac/terraform/`.
 
-### Load the track context
+### Initialize the selected track
 
 Start from the repository root so Copilot can resolve every relative path.
-Invoke the prompt for your selected track, then ask Copilot to follow the
-current task in this README. The prompt file loads the mandatory repository,
-lab, contract, and Logic App hosting context.
+Invoke the prompt for your selected track once. It creates only the initial file
+structure, minimal base files, and a path-local `AGENTS.md` containing the
+track's mandatory context and guardrails. It does not implement Task 1.
 
 **VS Code Copilot Chat**
 
@@ -79,7 +79,7 @@ lab, contract, and Logic App hosting context.
 3. Invoke the workspace prompt for your track:
 
    ```text
-   /01-crud-terraform Follow Task 1 in the Lab 1 README.
+   /01-crud-terraform
    ```
 
    Use `/01-crud-bicep` for the Bicep track.
@@ -96,7 +96,7 @@ lab, contract, and Logic App hosting context.
 2. At the interactive Copilot prompt, mention the file with `@`:
 
    ```text
-   @.github/prompts/01-crud-terraform.prompt.md Follow Task 1 in the Lab 1 README.
+   @.github/prompts/01-crud-terraform.prompt.md
    ```
 
    Use `@.github/prompts/01-crud-bicep.prompt.md` for the Bicep track. Typing
@@ -107,8 +107,8 @@ See
 [Invoking workshop prompt files](../../docs/copilot-working-agreement.md#invoking-workshop-prompt-files)
 for the reusable pattern.
 
-Create your selected directory when Copilot begins the first task. Keep local
-parameter values and Terraform state untracked.
+Review the generated starter files, then use the bounded prompt under Task 1.
+Keep local parameter values and Terraform state untracked.
 
 ## Task 1: deploy the backend infrastructure foundation
 

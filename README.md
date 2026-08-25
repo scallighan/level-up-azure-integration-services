@@ -46,7 +46,7 @@ People assisting learners should use the
 AGENTS.md                     Repository-wide agent instructions
 .github/
   copilot-instructions.md       Copilot-specific safeguards
-  prompts/                      IaC track context bootstrap files
+  prompts/                      IaC track starter structure prompts
 docs/
   implementation-standards.md  Shared engineering guardrails
   logic-app-standard-baseline.md
