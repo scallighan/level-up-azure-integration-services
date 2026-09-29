@@ -42,6 +42,9 @@ Create the path-local `AGENTS.md` with concise instructions that:
 - use the ignored root `.env` for stable, non-secret learner inputs, map them to
   exported `TF_VAR_*` values, and keep `.env.example` as the variable-name
   template so commands do not repeat `-var` arguments;
+- preserve the selected `API_MANAGEMENT_MODE` across tasks unless the learner
+  explicitly requests a mode change, and create no API Management resources
+  while it is `none`;
 - prohibit secrets or callback URLs in `.env`, prohibit committing `.env`,
   Terraform state or plan files, populated variable files, and changes to any
   `iac/.gitignore`;

@@ -57,6 +57,10 @@ Model API Management as `none`, `new`, or `existing`, defaulting to `none`.
   current subscription, and add only the workshop API, operations, and
   API-scoped policies.
 
+Treat the selected mode as a stable, lab-wide input. Preserve it across tasks
+unless the learner explicitly requests a mode change. When the mode is `none`,
+later tasks must continue to create no API Management resources.
+
 Reject inconsistent mode-specific inputs. Never change service-wide settings on
 an existing API Management instance.
 

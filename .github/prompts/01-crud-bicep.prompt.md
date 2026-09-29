@@ -39,6 +39,9 @@ Create the path-local `AGENTS.md` with concise instructions that:
 - use the ignored root `.env` for stable, non-secret learner inputs, require it
   to be sourced before Azure CLI commands, and keep `.env.example` as the
   variable-name template so values are not repeatedly re-entered;
+- preserve the selected `API_MANAGEMENT_MODE` across tasks unless the learner
+  explicitly requests a mode change, and create no API Management resources
+  while it is `none`;
 - prohibit secrets or callback URLs in `.env`, prohibit committing `.env`, and
   prohibit changes to any `iac/.gitignore`;
 - require a subscription-scoped entry point only because the deployment creates

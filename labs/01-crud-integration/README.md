@@ -116,6 +116,8 @@ cp .env.example .env
 Set `AZURE_SUBSCRIPTION_ID`, `WORKSHOP_PREFIX`, and the locations in `.env`.
 Keep `API_MANAGEMENT_MODE=none` for the direct learner path. The file is ignored
 by Git and must not contain credentials, callback URLs, or access keys.
+Treat `API_MANAGEMENT_MODE` as a lab-wide selection: preserve its current value
+across tasks unless the learner explicitly requests a mode change.
 
 Load the values once in each new terminal:
 
@@ -281,9 +283,9 @@ directly without persisting its callback URL.
 **Prompt Copilot**
 
 ```text
-Prepare the direct frontend path with API Management mode still set to none.
-Add the Free-tier Static Web App, CORS preflight handling, and response headers
-restricted to the deployed Static Web App origin.
+Prepare the direct frontend path. Add the Free-tier Static Web App, CORS
+preflight handling, and response headers restricted to the deployed Static Web
+App origin.
 
 Before editing, explain the resource and request flow, exact CORS behavior,
 files that will change, non-secret outputs, and how to test every OpenAPI
