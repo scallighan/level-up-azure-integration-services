@@ -36,7 +36,11 @@ Create the path-local `AGENTS.md` with concise instructions that:
 - keep each learner request bounded to the named lab task;
 - preserve the host-storage user-assigned identity and Cosmos workload
   system-assigned identity boundary;
-- prohibit secrets, callback URLs, and changes to any `iac/.gitignore`;
+- use the ignored root `.env` for stable, non-secret learner inputs, require it
+  to be sourced before Azure CLI commands, and keep `.env.example` as the
+  variable-name template so values are not repeatedly re-entered;
+- prohibit secrets or callback URLs in `.env`, prohibit committing `.env`, and
+  prohibit changes to any `iac/.gitignore`;
 - require a subscription-scoped entry point only because the deployment creates
   the resource group, with resource-group-scoped resources placed in clear
   modules; and

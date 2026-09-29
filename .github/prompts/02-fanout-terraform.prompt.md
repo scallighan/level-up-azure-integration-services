@@ -40,8 +40,12 @@ Create the path-local `AGENTS.md` with concise instructions that:
   its ownership and cleanup boundary;
 - preserve the host-storage user-assigned identity and subscription-scoped
   Service Bus receiver system-assigned identity boundary;
-- prohibit secrets, connection strings, full event payloads, Terraform state or
-  plan files, populated variable files, and changes to any `iac/.gitignore`;
+- use the ignored root `.env` for stable, non-secret learner inputs, map them to
+  exported `TF_VAR_*` values, and keep `.env.example` as the variable-name
+  template so commands do not repeat `-var` arguments;
+- prohibit secrets, connection strings, or full event payloads in `.env`,
+  prohibit committing `.env`, Terraform state or plan files, populated
+  variable files, and changes to any `iac/.gitignore`;
 - prefer AzureRM and allow AzAPI only when AzureRM cannot represent required
   behavior, with the reason documented; and
 - require `terraform fmt -check`, `terraform validate`, and the task's

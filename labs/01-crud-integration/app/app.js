@@ -86,11 +86,17 @@ function resetForm() {
   nameInput.focus();
 }
 
-function beginEdit(item) {
-  idInput.value = item.id;
-  nameInput.value = item.name;
-  statusInput.value = item.status;
-  nameInput.focus();
+async function beginEdit(id) {
+  try {
+    const item = await request(`/items/${encodeURIComponent(id)}`);
+    idInput.value = item.id;
+    nameInput.value = item.name;
+    statusInput.value = item.status;
+    nameInput.focus();
+    showMessage("Item loaded.");
+  } catch (error) {
+    showMessage(error.message, true);
+  }
 }
 
 async function deleteItem(id) {
@@ -118,7 +124,7 @@ function renderItems(items) {
     status.textContent = item.status;
     edit.textContent = "Edit";
     edit.className = "secondary";
-    edit.addEventListener("click", () => beginEdit(item));
+    edit.addEventListener("click", () => beginEdit(item.id));
     remove.textContent = "Delete";
     remove.className = "danger";
     remove.addEventListener("click", () => deleteItem(item.id));

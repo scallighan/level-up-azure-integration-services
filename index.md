@@ -51,8 +51,8 @@ identity boundaries, and runtime behavior.
 
 | Track | Lab 1 prompt | Lab 2 prompt |
 |---|---|---|
-| Bicep | [CRUD Bicep prompt](.github/prompts/01-crud-bicep.prompt.md) | [Fan-out Bicep prompt](.github/prompts/02-fanout-bicep.prompt.md) |
-| Terraform | [CRUD Terraform prompt](.github/prompts/01-crud-terraform.prompt.md) | [Fan-out Terraform prompt](.github/prompts/02-fanout-terraform.prompt.md) |
+| Bicep | [CRUD Bicep prompt](https://github.com/scallighan/level-up-azure-integration-services/blob/main/.github/prompts/01-crud-bicep.prompt.md) | [Fan-out Bicep prompt](https://github.com/scallighan/level-up-azure-integration-services/blob/main/.github/prompts/02-fanout-bicep.prompt.md) |
+| Terraform | [CRUD Terraform prompt](https://github.com/scallighan/level-up-azure-integration-services/blob/main/.github/prompts/01-crud-terraform.prompt.md) | [Fan-out Terraform prompt](https://github.com/scallighan/level-up-azure-integration-services/blob/main/.github/prompts/02-fanout-terraform.prompt.md) |
 
 > **Cost notice:** The labs create billable resources, including Windows WS1
 > Workflow Standard plans and private endpoints. Use a non-production

@@ -39,8 +39,12 @@ Create the path-local `AGENTS.md` with concise instructions that:
 - keep each learner request bounded to the named lab task;
 - preserve the host-storage user-assigned identity and Cosmos workload
   system-assigned identity boundary;
-- prohibit secrets, callback URLs, Terraform state or plan files, populated
-  variable files, and changes to any `iac/.gitignore`;
+- use the ignored root `.env` for stable, non-secret learner inputs, map them to
+  exported `TF_VAR_*` values, and keep `.env.example` as the variable-name
+  template so commands do not repeat `-var` arguments;
+- prohibit secrets or callback URLs in `.env`, prohibit committing `.env`,
+  Terraform state or plan files, populated variable files, and changes to any
+  `iac/.gitignore`;
 - prefer AzureRM and allow AzAPI only when AzureRM cannot represent required
   behavior, with the reason documented; and
 - require `terraform fmt -check`, `terraform validate`, and the task's

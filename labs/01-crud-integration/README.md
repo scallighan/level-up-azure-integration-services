@@ -54,10 +54,10 @@ repeat those guardrails.
 Use one track for implementation:
 
 - **Bicep:** invoke
-  [`.github/prompts/01-crud-bicep.prompt.md`](../../.github/prompts/01-crud-bicep.prompt.md)
+  [`.github/prompts/01-crud-bicep.prompt.md`](https://github.com/scallighan/level-up-azure-integration-services/blob/main/.github/prompts/01-crud-bicep.prompt.md)
   and work in `labs/01-crud-integration/iac/bicep/`.
 - **Terraform:** invoke
-  [`.github/prompts/01-crud-terraform.prompt.md`](../../.github/prompts/01-crud-terraform.prompt.md)
+  [`.github/prompts/01-crud-terraform.prompt.md`](https://github.com/scallighan/level-up-azure-integration-services/blob/main/.github/prompts/01-crud-terraform.prompt.md)
   and work in `labs/01-crud-integration/iac/terraform/`.
 
 ### Initialize the selected track
@@ -105,6 +105,30 @@ for the reusable pattern.
 Review the generated starter files, then use the bounded prompt under Task 1.
 Keep local parameter values and Terraform state untracked.
 
+### Save your workshop settings
+
+Create one local environment file from the repository root:
+
+```bash
+cp .env.example .env
+```
+
+Set `AZURE_SUBSCRIPTION_ID`, `WORKSHOP_PREFIX`, and the locations in `.env`.
+Keep `API_MANAGEMENT_MODE=none` for the direct learner path. The file is ignored
+by Git and must not contain credentials, callback URLs, or access keys.
+
+Load the values once in each new terminal:
+
+```bash
+set -a
+source .env
+set +a
+```
+
+The `TF_VAR_*` mappings in `.env` let Terraform discover the same values
+without repeated `-var` arguments. Bicep commands reference the exported
+workshop values directly.
+
 ## Task 1: deploy the backend infrastructure foundation
 
 **Outcome:** deploy the complete private hosting, data, identity, and
@@ -148,10 +172,11 @@ edits.
 az bicep format --file labs/01-crud-integration/iac/bicep/main.bicep
 az bicep build --file labs/01-crud-integration/iac/bicep/main.bicep
 az deployment sub what-if \
-  --location westus \
+  --subscription "$AZURE_SUBSCRIPTION_ID" \
+  --location "$AZURE_LOCATION" \
   --template-file labs/01-crud-integration/iac/bicep/main.bicep \
-  --parameters prefix="<your-prefix>" location="westus" \
-   apiManagementMode="none"
+  --parameters prefix="$WORKSHOP_PREFIX" location="$AZURE_LOCATION" \
+    apiManagementMode="$API_MANAGEMENT_MODE"
 ```
 
 **Terraform**
@@ -160,10 +185,7 @@ az deployment sub what-if \
 terraform -chdir=labs/01-crud-integration/iac/terraform init
 terraform -chdir=labs/01-crud-integration/iac/terraform fmt -check
 terraform -chdir=labs/01-crud-integration/iac/terraform validate
-terraform -chdir=labs/01-crud-integration/iac/terraform plan \
-  -var="subscription_id=<your-subscription-id>" \
-  -var="prefix=<your-prefix>" -var="location=westus" \
-  -var="api_management_mode=none"
+terraform -chdir=labs/01-crud-integration/iac/terraform plan
 ```
 
 **Deploy after reviewing the preview**
@@ -171,17 +193,15 @@ terraform -chdir=labs/01-crud-integration/iac/terraform plan \
 ```bash
 # Bicep
 az deployment sub create \
-  --name "crud-<your-prefix>" \
-  --location westus \
+  --subscription "$AZURE_SUBSCRIPTION_ID" \
+  --name "crud-$WORKSHOP_PREFIX" \
+  --location "$AZURE_LOCATION" \
   --template-file labs/01-crud-integration/iac/bicep/main.bicep \
-  --parameters prefix="<your-prefix>" location="westus" \
-    apiManagementMode="none"
+  --parameters prefix="$WORKSHOP_PREFIX" location="$AZURE_LOCATION" \
+    apiManagementMode="$API_MANAGEMENT_MODE"
 
 # Terraform
-terraform -chdir=labs/01-crud-integration/iac/terraform apply \
-  -var="subscription_id=<your-subscription-id>" \
-  -var="prefix=<your-prefix>" -var="location=westus" \
-  -var="api_management_mode=none"
+terraform -chdir=labs/01-crud-integration/iac/terraform apply
 ```
 
 **Done when:** Azure contains the complete backend infrastructure foundation,
@@ -236,17 +256,15 @@ deployed hosting or data foundation.
 ```bash
 # Bicep
 az deployment sub create \
-  --name "crud-<your-prefix>" \
-  --location westus \
+  --subscription "$AZURE_SUBSCRIPTION_ID" \
+  --name "crud-$WORKSHOP_PREFIX" \
+  --location "$AZURE_LOCATION" \
   --template-file labs/01-crud-integration/iac/bicep/main.bicep \
-  --parameters prefix="<your-prefix>" location="westus" \
-    apiManagementMode="none"
+  --parameters prefix="$WORKSHOP_PREFIX" location="$AZURE_LOCATION" \
+    apiManagementMode="$API_MANAGEMENT_MODE"
 
 # Terraform
-terraform -chdir=labs/01-crud-integration/iac/terraform apply \
-  -var="subscription_id=<your-subscription-id>" \
-  -var="prefix=<your-prefix>" -var="location=westus" \
-  -var="api_management_mode=none"
+terraform -chdir=labs/01-crud-integration/iac/terraform apply
 ```
 
 **Done when:** create, list, get, update, and delete return the contracted
@@ -312,7 +330,7 @@ correlation ID is visible in telemetry, and no callback URL was persisted.
 ## Copilot review challenge
 
 Invoke
-[`review-iac-parity.prompt.md`](../../.github/prompts/review-iac-parity.prompt.md)
+[`review-iac-parity.prompt.md`](https://github.com/scallighan/level-up-azure-integration-services/blob/main/.github/prompts/review-iac-parity.prompt.md)
 with someone using the other track. Resolve behavioral differences, not cosmetic
 syntax differences.
 
@@ -325,10 +343,7 @@ Preview cleanup before approving it:
 az group delete --name "<resource-group-name>" --yes --no-wait
 
 # Terraform
-terraform -chdir=labs/01-crud-integration/iac/terraform destroy \
-  -var="subscription_id=<your-subscription-id>" \
-  -var="prefix=<your-prefix>" -var="location=westus" \
-  -var="api_management_mode=none"
+terraform -chdir=labs/01-crud-integration/iac/terraform destroy
 ```
 
 Confirm the workshop resource group is deleted before moving to another

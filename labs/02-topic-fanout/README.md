@@ -60,10 +60,10 @@ guardrails.
 ## Choose a track
 
 - **Bicep:** invoke
-  [`.github/prompts/02-fanout-bicep.prompt.md`](../../.github/prompts/02-fanout-bicep.prompt.md)
+  [`.github/prompts/02-fanout-bicep.prompt.md`](https://github.com/scallighan/level-up-azure-integration-services/blob/main/.github/prompts/02-fanout-bicep.prompt.md)
   and work in `labs/02-topic-fanout/iac/bicep/`.
 - **Terraform:** invoke
-  [`.github/prompts/02-fanout-terraform.prompt.md`](../../.github/prompts/02-fanout-terraform.prompt.md)
+  [`.github/prompts/02-fanout-terraform.prompt.md`](https://github.com/scallighan/level-up-azure-integration-services/blob/main/.github/prompts/02-fanout-terraform.prompt.md)
   and work in `labs/02-topic-fanout/iac/terraform/`.
 
 Invoke the selected prompt once from the repository root. It creates only the
@@ -71,6 +71,14 @@ initial file structure, minimal base files, and a path-local `AGENTS.md` with
 the track's mandatory references and guardrails. It does not implement Step 0
 or infer what to build next. Review the starter files, then use the bounded
 prompt under Step 0.
+
+Reuse the ignored root `.env` from Lab 1 for stable, non-secret deployment
+inputs. Add Lab 2 hosting-foundation mode and reference values as the selected
+track introduces them, and add matching empty entries to `.env.example`.
+Source `.env` once per terminal; Terraform should consume exported `TF_VAR_*`
+values instead of repeated `-var` arguments, while Bicep commands should
+reference the exported shell values. Never store connection strings, access
+keys, or observability credentials in `.env`.
 
 ## Step 0: resolve the shared hosting foundation
 
@@ -243,7 +251,7 @@ retries and dead-letters its copy, and the deliberate failure has been reverted.
 ## Cross-track review
 
 Pair with someone using the other IaC language and invoke
-[`review-iac-parity.prompt.md`](../../.github/prompts/review-iac-parity.prompt.md).
+[`review-iac-parity.prompt.md`](https://github.com/scallighan/level-up-azure-integration-services/blob/main/.github/prompts/review-iac-parity.prompt.md).
 Pay special attention to default rules, RBAC scope, lock handling, and resources
 that cleanup could orphan.
 
