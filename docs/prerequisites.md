@@ -65,7 +65,7 @@ az provider register --namespace Microsoft.ApiManagement --wait
 
 ## Local configuration
 
-Use one short, globally distinctive prefix throughout both labs, such as your
+Use one short, globally distinctive prefix throughout the workshop labs, such as your
 initials plus a number. Never place credentials, callback URLs, access keys,
 Terraform state, or populated parameter files in Git.
 

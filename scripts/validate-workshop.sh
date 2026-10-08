@@ -17,6 +17,11 @@ required_files=(
   "labs/02-topic-fanout/implementation-requirements.md"
   "labs/02-topic-fanout/contracts/order-created.schema.json"
   "labs/02-topic-fanout/contracts/sample-order-created.json"
+  "labs/03-workbook-to-solution/README.md"
+  "labs/03-workbook-to-solution/implementation-requirements.md"
+  "labs/03-workbook-to-solution/contracts/integration-design.schema.json"
+  "labs/03-workbook-to-solution/contracts/sample-simple-design.json"
+  "scripts/extract-integration-workbook.py"
 )
 
 for file in "${required_files[@]}"; do
@@ -28,10 +33,17 @@ done
 
 jq empty labs/02-topic-fanout/contracts/order-created.schema.json
 jq empty labs/02-topic-fanout/contracts/sample-order-created.json
+jq empty labs/03-workbook-to-solution/contracts/integration-design.schema.json
+jq empty labs/03-workbook-to-solution/contracts/sample-simple-design.json
+PYTHONPYCACHEPREFIX="${TMPDIR:-/tmp}/level-up-azure-integration-services-pycache" \
+  python -m py_compile scripts/extract-integration-workbook.py
 
 if grep -RInE \
   '(AccountKey=|SharedAccessKey=|sig=[A-Za-z0-9%]|-----BEGIN (RSA |EC )?PRIVATE KEY-----)' \
-  --exclude='validate-workshop.sh' .; then
+  --exclude='validate-workshop.sh' \
+  --exclude='*.tfstate' \
+  --exclude='*.tfstate.*' \
+  --exclude-dir='.terraform' .; then
   echo "Potential secret material found." >&2
   exit 1
 fi

@@ -11,6 +11,8 @@ Participants build the same solutions with either **Bicep** or **Terraform**:
    DB, with optional new or existing API Management.
 2. An event fan-out solution using an Azure Service Bus topic and three Logic
    App subscribers.
+3. An optional workbook-driven capstone that turns payload and transformation
+   evidence into an approved Azure Integration Services solution.
 
 The workshop emphasizes the engineering loop around Copilot: provide context,
 ask for a small change, review the result, validate it with native tools, and
@@ -25,6 +27,7 @@ and test results remain the source of truth.
 | Lab 1: CRUD integration | 90 min | Browser-to-database request path deployed and tested |
 | Break | 15 min | |
 | Lab 2: topic fan-out | 75 min | One event independently processed by three workflows |
+| Optional Lab 3 capstone | 90-150 min | Workbook evidence becomes an approved design and implementation |
 | Review and cleanup | 30 min | IaC reviewed, resources removed, takeaways captured |
 
 ## Start here
@@ -34,7 +37,8 @@ and test results remain the source of truth.
 3. Choose one IaC track for the day: **Bicep** or **Terraform**.
 4. Complete [Lab 1](labs/01-crud-integration/README.md).
 5. Complete [Lab 2](labs/02-topic-fanout/README.md).
-6. Delete workshop resources using the cleanup steps in each lab.
+6. Complete [Lab 3](labs/03-workbook-to-solution/README.md).
+7. Delete workshop resources using the cleanup steps in each lab.
 
 Instructors should also read the [instructor guide](docs/instructor-guide.md).
 People assisting learners should use the
@@ -53,6 +57,7 @@ docs/
 labs/
   01-crud-integration/          Lab tasks, requirements, and API contract
   02-topic-fanout/              Lab tasks, requirements, and event contract
+  03-workbook-to-solution/      Workbook evidence, design contract, and implementation loop
 scripts/                        Local workshop checks
 ```
 

@@ -27,7 +27,7 @@ destructive deployment, or use of the wrong Azure subscription.
 
 1. Complete [`prerequisites.md`](prerequisites.md) using the same workstation
    constraints as learners.
-2. Read `AGENTS.md`, `.github/copilot-instructions.md`, both lab READMEs, all
+2. Read `AGENTS.md`, `.github/copilot-instructions.md`, all lab READMEs, all
    committed contracts, and
    [`logic-app-standard-baseline.md`](logic-app-standard-baseline.md).
 3. Review the current
@@ -96,7 +96,8 @@ omits any of these responsibilities:
 
 The user-assigned identity is for host storage. The system-assigned identity is
 for the lab workload: Cosmos DB in Lab 1 and the assigned Service Bus
-subscription in Lab 2.
+subscription in Lab 2. Lab 3 derives workload roles from the approved design
+and keeps each role at the narrowest individual resource scope.
 
 For Lab 2, learners explicitly create a new shared hosting foundation or
 reference the compatible foundation from Lab 1. Existing resources remain
@@ -319,6 +320,82 @@ failure is reverted.
 Do not suggest automatically replaying dead-letter messages. Ask how a replay
 tool would preserve diagnostics and identifiers while preventing an infinite
 poison-message loop.
+
+## Lab 3 coaching map
+
+### Checkpoint 0: workbook evidence
+
+**Learner should explain**
+
+- Which sheets and cells establish each source, target, payload, transform,
+  response, and error conclusion.
+- Why `Architect Diagram` / `Architecture Diagram` tabs define flow guidance,
+  XRef entries supply lookup data, and Source-prefixed tabs or tables identify
+  starting points.
+- How aligned Input, Transformation rule, and Output cells define each
+  processing tab's mapping, and how diagram arrows match Output to next Input.
+- Which workbook images were reviewed separately.
+- Which protocol, authentication, volume, latency, ordering, idempotency,
+  recovery, ownership, and networking details remain unknown.
+
+**Coach checks**
+
+- The workbook was extracted locally and was not uploaded to an external
+  service.
+- Facts and assumptions are visibly separate.
+- Every tab is classified; architecture and XRef information do not create
+  workflows, and ambiguous diagram links are resolved before approval.
+- Customer or production payloads are not being committed.
+
+### Checkpoint 1: approved design
+
+**Learner should explain**
+
+- Why each selected Azure service is required and which alternatives were
+  rejected.
+- The resource graph, private data paths, identity scopes, reliability
+  behavior, cost, ownership, and cleanup boundary.
+- Which assumptions had to be confirmed before implementation.
+
+**Coach checks**
+
+- The proposal validates against the Lab 3 schema.
+- Every non-informational tab has its own flow/workflow; Source helpers send
+  to ingress queues and inter-tab edges use topics and downstream subscriptions.
+- Publishers send to topics, not subscriptions; fan-out uses independent
+  subscriptions and XRef data has an explicit lookup strategy.
+- IaC initialization does not begin while status is `proposed`.
+- The host-storage user-assigned identity remains limited to host storage.
+- Workload roles use the Logic App system identity at individual resource
+  scopes.
+- External credentials are neither invented nor placed in the proposal.
+
+### Checkpoint 2: foundation and integration resources
+
+Compare every planned resource with the approved proposal. Stop additions that
+are merely convenient rather than justified by a flow requirement. Require a
+complete private endpoint and DNS path for every approved Azure service whose
+public access is disabled.
+
+### Checkpoint 3: transformations and workflows
+
+Require sanitized fixtures for source, canonical, target, response, and error
+shapes. Test workbook conditionals, defaults, null handling, lookups, dates,
+types, and array behavior. A syntactically translated DataWeave expression is
+not proof of equivalent behavior.
+
+Require one workflow per processing tab and a documented sample helper for each
+Source starting point. Run helpers with sender-only Microsoft Entra access from
+an approved network path. Verify every upstream Output satisfies downstream
+Input and that a workflow completes Input only after Output publication.
+Include lookup misses and publication-success/settlement-failure duplicates.
+
+### Checkpoint 4: target connection and failure proof
+
+Confirm target ownership, endpoint, authentication, throttling, test data, and
+recovery before live connection. Require success, invalid input, timeout,
+transient failure, permanent failure, and correlation evidence without logging
+full payloads.
 
 ## Troubleshooting playbook
 

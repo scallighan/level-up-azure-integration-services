@@ -1,0 +1,241 @@
+{
+  "schemaVersion": "1.0",
+  "status": "proposed",
+  "workbook": {
+    "fileName": "simple-integration-sample-payoad-and-transformation-logic.xlsx",
+    "sheetsReviewed": [
+      "Source (service requests to CBO",
+      "CBO to Maximo"
+    ]
+  },
+  "evidence": [
+    {
+      "sheet": "Source (service requests to CBO",
+      "cells": [
+        "A1",
+        "D1",
+        "J1"
+      ],
+      "finding": "The sheet provides a JSON request, DataWeave transformation, and canonical JSON output."
+    },
+    {
+      "sheet": "CBO to Maximo",
+      "cells": [
+        "A1",
+        "I1",
+        "P1"
+      ],
+      "finding": "The canonical object is transformed into a Maximo-oriented JSON request."
+    },
+    {
+      "sheet": "CBO to Maximo",
+      "cells": [
+        "I4",
+        "I9"
+      ],
+      "finding": "Classification values are mapped to Maximo class structure identifiers."
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "A-001",
+      "statement": "Confirm the operator and private-network execution environment for the Source helper; it sends sanitized service requests to the service-requests queue using Microsoft Entra authentication.",
+      "mustConfirmBeforeImplementation": true
+    },
+    {
+      "id": "A-002",
+      "statement": "Maximo authentication details and endpoint ownership are supplied outside the workbook.",
+      "mustConfirmBeforeImplementation": true
+    },
+    {
+      "id": "A-003",
+      "statement": "DataWeave behavior will be reimplemented and tested rather than executed directly.",
+      "mustConfirmBeforeImplementation": false
+    },
+    {
+      "id": "A-004",
+      "statement": "The Source tab's canonical Output feeds CBO to Maximo Input via canonical-requests/maximo-transform. Confirm the link against payload evidence and any available architecture diagram; do not infer it from tab order.",
+      "mustConfirmBeforeImplementation": true
+    },
+    {
+      "id": "A-005",
+      "statement": "A mock consumer of maximo-requests/mock-target verifies the final Output before an approved Maximo adapter is connected. Confirm target-adapter ownership and idempotency before live writes.",
+      "mustConfirmBeforeImplementation": true
+    }
+  ],
+  "flows": [
+    {
+      "name": "service-request-to-canonical",
+      "trigger": "Receive and lock from Service Bus queue service-requests",
+      "sourceFormat": "JSON service request",
+      "targetFormat": "Canonical business object JSON",
+      "steps": [
+        "Implement only the processing tab Source (service requests to CBO.",
+        "Provide a parameterized Source helper that sends its sanitized Input fixture to service-requests with content type, message ID, and correlation ID.",
+        "Validate the inbound Input against its payload contract.",
+        "Apply this tab's transformation rules to produce and validate the canonical Output.",
+        "Publish Output to canonical-requests; subscription maximo-transform supplies the CBO to Maximo workflow.",
+        "Complete the service-requests message only after successful publication."
+      ],
+      "failureBehavior": "Do not complete Input on validation, transformation, or publication failure. Apply bounded retries and dead-letter policy; preserve correlation and handle duplicates if publication succeeds but completion fails."
+    },
+    {
+      "name": "canonical-to-maximo",
+      "trigger": "Receive and lock from Service Bus topic canonical-requests, subscription maximo-transform",
+      "sourceFormat": "Canonical business object JSON",
+      "targetFormat": "Maximo JSON request",
+      "steps": [
+        "Implement only the processing tab CBO to Maximo.",
+        "Validate canonical Input against this tab's payload contract.",
+        "Apply transformation rules and classification lookups to produce and validate Maximo Output; any XRef entries are lookup artifacts, not workflows.",
+        "Publish Output to maximo-requests for the mock-target subscription; connect a real target adapter only after approval.",
+        "Complete the maximo-transform message only after successful publication."
+      ],
+      "failureBehavior": "Do not complete Input on invalid canonical data, unmapped classification, or failed Output publication. Apply bounded retries and dead-letter policy and record only sanitized diagnostics and correlation identifiers."
+    }
+  ],
+  "azureResources": [
+    {
+      "type": "Private Logic App Standard hosting foundation",
+      "purpose": "Host both tab workflows with the workshop network and keyless host-storage baseline.",
+      "required": true,
+      "costBearing": true
+    },
+    {
+      "type": "Logic App Standard workflows",
+      "purpose": "One workflow for Source (service requests to CBO and one for CBO to Maximo; informational architecture and XRef tabs do not become workflows.",
+      "required": true,
+      "costBearing": false
+    },
+    {
+      "type": "Service Bus namespace",
+      "purpose": "Provide durable Source ingress and topic/subscription handoffs with the approved private connectivity and a topic-capable SKU.",
+      "required": true,
+      "costBearing": true
+    },
+    {
+      "type": "Service Bus queue service-requests",
+      "purpose": "Receive sanitized Input messages from the Source helper for the Source workflow.",
+      "required": true,
+      "costBearing": false
+    },
+    {
+      "type": "Service Bus topic canonical-requests and subscription maximo-transform",
+      "purpose": "Route the Source workflow's canonical Output to CBO to Maximo Input.",
+      "required": true,
+      "costBearing": false
+    },
+    {
+      "type": "Service Bus topic maximo-requests and subscription mock-target",
+      "purpose": "Expose the last processing tab's Maximo Output to the approved test consumer, then target adapter.",
+      "required": true,
+      "costBearing": false
+    },
+    {
+      "type": "Application Insights",
+      "purpose": "Record correlated operational telemetry without full payloads.",
+      "required": true,
+      "costBearing": true
+    },
+    {
+      "type": "Key Vault",
+      "purpose": "Reference an external-system credential only if managed identity or federation is unavailable.",
+      "required": false,
+      "costBearing": true
+    },
+    {
+      "type": "API Management",
+      "purpose": "Not selected for broker-based Source helper ingress; consider only if a separately approved API ingress requirement exists.",
+      "required": false,
+      "costBearing": true
+    }
+  ],
+  "identityBoundaries": [
+    {
+      "identity": "Source helper operator's Microsoft Entra identity",
+      "resource": "Service Bus queue service-requests",
+      "permissions": "Azure Service Bus Data Sender",
+      "scope": "service-requests queue only"
+    },
+    {
+      "identity": "Logic App system-assigned managed identity",
+      "resource": "service-requests queue and canonical-requests/maximo-transform subscription",
+      "permissions": "Azure Service Bus Data Receiver",
+      "scope": "Separate assignments at the input queue and input subscription; shared site identity, not per-workflow identities"
+    },
+    {
+      "identity": "Logic App system-assigned managed identity",
+      "resource": "canonical-requests and maximo-requests topics",
+      "permissions": "Azure Service Bus Data Sender",
+      "scope": "Separate assignments at each output topic"
+    },
+    {
+      "identity": "Approved mock consumer or target adapter identity",
+      "resource": "maximo-requests/mock-target subscription",
+      "permissions": "Azure Service Bus Data Receiver",
+      "scope": "mock-target subscription only"
+    },
+    {
+      "identity": "Host-storage user-assigned managed identity",
+      "resource": "Logic App host storage",
+      "permissions": "Blob, Queue, and Table Data Contributor",
+      "scope": "Host storage account only"
+    },
+    {
+      "identity": "Logic App system-assigned managed identity",
+      "resource": "Optional Key Vault",
+      "permissions": "Only the data-plane roles required by the approved implementation",
+      "scope": "Each individual workload resource"
+    }
+  ],
+  "reliability": [
+    "Confirm lock duration and renewal, retry limits, maximum delivery count, TTL, and dead-letter ownership before implementation.",
+    "Complete each Input only after publishing validated Output; failed publication leaves Input unsettled for the approved failure policy.",
+    "Use stable message IDs and explicit duplicate handling for retries and replay, including publication success followed by completion failure.",
+    "Define target timeouts and classify transient versus permanent failures.",
+    "Disable unsafe automatic retries for non-idempotent target writes unless an idempotency key is confirmed.",
+    "Preserve one correlation identifier through the Source helper, both tab workflows, every broker handoff, and the approved target adapter."
+  ],
+  "observability": [
+    "Record workflow, stage, duration, result, and correlation identifier.",
+    "Do not record complete source, canonical, or target payloads.",
+    "Create a failure query and alert only after expected volume and support ownership are known."
+  ],
+  "security": [
+    "Use HTTPS with TLS 1.2 or later.",
+    "Keep Logic App host storage private and keyless.",
+    "Use Microsoft Entra authentication for the Source helper and managed identity for workflow broker access; confirm private-network reachability without weakening public-access policy.",
+    "Do not place Maximo credentials, callback URLs, or payloads in source, outputs, state, or telemetry."
+  ],
+  "implementationStages": [
+    {
+      "stage": 0,
+      "outcome": "Approve the evidence, assumptions, service selection, and target contract."
+    },
+    {
+      "stage": 1,
+      "outcome": "Deploy the private Logic App Standard and observability foundation."
+    },
+    {
+      "stage": 2,
+      "outcome": "Deploy approved Service Bus entities, routing, private connectivity, and least-privilege workload and helper access."
+    },
+    {
+      "stage": 3,
+      "outcome": "Implement two tab workflows, tested transformations and lookup artifacts, and a Source helper against sanitized fixtures and a mock subscriber."
+    },
+    {
+      "stage": 4,
+      "outcome": "Connect the approved Maximo target adapter and prove end-to-end success and failure behavior."
+    }
+  ],
+  "validation": [
+    "Validate the proposal against integration-design.schema.json.",
+    "Compare transformation outputs with workbook examples.",
+    "Verify one workflow per processing tab and no workflow for architecture or XRef information.",
+    "Run the Source helper and trace service-requests to canonical-requests/maximo-transform to maximo-requests/mock-target with one correlation ID.",
+    "Verify upstream Output satisfies downstream Input; test lookup misses, failed publication, duplicate delivery, routing, and dead-letter behavior.",
+    "Run Bicep or Terraform format, validation, and deployment preview.",
+    "Test success, invalid input, unmapped classification, timeout, transient failure, and permanent target failure."
+  ]
+}

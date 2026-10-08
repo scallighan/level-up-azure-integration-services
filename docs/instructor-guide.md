@@ -13,6 +13,8 @@ By the end, participants can:
 - review generated IaC for identity, secrets, naming, cost, and idempotency;
 - generate and test Logic App workflows from API and event contracts;
 - diagnose deployments by grounding Copilot in exact command output; and
+- derive an implementation contract from workbook evidence and explicit
+  assumptions; and
 - manage the deployed solutions through safe previews and cleanup.
 
 In-room helpers should also read the
@@ -29,7 +31,8 @@ ladder, troubleshooting guidance, and cleanup sign-off criteria.
 | 2:00 | Break | Compare direct and APIM modes |
 | 2:15 | Lab 2 | Asynchronous fan-out and independent failure |
 | 3:30 | Cross-track review | Compare Bicep and Terraform resource graphs |
-| 3:45 | Cleanup and discussion | Cost, security, and production hardening |
+| 3:45 | Optional Lab 3 extension | Design from workbook evidence |
+| 4:45 | Cleanup and discussion | Cost, security, and production hardening |
 
 ## Pairing model
 
@@ -54,6 +57,15 @@ behavior should match even when implementation details differ.
 - Each workflow uses its own subscription.
 - A workflow failure does not prevent the other subscriptions from processing.
 - Duplicate handling and dead-letter behavior are discussed before testing.
+
+**Lab 3**
+
+- Workbook facts cite sheets and cells; assumptions are visibly separate.
+- The schema-valid proposal is approved before IaC initialization.
+- Selected Azure services map to confirmed requirements rather than workbook
+  product names alone.
+- DataWeave behavior is covered by sanitized transformation fixtures and tests.
+- External authentication and ownership are confirmed before live connection.
 
 ## Recovery strategies
 

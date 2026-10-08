@@ -56,3 +56,5 @@ terraform.rc
 _site/
 .jekyll-cache/
 .sass-cache/
+
+*.xlsx
