@@ -33,7 +33,7 @@ and cell alignment, including merged headers, rather than fixed column letters.
 | XRef tab or table entries | Reference lookup data, not a workflow. An XRef table inside a processing tab does not exclude that tab. |
 | Processing tab or table name beginning with `Source` | Starting point; include a workflow and a helper script to send sample Input to its ingress queue. |
 | Every non-informational tab | One separate Logic App Standard workflow. |
-| `Input` columns | Incoming-message examples used to derive sanitized fixtures and validation expectations. |
+| `Input` columns | Incoming-message examples to check against the transformation and Output. |
 | `Transformation rule`, `Transformation Logic`, or `Dataweave` columns | Mapping, validation, defaults, conversions, and lookup behavior. |
 | `Output` columns | Expected transformed message, published to an output topic for downstream consumption. |
 
@@ -45,8 +45,7 @@ ambiguous tabs before approval.
 
 ## Task 1: propose and approve the Azure design
 
-**Outcome:** a reviewed design and SVG visual based on your workbook and the
-rules above.
+**Outcome:** a concise workbook summary, proposed message flow, and simple SVG.
 
 Reference your local workbook in this prompt, replacing `sample.xlsx` with its
 path:
@@ -55,38 +54,45 @@ path:
 Workbook: sample.xlsx
 
 Read the Lab 3 README, implementation requirements, repository implementation
-standards, and any existing Lab 3 plans.
+standards, and any relevant existing workbook evidence. Do not use an older
+long-form plan as the output template.
 
 Use the workbook above locally. Run scripts/extract-integration-workbook.py to
 extract all sheets into labs/03-workbook-to-solution/plans/workbook-evidence.md.
 Keep extracted images and all other intermediate files in that plans folder;
-review the images separately. Do not commit these local artifacts.
-Apply the workbook interpretation rules to propose the smallest secure Azure
-Integration Services design. Include one workflow per processing tab, Source
-helpers, XRef lookup artifacts, Service Bus handoffs, and mocked external systems.
+review the images separately. Apply the workbook interpretation rules and check
+that each upstream Output matches its downstream Input.
 
-Summarize the flow and resource graph, identity boundaries, costs, and cleanup
-ownership. Cite workbook evidence locally; separate facts from assumptions and
-list conflicts or missing information that need my decision.
+Write plans/integration-design.md in the Lab 3 folder, starting with
+"Status: proposed". Use original workbook names and values without scrubbing.
+Give me the same concise summary in chat, containing only:
+1. A one-sentence verdict on the workflow mapping and any approval blockers.
+2. A table: Tab | Classification | Input cells | Transformation cells | Output cells.
+3. A short message-flow graph using Logic App Standard workflows, Service Bus
+   queues/topics/subscriptions, Source helpers, lookups, and mocked targets.
+4. An issues table: workbook conflict or missing flow information | cell evidence.
+5. A brief note on untested rules or interpretation limits, and the SVG path.
 
-Write labs/03-workbook-to-solution/plans/integration-design.md using the original
-workbook names and values without scrubbing. Start it with "Status: proposed"
-and include
-payload expectations, transformation choices, reliability, and validation.
-Generate plans/integration-design.svg in the same Lab 3 folder as a self-contained
-visual of the proposed Azure design. Show workflows, Source helpers, XRef lookups,
-mock systems, queue/topic/subscription handoffs, and identity/network boundaries.
-Use clear labels and arrows, distinguish assumptions, and keep it consistent
-with the written plan. Link the SVG from the plan and validate its XML.
-Do not initialize IaC, implement, or deploy resources.
+Generate plans/integration-design.svg as a simple, readable version of that
+message flow. Use clear labels and arrows; mark unresolved links. Link it from
+the written summary and validate its XML.
+
+Keep narrative to two short paragraphs; add table rows only for actual tabs and
+issues. Do not paste payloads or transformation code into the summary, invent
+missing behavior, or expand it into a deployment design document. Hosting,
+networking, RBAC, costs, retry settings, and deployment details belong in Task 2.
+Create only the evidence file, summary, SVG, and any extracted workbook images.
+Do not download reference implementations, create extra planning files,
+initialize IaC, implement, or deploy resources.
 ```
 
 Open `plans/integration-design.svg` locally and review it with the written plan.
-Resolve all blocking assumptions and workbook conflicts, then change the plan's
+Resolve the workbook and flow conflicts, then change the plan's
 first line to `Status: approved`. Update the visual if the design changes.
 
-**Done when:** the plan explains the flows, resource graph, and validation
-criteria, the SVG matches it, and you have approved it.
+**Done when:** the tab mapping and message flow are understood, workbook
+conflicts are resolved, and you have approved the matching summary and SVG.
+This approves the flow, not deployment-specific technical choices.
 
 ## Task 2: implement the approved design
 
@@ -102,9 +108,9 @@ Then use this implementation prompt:
 ```text
 Read the Lab 3 requirements and
 labs/03-workbook-to-solution/plans/integration-design.md.
-Use its integration-design.svg to review the resource graph.
-Stop if the plan is missing, incomplete, has unresolved blocking questions,
-or does not begin with "Status: approved".
+Use its integration-design.svg to review the approved message flow.
+Stop if the plan is missing, lacks the Task 1 summary, has unresolved workbook
+or flow conflicts, or does not begin with "Status: approved".
 
 Implement the approved design in my selected IaC track: the complete private
 Logic App Standard foundation, approved integration resources and workload RBAC,
@@ -117,9 +123,13 @@ from artifacts intended for Git; never commit secrets or log sensitive payloads.
 Complete each input message only after its validated Output is published.
 
 Before editing, explain the resource graph, identity boundaries, expected files,
-costs, and validation commands. Wait for my approval. Then implement in dependency
-order, run the selected track's format/build or validate checks, and review the
-deployment preview with me before deploying.
+costs, and validation commands. Resolve hosting, networking, RBAC, deployment
+inputs, reliability, and cleanup choices here, using the implementation
+requirements and hosting reference. Keep explanations brief and ask only for
+decisions needed to implement the approved flow; do not invent technical defaults.
+Wait for my approval before resource implementation. Then implement in dependency
+order, run format/build or validate checks, and review the deployment preview
+with me before deploying.
 
 Run each Source helper and verify expected outputs, correlation, and the
 approved failure behavior at every workflow and broker handoff against mocks.

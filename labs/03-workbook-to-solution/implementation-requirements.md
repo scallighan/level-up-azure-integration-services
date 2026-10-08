@@ -3,7 +3,8 @@
 These requirements define the boundary for deriving and implementing an Azure
 integration from workbook evidence. Read them with [`README.md`](README.md),
 any existing local files under `plans/`, the repository-wide
-[`implementation standards`](../../docs/implementation-standards.md), and the
+[`implementation standards`](../../docs/implementation-standards.md), and, for
+Task 2 implementation, the
 [`Logic App Standard baseline`](../../docs/logic-app-standard-baseline.md).
 
 ## Evidence and approval boundary
@@ -24,24 +25,35 @@ any existing local files under `plans/`, the repository-wide
   labels, and payload values without scrubbing. Sanitize only artifacts intended
   for Git, including code, fixtures, and documentation; never commit customer
   identifiers, payloads, or workbook images. This does not permit secrets in plans.
-- Record missing triggers, protocols, authentication, volumes, latency,
-  ordering, idempotency, recovery, ownership, and network constraints as
-  explicit assumptions.
+- In Task 1, report only workbook conflicts and missing information needed to
+  establish the message flow. Deployment inputs and operational settings are
+  Task 2 decisions; do not invent them during workbook interpretation.
 - Write `plans/integration-design.md` with `Status: proposed` as its first line.
-  Include the flow graph, resource responsibilities, identity and network
-  boundaries, payload expectations, transformation choices, assumptions,
-  reliability, observability, costs, validation, ownership, and cleanup.
+  Use the same concise output in the file and chat: one-sentence verdict; a tab
+  classification table with Input, transformation, and Output cell references;
+  a short message-flow graph; an issues/evidence table; and a brief note about
+  interpretation limits and the SVG path. Keep narrative to two short paragraphs,
+  with rows for all relevant tabs and actual issues. Do not include payload dumps,
+  transformation listings, or a deployment design dossier.
 - Generate `plans/integration-design.svg` as a self-contained visual of that
-  proposal and link it from the written plan. Show Source helpers, per-tab
-  workflows, lookups, mock systems, broker entities and message direction,
-  hosting dependencies, and identity/network boundaries. Label assumptions and
-  unresolved decisions; do not present them as approved resources.
+  message flow and link it from the summary. Show Source helpers, per-tab
+  workflows, lookups, mock systems, and queue/topic/subscription handoffs with
+  clear arrows. Mark unresolved links. Do not add hosting inventories, network
+  layouts, RBAC matrices, cost panels, or operational checklists to this visual.
   Preserve original workbook labels where useful. Validate SVG XML and review
   its legibility locally. Keep the diagram synchronized with the written plan;
   do not use scripts, external assets, credentials, or callback URLs in the SVG.
 - Do not initialize IaC or implement Azure resources until the learner resolves
-  blocking questions and changes the plan's first line to `Status: approved`.
+  workbook/flow conflicts and changes the plan's first line to `Status: approved`.
+  This approves the flow only; review technical choices before implementing
+  resources in Task 2.
   No pre-supplied design schema or `contracts/` folder is required for Lab 3.
+- Task 1 creates only `workbook-evidence.md`, `integration-design.md`,
+  `integration-design.svg`, and any extracted workbook images under `plans/`.
+  Do not download reference source, research deployment APIs, or create extra
+  planning files for this task. Existing long-form plans are evidence, not a
+  template to reproduce. Detailed implementation requirements below apply to
+  Task 2, not to the Task 1 output.
 - A workbook architecture image is supporting evidence only. The extractor
   lists embedded media but does not interpret images; review those images
   separately and record what was verified, citing the sheet and media reference
@@ -55,9 +67,10 @@ any existing local files under `plans/`, the repository-wide
   intended flow graph. Review their arrows, branches, and embedded images;
   they are informational and do not become workflows.
 - XRef tabs and table entries supply reference lookup data, not workflows.
-  Document lookup keys, values, consuming transformations, maintenance
-  ownership, and behavior for missing or duplicate keys. An XRef table embedded
-  in a processing tab does not make that whole tab informational.
+  Identify consuming transformations and report missing workbook mappings.
+  Storage, maintenance ownership, and missing/duplicate-key policies are Task 2
+  decisions. An XRef table embedded in a processing tab does not make that whole
+  tab informational.
 - A processing tab whose tab or table name begins with `Source` is a flow
   starting point. Each starting point requires a sample helper script to send
   sample Input messages to its Service Bus ingress queue.
@@ -68,17 +81,26 @@ any existing local files under `plans/`, the repository-wide
 - Cells aligned under Input are incoming-message examples; transformation
   rules describe how to produce the corresponding Output. Preserve the
   header/cell alignment, including merged headers, rather than assuming fixed
-  column positions. Preserve examples in local plans and derive input/output
-  validation expectations; sanitize fixtures intended for Git.
+  column positions. Check example consistency in Task 1; define validation and
+  sanitized implementation fixtures in Task 2.
 - Determine inter-tab edges from the reviewed architecture and matching
   upstream Output/downstream Input, not tab order. Record conflicts or missing
   links as assumptions that must be confirmed before implementation.
-- Describe one workflow per processing tab in the design plan. Record its
-  original sheet label, XRef dependencies, input queue or topic/subscription,
-  input/output formats, transformation steps, output topic, and consumers.
-  Include every broker entity and its identity access scope in the plan.
+- Show one workflow per processing tab in the summary and message-flow graph.
+  Keep original sheet labels and cell evidence. Identify XRef dependencies and
+  queue/topic/subscription handoffs without expanding each workflow into a
+  detailed implementation specification.
 
-## Service Bus handoffs and Source helpers
+## Task 2 implementation requirements
+
+Translate the approved flow into a deployable solution here. Before resource
+edits, resolve required deployment inputs, hosting and network compatibility,
+identity scopes, costs, ownership, and operational behavior with the learner.
+Use a short decision summary; reference the baseline rather than repeating it.
+Approval of the Task 1 summary does not authorize unresolved technical choices
+or deployment. Keep any implementation notes in ignored `plans/`.
+
+### Service Bus handoffs and Source helpers
 
 Service Bus is required for communication between processing tabs in this lab:
 
@@ -109,7 +131,7 @@ Service Bus is required for communication between processing tabs in this lab:
   These are site-level identity grants, not per-workflow identity isolation;
   keep connections and triggers mapped to the approved entities.
 
-## Service selection
+### Service selection
 
 Select only services justified by the approved flow:
 
@@ -126,9 +148,10 @@ Service Bus is justified by this lab's required inter-tab handoffs. Do not add
 extra brokers, gateways, databases, Key Vaults, or file stores merely because
 they are available. XRef entries alone do not require a database: choose a
 reviewed lookup artifact unless confirmed requirements justify a store.
-Explain rejected alternatives and cost-bearing resources.
+Briefly justify additions and identify cost-bearing resources; do not write an
+exhaustive alternatives analysis.
 
-## Logic App hosting and identities
+### Logic App hosting and identities
 
 Every implemented design uses the complete private Logic App Standard baseline.
 The host-storage user-assigned identity remains limited to host storage. The
@@ -151,8 +174,10 @@ create the complete private endpoint, private DNS zone, VNet link, and DNS zone
 group needed by the VNet-integrated Logic App. A private endpoint alone is not
 a working data path.
 
-## Transformation implementation
+### Transformation implementation
 
+- Confirm lookup values, storage/versioning, ownership, and missing/duplicate-key
+  behavior before implementing lookup artifacts.
 - Translate DataWeave or other source-platform expressions into Logic Apps
   operations, Liquid maps, JavaScript, or a small tested helper only after
   documenting the chosen runtime and tradeoff.
@@ -167,10 +192,9 @@ a working data path.
   that its published Output satisfies each downstream tab's Input expectations.
 - Do not log full payloads or sensitive field values.
 
-## Reliability and validation
+### Reliability and validation
 
-The approved proposal must make these behaviors explicit before resource
-implementation:
+In Task 2, confirm these behaviors before resource implementation:
 
 - synchronous or asynchronous acceptance;
 - timeout and retry boundaries;
@@ -210,7 +234,7 @@ within the approved design.
 
 ## Cleanup ownership
 
-The proposal must identify new versus existing resources. Existing resources
+Task 2 must identify new versus existing resources. Existing resources
 are references and must not be imported, retagged, modified, replaced, or
 deleted unless the approved design explicitly grants that ownership. Cleanup
 must remove only Lab 3-owned resources.

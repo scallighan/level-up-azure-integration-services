@@ -11,8 +11,11 @@ current files under
 `labs/03-workbook-to-solution/plans/integration-design.md` and its
 `integration-design.svg` visual.
 
-Stop if the plan is missing, incomplete, has unresolved blocking questions,
-or does not begin with `Status: approved`.
+Stop if the plan is missing, lacks the concise Task 1 summary, has unresolved
+workbook/flow conflicts, or does not begin with `Status: approved`.
+Task 1 approves the message flow, not a complete deployment specification.
+Missing hosting, network, RBAC, or operational details are resolved in Task 2
+before resource implementation, not by expanding the Task 1 report.
 
 Initialize only `labs/03-workbook-to-solution/iac/bicep/`. Before editing, show
 this starter structure and briefly explain each entry:

@@ -335,13 +335,7 @@ poison-message loop.
 - How aligned Input, Transformation rule, and Output cells define each
   processing tab's mapping, and how diagram arrows match Output to next Input.
 - Which workbook images were reviewed separately.
-- Which protocol, authentication, volume, latency, ordering, idempotency,
-  recovery, ownership, and networking details remain unknown.
-- Why each selected Azure service is required and which alternatives were
-  rejected.
-- The resource graph, private data paths, identity scopes, reliability
-  behavior, cost, ownership, and cleanup boundary.
-- Which assumptions had to be confirmed before implementation.
+- Which workbook conflicts or missing links block approval of the flow.
 
 **Coach checks**
 
@@ -352,25 +346,31 @@ poison-message loop.
   workflows, and ambiguous diagram links are resolved before approval.
 - Customer or production payloads are not being committed.
 - All intermediate artifacts stay in the Git-ignored Lab 3 `plans/` folder;
-  the design plan records the flows, resources, validation, and blocking questions.
+  Task 1 creates only extracted evidence/images, the concise summary, and its SVG.
+- The summary contains a verdict, tab/cell table, message-flow graph, actual
+  issues/evidence table, and a brief limitations note. It is not a deployment
+  dossier and does not invent missing behavior or technical defaults.
 - Original names and values may remain in ignored plans; only artifacts intended
   for Git require scrubbing. Secrets remain excluded from planning artifacts.
 - `plans/integration-design.svg` is legible, matches the written plan, and shows
-  message direction, identity/network boundaries, and unresolved assumptions.
+  message direction and unresolved links, not infrastructure or RBAC panels.
 - Every non-informational tab has its own flow/workflow; Source helpers send
   to ingress queues and inter-tab edges use topics and downstream subscriptions.
 - Publishers send to topics, not subscriptions; fan-out uses independent
-  subscriptions and XRef data has an explicit lookup strategy.
-- IaC initialization does not begin until blocking questions are resolved and
+  subscriptions and XRef data is identified as reference data, not a workflow.
+- IaC initialization does not begin until workbook/flow conflicts are resolved and
   `plans/integration-design.md` begins with `Status: approved`.
-- The host-storage user-assigned identity remains limited to host storage.
-- Workload roles use the Logic App system identity at individual resource
-  scopes.
 - External credentials are neither invented nor placed in the proposal.
 
 ### Task 2: implement the approved design
 
-Compare every planned resource with the approved proposal. Stop additions that
+Resolve hosting, networking, RBAC, cost, ownership, and operational decisions
+here before resource implementation. Keep the decision summary brief and
+reference the baseline instead of repeating it; flow approval alone is not
+deployment approval. The host-storage user-assigned identity remains limited to
+host storage; workload grants use the system identity at individual scopes.
+
+Compare every planned resource with the approved flow. Stop additions that
 are merely convenient rather than justified by a flow requirement. Require a
 complete private endpoint and DNS path for every approved Azure service whose
 public access is disabled.
