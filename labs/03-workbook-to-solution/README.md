@@ -14,12 +14,13 @@ lab.
 ![Workbook to approved design to Azure implementation](../../docs/assets/lab-03-workbook-design-architecture.svg)
 
 Read [`implementation-requirements.md`](implementation-requirements.md) for the
-technical requirements. Keep workbooks, raw evidence, and images local; never
-commit customer data or identifiers. Use sanitized fixtures and generic names
-in implementation code. Put all intermediate files in the Git-ignored
-`plans/` folder: extracted evidence and images, design proposals, assumptions,
-review notes, test plans, and validation summaries. Keep final implementation
-files in the selected IaC track; do not recreate a `contracts/` folder.
+technical requirements. Put all intermediate files in the Git-ignored `plans/`
+folder: evidence and images, proposals and SVG diagrams, assumptions, review
+notes, test plans, and validation summaries. These local plans may retain
+original workbook names and values; scrubbing is required only for artifacts
+intended for Git. Never commit customer data, identifiers, or workbook images.
+Keep secrets out of plans. Keep final implementation files in the selected
+IaC track; do not recreate a `contracts/` folder.
 
 ## Workbook interpretation rules
 
@@ -44,7 +45,8 @@ ambiguous tabs before approval.
 
 ## Task 1: propose and approve the Azure design
 
-**Outcome:** a reviewed design based on your workbook and the rules above.
+**Outcome:** a reviewed design and SVG visual based on your workbook and the
+rules above.
 
 Reference your local workbook in this prompt, replacing `sample.xlsx` with its
 path:
@@ -67,17 +69,24 @@ Summarize the flow and resource graph, identity boundaries, costs, and cleanup
 ownership. Cite workbook evidence locally; separate facts from assumptions and
 list conflicts or missing information that need my decision.
 
-Write labs/03-workbook-to-solution/plans/integration-design.md using generic
-names and sanitized evidence. Start it with "Status: proposed" and include
+Write labs/03-workbook-to-solution/plans/integration-design.md using the original
+workbook names and values without scrubbing. Start it with "Status: proposed"
+and include
 payload expectations, transformation choices, reliability, and validation.
+Generate plans/integration-design.svg in the same Lab 3 folder as a self-contained
+visual of the proposed Azure design. Show workflows, Source helpers, XRef lookups,
+mock systems, queue/topic/subscription handoffs, and identity/network boundaries.
+Use clear labels and arrows, distinguish assumptions, and keep it consistent
+with the written plan. Link the SVG from the plan and validate its XML.
 Do not initialize IaC, implement, or deploy resources.
 ```
 
-Review the proposal, resolve all blocking assumptions and workbook conflicts,
-then change its first line to `Status: approved`.
+Open `plans/integration-design.svg` locally and review it with the written plan.
+Resolve all blocking assumptions and workbook conflicts, then change the plan's
+first line to `Status: approved`. Update the visual if the design changes.
 
 **Done when:** the plan explains the flows, resource graph, and validation
-criteria, and you have approved it.
+criteria, the SVG matches it, and you have approved it.
 
 ## Task 2: implement the approved design
 
@@ -93,6 +102,7 @@ Then use this implementation prompt:
 ```text
 Read the Lab 3 requirements and
 labs/03-workbook-to-solution/plans/integration-design.md.
+Use its integration-design.svg to review the resource graph.
 Stop if the plan is missing, incomplete, has unresolved blocking questions,
 or does not begin with "Status: approved".
 
@@ -102,7 +112,8 @@ one workflow per processing tab, tested transformations and XRef lookups, Source
 helper scripts, sanitized fixtures, and mocked external systems.
 
 Preserve the host-storage and workload identity boundaries. Do not add unapproved
-resources, real external-system connections, customer identifiers, or secrets.
+resources or real external-system connections. Scrub customer names and values
+from artifacts intended for Git; never commit secrets or log sensitive payloads.
 Complete each input message only after its validated Output is published.
 
 Before editing, explain the resource graph, identity boundaries, expected files,

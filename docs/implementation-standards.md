@@ -54,6 +54,12 @@ implementation under
 - In Service Bus workflows, complete a message only after successful
   processing and preserve dead-letter behavior for repeated failures.
 
+## Service Bus
+- Specifically for these labs only use a Standard SKU service bus for cost concerns. Mention that for production Premium would be the recommended way to go.
+
+## NAT Gateway
+- If we need to egress to the public internet, prefer the Virtual Network direct to internet route rather than requiring a NAT Gateway. We want to keep the network design cheap and simple
+
 ## Validation
 
 For Bicep, run:

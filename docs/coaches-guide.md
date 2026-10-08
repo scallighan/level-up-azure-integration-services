@@ -353,6 +353,10 @@ poison-message loop.
 - Customer or production payloads are not being committed.
 - All intermediate artifacts stay in the Git-ignored Lab 3 `plans/` folder;
   the design plan records the flows, resources, validation, and blocking questions.
+- Original names and values may remain in ignored plans; only artifacts intended
+  for Git require scrubbing. Secrets remain excluded from planning artifacts.
+- `plans/integration-design.svg` is legible, matches the written plan, and shows
+  message direction, identity/network boundaries, and unresolved assumptions.
 - Every non-informational tab has its own flow/workflow; Source helpers send
   to ingress queues and inter-tab edges use topics and downstream subscriptions.
 - Publishers send to topics, not subscriptions; fan-out uses independent

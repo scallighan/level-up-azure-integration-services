@@ -62,7 +62,8 @@ behavior should match even when implementation details differ.
 
 - Workbook facts cite sheets and cells; assumptions are visibly separate.
 - Intermediate artifacts stay in the Lab 3 `plans/` folder; its design plan
-  is reviewed and approved before IaC initialization.
+  and SVG visual are reviewed and approved before IaC initialization. Local
+  plans may retain original names and values; committed artifacts are scrubbed.
 - Selected Azure services map to confirmed requirements rather than workbook
   product names alone.
 - DataWeave behavior is covered by sanitized transformation fixtures and tests.

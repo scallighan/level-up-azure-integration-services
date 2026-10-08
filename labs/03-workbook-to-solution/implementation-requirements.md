@@ -15,13 +15,15 @@ any existing local files under `plans/`, the repository-wide
   Do not upload a workbook to an external service.
 - Store every intermediate artifact in
   `labs/03-workbook-to-solution/plans/`: extracted evidence and images, design
-  proposals, assumptions, review notes, test plans, and validation summaries.
+  proposals and SVG visuals, assumptions, review notes, test plans, and validation
+  summaries.
   This folder is Git-ignored and excluded from the published workshop site.
   Never force-add its contents or include secrets in planning artifacts.
 - Cite sheet names and cell references for every material design conclusion.
-- Keep original customer-specific workbook, sheet, system, and broker labels
-  only in local evidence. Use consistent generic replacements in any committed
-  fixture or documentation; never commit customer payloads or workbook images.
+- Local files under ignored `plans/` may retain original workbook names,
+  labels, and payload values without scrubbing. Sanitize only artifacts intended
+  for Git, including code, fixtures, and documentation; never commit customer
+  identifiers, payloads, or workbook images. This does not permit secrets in plans.
 - Record missing triggers, protocols, authentication, volumes, latency,
   ordering, idempotency, recovery, ownership, and network constraints as
   explicit assumptions.
@@ -29,6 +31,14 @@ any existing local files under `plans/`, the repository-wide
   Include the flow graph, resource responsibilities, identity and network
   boundaries, payload expectations, transformation choices, assumptions,
   reliability, observability, costs, validation, ownership, and cleanup.
+- Generate `plans/integration-design.svg` as a self-contained visual of that
+  proposal and link it from the written plan. Show Source helpers, per-tab
+  workflows, lookups, mock systems, broker entities and message direction,
+  hosting dependencies, and identity/network boundaries. Label assumptions and
+  unresolved decisions; do not present them as approved resources.
+  Preserve original workbook labels where useful. Validate SVG XML and review
+  its legibility locally. Keep the diagram synchronized with the written plan;
+  do not use scripts, external assets, credentials, or callback URLs in the SVG.
 - Do not initialize IaC or implement Azure resources until the learner resolves
   blocking questions and changes the plan's first line to `Status: approved`.
   No pre-supplied design schema or `contracts/` folder is required for Lab 3.
@@ -50,7 +60,7 @@ any existing local files under `plans/`, the repository-wide
   in a processing tab does not make that whole tab informational.
 - A processing tab whose tab or table name begins with `Source` is a flow
   starting point. Each starting point requires a sample helper script to send
-  sanitized Input messages to its Service Bus ingress queue.
+  sample Input messages to its Service Bus ingress queue.
 - Every non-informational tab maps to one distinct workflow in the Logic App
   Standard app. Do not merge processing tabs into one workflow. Classify any
   additional informational tabs explicitly and resolve ambiguous tabs before
@@ -58,13 +68,13 @@ any existing local files under `plans/`, the repository-wide
 - Cells aligned under Input are incoming-message examples; transformation
   rules describe how to produce the corresponding Output. Preserve the
   header/cell alignment, including merged headers, rather than assuming fixed
-  column positions. Derive sanitized input/output fixtures and validation
-  expectations from these examples.
+  column positions. Preserve examples in local plans and derive input/output
+  validation expectations; sanitize fixtures intended for Git.
 - Determine inter-tab edges from the reviewed architecture and matching
   upstream Output/downstream Input, not tab order. Record conflicts or missing
   links as assumptions that must be confirmed before implementation.
 - Describe one workflow per processing tab in the design plan. Record its
-  generic sheet label, XRef dependencies, input queue or topic/subscription,
+  original sheet label, XRef dependencies, input queue or topic/subscription,
   input/output formats, transformation steps, output topic, and consumers.
   Include every broker entity and its identity access scope in the plan.
 
@@ -172,7 +182,8 @@ implementation:
 - correlation propagation; and
 - poison-input quarantine or support workflow.
 
-Define input/output validation and tests from sanitized workbook examples.
+Use workbook examples to define input/output validation and tests; sanitize
+any fixtures intended for Git.
 The workbook alone is not a runtime specification. Do not recreate the removed
 `contracts/` folder. Validate Source helper publication,
 per-tab transformations, XRef misses, routing/fan-out, failed publication,
@@ -183,7 +194,7 @@ logging full payloads.
 
 1. **Propose and approve:** reference a local workbook, extract and review its
    evidence, apply the workbook interpretation rules, resolve conflicts, and
-   approve the design in `plans/integration-design.md`.
+   approve the design in `plans/integration-design.md` and its matching SVG visual.
 2. **Implement:** initialize one IaC track, implement the approved solution,
    review the deployment preview before deploying, and prove end-to-end and
    failure behavior using Source helpers, sanitized fixtures, and mocks.
