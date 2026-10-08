@@ -34,7 +34,9 @@ reviews the evidence and assumptions and changes the proposal status from
 `proposed` to `approved`.
 
 Workbook files are intentionally ignored by Git. Use local, sanitized copies
-and never commit customer or production data.
+and never commit customer or production data. Use generic workbook, sheet,
+system, and broker names in committed documentation and contracts. Keep the
+mapping to original customer-specific labels only in local evidence.
 
 ## Implementation reference
 
@@ -73,17 +75,17 @@ approval.
 
 ### Suggested runtime architecture
 
-For the simple workbook, the two processing tabs become two workflows:
+For a generic two-stage workbook, the processing tabs become two workflows:
 
 ```text
 Source helper script (sanitized service-request Input)
   -> service-requests ingress queue
   -> Source workflow (service request -> canonical Output)
   -> canonical-requests topic
-  -> maximo-transform subscription
-  -> CBO-to-Maximo workflow (canonical Input -> Maximo Output)
-  -> maximo-requests topic
-  -> mock-target subscription (test consumer, then approved target adapter)
+  -> target-transform subscription
+  -> Canonical-to-target workflow (canonical Input -> target Output)
+  -> target-requests topic
+  -> mock-target subscription (mock consumer or adapter)
 ```
 
 Service Bus carries every inter-tab message; do not replace a handoff with a
@@ -154,7 +156,9 @@ as the reviewed implementation contract.
 
 Use
 [`contracts/sample-simple-design.json`](contracts/sample-simple-design.json) as
-an example of structure and evidence depth, not as a design to copy.
+an example of structure and evidence depth, not as a design to copy. Its workbook
+name, sheet labels, and cell references are illustrative; they are not verified
+evidence from a customer workbook.
 
 **Prompt Copilot**
 

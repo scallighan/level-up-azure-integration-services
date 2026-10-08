@@ -14,6 +14,10 @@ both files under [`contracts/`](contracts/), the repository-wide
   [`scripts/extract-integration-workbook.py`](../../scripts/extract-integration-workbook.py).
   Do not upload a workbook to an external service.
 - Cite sheet names and cell references for every material design conclusion.
+- Keep original customer-specific workbook, sheet, system, and broker labels
+  only in local evidence. Use consistent generic replacements in any committed
+  proposal, contract, fixture, or documentation; never commit customer payloads
+  or workbook images.
 - Record missing triggers, protocols, authentication, volumes, latency,
   ordering, idempotency, recovery, ownership, and network constraints as
   explicit assumptions.
