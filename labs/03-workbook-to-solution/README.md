@@ -33,16 +33,6 @@ as the approval boundary. Azure implementation begins only after a learner
 reviews the evidence and assumptions and changes the proposal status from
 `proposed` to `approved`.
 
-The supplied example workbooks illustrate two complexity levels:
-
-- `simple-integration-sample-payoad-and-transformation-logic.xlsx` contains a
-  service-request-to-canonical transformation followed by a canonical-to-Maximo
-  transformation.
-- `Medium-integration-sample-payoad-and-transformation-logic.xlsx` contains SAP
-  IDoc XML to a customer canonical object, canonical fan-out to Salesforce and
-  QAD shapes, Salesforce response examples, and a pipe-delimited file for MFT.
-  It also contains an architecture image that must be reviewed separately.
-
 Workbook files are intentionally ignored by Git. Use local, sanitized copies
 and never commit customer or production data.
 

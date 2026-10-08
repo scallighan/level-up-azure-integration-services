@@ -72,7 +72,7 @@ Service Bus is required for communication between processing tabs in this lab:
 - Record topic, subscription, routing properties, and filters for every edge.
   Ensure filters deliver each intended copy without unintended default-rule
   matches. The final tab also publishes Output; identify the approved mock
-  consumer or target adapter without inventing another workbook workflow.
+  consumer or mock target adapter without inventing another workbook workflow.
 - Complete the Input only after Output publication succeeds. Failed
   publication must not acknowledge the Input. Document lock renewal,
   retry/dead-letter limits, and duplicate handling for the case where
@@ -115,12 +115,16 @@ The host-storage user-assigned identity remains limited to host storage. The
 Logic App system identity receives separate least-privilege roles on each Azure
 workload resource.
 
-External systems such as SAP, Salesforce, Maximo, QAD, or an MFT platform may
-require credentials that Azure managed identity cannot supply. Confirm the
-supported authentication method before implementation. If a secret is
-unavoidable, store it in Key Vault, grant the Logic App system identity only
-the required secret access, and use a Key Vault reference. Never commit or
-output the secret.
+External systems are mocked in this lab using sanitized fixtures and mock
+endpoints or consumers. Do not require real external-system accounts,
+credentials, or production data to complete the lab.
+
+In an actual environment, replace the mocks with connections to the actual
+source and target systems. Confirm endpoint ownership, supported authentication,
+network access, and payload contracts before connecting. Prefer managed identity
+where supported. If an external-system secret is unavoidable, store it in Key
+Vault, grant the Logic App system identity only the required secret access, and
+use a Key Vault reference. Never commit or output the secret.
 
 When an approved design disables public access to an Azure workload service,
 create the complete private endpoint, private DNS zone, VNet link, and DNS zone
@@ -172,7 +176,8 @@ logging full payloads.
    access.
 4. Implement transformations and workflows against mocks and committed
    fixtures.
-5. Connect approved external endpoints and execute failure-path tests.
+5. Exercise mock endpoints or consumers and execute end-to-end and failure-path
+   tests. Real external-system connections are outside the lab scope.
 
 Each task must state the resource graph, identity boundaries, expected files,
 cost-bearing resources, and validation commands before editing.
