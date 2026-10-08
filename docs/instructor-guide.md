@@ -61,11 +61,13 @@ behavior should match even when implementation details differ.
 **Lab 3**
 
 - Workbook facts cite sheets and cells; assumptions are visibly separate.
-- The schema-valid proposal is approved before IaC initialization.
+- Intermediate artifacts stay in the Lab 3 `plans/` folder; its design plan
+  is reviewed and approved before IaC initialization.
 - Selected Azure services map to confirmed requirements rather than workbook
   product names alone.
 - DataWeave behavior is covered by sanitized transformation fixtures and tests.
-- External authentication and ownership are confirmed before live connection.
+- External systems are mocked; the approved plan defines their expected
+  success and failure behavior.
 
 ## Recovery strategies
 

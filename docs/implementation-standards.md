@@ -7,8 +7,8 @@ runtime behavior.
 
 ## Working boundaries
 
-- Read the active lab README, implementation requirements, and contracts before
-  proposing changes.
+- Read the active lab README, implementation requirements, and any available
+  contracts or design plans before proposing changes.
 - Make one bounded change at a time and explain the intended resource graph
   before editing.
 - Favor clear teaching code over abstraction.

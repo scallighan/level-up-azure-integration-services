@@ -23,6 +23,7 @@ include:
 
 exclude:
   - scripts
+  - labs/03-workbook-to-solution/plans
   - "*.tfstate"
   - "*.tfstate.*"
   - "*.tfplan"

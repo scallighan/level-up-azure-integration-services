@@ -255,7 +255,13 @@ Pair with someone using the other IaC language and invoke
 Pay special attention to default rules, RBAC scope, lock handling, and resources
 that cleanup could orphan.
 
-## Cleanup
+## Optional cleanup
+
+**Skip this section if you are continuing with resources that the next lab's
+approved design explicitly reuses.** Otherwise, clean up when you stop or no
+longer need the Lab 2 deployment. Retained resources continue to incur charges;
+complete cleanup at the end of the workshop, removing dependent lab resources
+first.
 
 Use `az group delete` for a Bicep-created workshop resource group or
 `terraform destroy` for Terraform. Preview the deletion first and confirm the

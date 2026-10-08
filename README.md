@@ -38,7 +38,9 @@ and test results remain the source of truth.
 4. Complete [Lab 1](labs/01-crud-integration/README.md).
 5. Complete [Lab 2](labs/02-topic-fanout/README.md).
 6. Complete [Lab 3](labs/03-workbook-to-solution/README.md).
-7. Delete workshop resources using the cleanup steps in each lab.
+7. When finished, delete workshop resources using each lab's cleanup steps.
+   Skip cleanup between labs when continuing with resources the next lab reuses.
+   Remove dependent lab resources before their shared foundation.
 
 Instructors should also read the [instructor guide](docs/instructor-guide.md).
 People assisting learners should use the
@@ -57,7 +59,7 @@ docs/
 labs/
   01-crud-integration/          Lab tasks, requirements, and API contract
   02-topic-fanout/              Lab tasks, requirements, and event contract
-  03-workbook-to-solution/      Workbook evidence, design contract, and implementation loop
+  03-workbook-to-solution/      Local design plans and implementation loop
 scripts/                        Local workshop checks
 ```
 
@@ -77,4 +79,7 @@ implicitly part of these labs.
 
 The labs create billable Azure resources. Use a non-production subscription,
 choose the lowest practical SKUs, never commit secrets or Terraform state, and
-run each lab's cleanup steps when finished.
+retain resources between labs only when continuing with an approved reuse
+plan. Retained resources continue to incur charges. Run each lab's cleanup
+steps when finished with the workshop, removing dependent resources before
+their shared foundation.

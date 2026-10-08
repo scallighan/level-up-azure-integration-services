@@ -336,7 +336,15 @@ Invoke
 with someone using the other track. Resolve behavioral differences, not cosmetic
 syntax differences.
 
-## Cleanup
+## Optional cleanup
+
+**Skip this section if you are continuing to another lab that reuses these
+resources.** Keep the Lab 1 foundation deployed for Lab 2's `existing` mode;
+Lab 3 may reuse it only when its approved design explicitly references it.
+
+Clean up when you stop or no longer need the resources. Retained resources
+continue to incur charges. At the end of the workshop, remove dependent lab
+resources before deleting this shared foundation.
 
 Preview cleanup before approving it:
 

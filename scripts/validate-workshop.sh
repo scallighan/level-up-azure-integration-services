@@ -19,8 +19,6 @@ required_files=(
   "labs/02-topic-fanout/contracts/sample-order-created.json"
   "labs/03-workbook-to-solution/README.md"
   "labs/03-workbook-to-solution/implementation-requirements.md"
-  "labs/03-workbook-to-solution/contracts/integration-design.schema.json"
-  "labs/03-workbook-to-solution/contracts/sample-simple-design.json"
   "scripts/extract-integration-workbook.py"
 )
 
@@ -33,8 +31,6 @@ done
 
 jq empty labs/02-topic-fanout/contracts/order-created.schema.json
 jq empty labs/02-topic-fanout/contracts/sample-order-created.json
-jq empty labs/03-workbook-to-solution/contracts/integration-design.schema.json
-jq empty labs/03-workbook-to-solution/contracts/sample-simple-design.json
 PYTHONPYCACHEPREFIX="${TMPDIR:-/tmp}/level-up-azure-integration-services-pycache" \
   python -m py_compile scripts/extract-integration-workbook.py
 

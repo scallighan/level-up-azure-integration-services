@@ -7,7 +7,7 @@ Before proposing or making a change, read:
 
 1. [`docs/implementation-standards.md`](docs/implementation-standards.md);
 2. the active lab README and `implementation-requirements.md`;
-3. the active lab contracts; and
+3. the active lab contracts when present, or its available design plans; and
 4. for Logic App infrastructure, `docs/logic-app-standard-baseline.md` and the
    matching implementation under `scallighan/logic-app-doc-processing`.
 

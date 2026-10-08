@@ -351,12 +351,14 @@ poison-message loop.
 - Every tab is classified; architecture and XRef information do not create
   workflows, and ambiguous diagram links are resolved before approval.
 - Customer or production payloads are not being committed.
-- The proposal validates against the Lab 3 schema.
+- All intermediate artifacts stay in the Git-ignored Lab 3 `plans/` folder;
+  the design plan records the flows, resources, validation, and blocking questions.
 - Every non-informational tab has its own flow/workflow; Source helpers send
   to ingress queues and inter-tab edges use topics and downstream subscriptions.
 - Publishers send to topics, not subscriptions; fan-out uses independent
   subscriptions and XRef data has an explicit lookup strategy.
-- IaC initialization does not begin while status is `proposed`.
+- IaC initialization does not begin until blocking questions are resolved and
+  `plans/integration-design.md` begins with `Status: approved`.
 - The host-storage user-assigned identity remains limited to host storage.
 - Workload roles use the Logic App system identity at individual resource
   scopes.

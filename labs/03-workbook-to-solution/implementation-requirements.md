@@ -2,7 +2,7 @@
 
 These requirements define the boundary for deriving and implementing an Azure
 integration from workbook evidence. Read them with [`README.md`](README.md),
-both files under [`contracts/`](contracts/), the repository-wide
+any existing local files under `plans/`, the repository-wide
 [`implementation standards`](../../docs/implementation-standards.md), and the
 [`Logic App Standard baseline`](../../docs/logic-app-standard-baseline.md).
 
@@ -13,18 +13,25 @@ both files under [`contracts/`](contracts/), the repository-wide
 - Extract workbook content locally with
   [`scripts/extract-integration-workbook.py`](../../scripts/extract-integration-workbook.py).
   Do not upload a workbook to an external service.
+- Store every intermediate artifact in
+  `labs/03-workbook-to-solution/plans/`: extracted evidence and images, design
+  proposals, assumptions, review notes, test plans, and validation summaries.
+  This folder is Git-ignored and excluded from the published workshop site.
+  Never force-add its contents or include secrets in planning artifacts.
 - Cite sheet names and cell references for every material design conclusion.
 - Keep original customer-specific workbook, sheet, system, and broker labels
   only in local evidence. Use consistent generic replacements in any committed
-  proposal, contract, fixture, or documentation; never commit customer payloads
-  or workbook images.
+  fixture or documentation; never commit customer payloads or workbook images.
 - Record missing triggers, protocols, authentication, volumes, latency,
   ordering, idempotency, recovery, ownership, and network constraints as
   explicit assumptions.
-- Produce a proposal that validates against
-  [`contracts/integration-design.schema.json`](contracts/integration-design.schema.json).
-- Do not initialize IaC or implement Azure resources while the proposal status
-  is `proposed`. A learner must review it and change the status to `approved`.
+- Write `plans/integration-design.md` with `Status: proposed` as its first line.
+  Include the flow graph, resource responsibilities, identity and network
+  boundaries, payload expectations, transformation choices, assumptions,
+  reliability, observability, costs, validation, ownership, and cleanup.
+- Do not initialize IaC or implement Azure resources until the learner resolves
+  blocking questions and changes the plan's first line to `Status: approved`.
+  No pre-supplied design schema or `contracts/` folder is required for Lab 3.
 - A workbook architecture image is supporting evidence only. The extractor
   lists embedded media but does not interpret images; review those images
   separately and record what was verified, citing the sheet and media reference
@@ -51,16 +58,15 @@ both files under [`contracts/`](contracts/), the repository-wide
 - Cells aligned under Input are incoming-message examples; transformation
   rules describe how to produce the corresponding Output. Preserve the
   header/cell alignment, including merged headers, rather than assuming fixed
-  column positions. Derive sanitized input/output fixtures and payload
-  contracts from these examples.
+  column positions. Derive sanitized input/output fixtures and validation
+  expectations from these examples.
 - Determine inter-tab edges from the reviewed architecture and matching
   upstream Output/downstream Input, not tab order. Record conflicts or missing
   links as assumptions that must be confirmed before implementation.
-- Use one `flows` entry per processing tab in the design contract. Record the
-  generic sheet label and XRef dependencies in `steps`, the ingress queue or
-  topic/subscription in `trigger`, the message formats in `sourceFormat` and
-  `targetFormat`, and the output topic and consumers in `steps`. Include all
-  broker entities in `azureResources` and their access in `identityBoundaries`.
+- Describe one workflow per processing tab in the design plan. Record its
+  generic sheet label, XRef dependencies, input queue or topic/subscription,
+  input/output formats, transformation steps, output topic, and consumers.
+  Include every broker entity and its identity access scope in the plan.
 
 ## Service Bus handoffs and Source helpers
 
@@ -125,7 +131,7 @@ credentials, or production data to complete the lab.
 
 In an actual environment, replace the mocks with connections to the actual
 source and target systems. Confirm endpoint ownership, supported authentication,
-network access, and payload contracts before connecting. Prefer managed identity
+network access, and payload expectations before connecting. Prefer managed identity
 where supported. If an external-system secret is unavoidable, store it in Key
 Vault, grant the Logic App system identity only the required secret access, and
 use a Key Vault reference. Never commit or output the secret.
@@ -142,14 +148,16 @@ a working data path.
   documenting the chosen runtime and tradeoff.
 - Do not claim semantic equivalence from syntax conversion alone.
 - Commit sanitized source, canonical, target, and error fixtures.
+- Keep final fixtures, tests, helper scripts, workflow definitions, and IaC
+  alongside the implementation, not in the intermediate `plans/` folder.
 - Test defaults, null handling, conditionals, lookups, type conversions, date
   formatting, array cardinality, and required-field failures found in the
   workbook.
 - Test each processing tab's Input-to-Output mapping independently, then test
-  that its published Output satisfies each downstream tab's Input contract.
+  that its published Output satisfies each downstream tab's Input expectations.
 - Do not log full payloads or sensitive field values.
 
-## Reliability and contracts
+## Reliability and validation
 
 The approved proposal must make these behaviors explicit before resource
 implementation:
@@ -164,8 +172,9 @@ implementation:
 - correlation propagation; and
 - poison-input quarantine or support workflow.
 
-Create machine-readable payload contracts from sanitized workbook examples.
-The workbook is not the runtime contract. Validate Source helper publication,
+Define input/output validation and tests from sanitized workbook examples.
+The workbook alone is not a runtime specification. Do not recreate the removed
+`contracts/` folder. Validate Source helper publication,
 per-tab transformations, XRef misses, routing/fan-out, failed publication,
 duplicate delivery after failed settlement, and end-to-end correlation without
 logging full payloads.
@@ -174,7 +183,7 @@ logging full payloads.
 
 1. **Propose and approve:** reference a local workbook, extract and review its
    evidence, apply the workbook interpretation rules, resolve conflicts, and
-   approve the schema-valid design.
+   approve the design in `plans/integration-design.md`.
 2. **Implement:** initialize one IaC track, implement the approved solution,
    review the deployment preview before deploying, and prove end-to-end and
    failure behavior using Source helpers, sanitized fixtures, and mocks.

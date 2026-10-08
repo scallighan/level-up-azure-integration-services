@@ -7,11 +7,11 @@ Read `AGENTS.md`, `.github/copilot-instructions.md`,
 current files under
 `https://github.com/scallighan/logic-app-doc-processing/tree/main/terraform`,
 `labs/03-workbook-to-solution/README.md`,
-`labs/03-workbook-to-solution/implementation-requirements.md`, both files under
-`labs/03-workbook-to-solution/contracts/`, and the learner's approved
-`labs/03-workbook-to-solution/design/integration-design.json`.
+`labs/03-workbook-to-solution/implementation-requirements.md`, and the learner's
+`labs/03-workbook-to-solution/plans/integration-design.md`.
 
-Stop if the design file is missing, invalid, or its status is not `approved`.
+Stop if the plan is missing, incomplete, has unresolved blocking questions,
+or does not begin with `Status: approved`.
 
 Initialize only `labs/03-workbook-to-solution/iac/terraform/`. Before editing,
 show this starter structure and briefly explain each file:
@@ -34,7 +34,9 @@ locals, outputs, backend configuration, or placeholders.
 
 Create `AGENTS.md` with concise instructions that require all context above;
 keep work bounded to the named Lab 3 task; treat the approved design as the
-implementation contract; cite workbook evidence for design changes; preserve
+implementation boundary; cite workbook evidence for design changes; keep every
+intermediate artifact in the Git-ignored Lab 3 `plans/` folder and do not
+recreate a `contracts/` folder; preserve
 the host-storage user-assigned and workload system-assigned identity boundary;
 prohibit workbook payloads, secrets, callback URLs, external credentials,
 Terraform state, plans, and populated variable files in source control;

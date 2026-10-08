@@ -28,7 +28,7 @@
   <line class="line" x1="490" y1="170" x2="545" y2="170"/>
   <rect class="box" x="550" y="105" width="210" height="130"/>
   <text class="label" x="655" y="145">Design proposal</text>
-  <text class="detail" x="655" y="177">schema-valid resource graph</text>
+  <text class="detail" x="655" y="177">reviewable resource graph</text>
   <text class="detail" x="655" y="199">identity + reliability</text>
 
   <line class="line" x1="760" y1="170" x2="815" y2="170"/>
