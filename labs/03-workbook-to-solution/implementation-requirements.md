@@ -57,7 +57,7 @@ both files under [`contracts/`](contracts/), the repository-wide
   upstream Output/downstream Input, not tab order. Record conflicts or missing
   links as assumptions that must be confirmed before implementation.
 - Use one `flows` entry per processing tab in the design contract. Record the
-  original sheet name and XRef dependencies in `steps`, the ingress queue or
+  generic sheet label and XRef dependencies in `steps`, the ingress queue or
   topic/subscription in `trigger`, the message formats in `sourceFormat` and
   `targetFormat`, and the output topic and consumers in `steps`. Include all
   broker entities in `azureResources` and their access in `identityBoundaries`.
@@ -172,19 +172,21 @@ logging full payloads.
 
 ## Implementation sequence
 
-0. Extract workbook evidence and approve the schema-valid design proposal.
-1. Initialize one IaC track using the Lab 3 starter prompt.
-2. Deploy only the approved private hosting, identity, network, and
-   observability foundation.
-3. Add only the approved integration resources and least-privilege workload
-   access.
-4. Implement transformations and workflows against mocks and committed
-   fixtures.
-5. Exercise mock endpoints or consumers and execute end-to-end and failure-path
-   tests. Real external-system connections are outside the lab scope.
+1. **Propose and approve:** reference a local workbook, extract and review its
+   evidence, apply the workbook interpretation rules, resolve conflicts, and
+   approve the schema-valid design.
+2. **Implement:** initialize one IaC track, implement the approved solution,
+   review the deployment preview before deploying, and prove end-to-end and
+   failure behavior using Source helpers, sanitized fixtures, and mocks.
 
-Each task must state the resource graph, identity boundaries, expected files,
-cost-bearing resources, and validation commands before editing.
+Within Task 2, implement the hosting foundation before integration resources
+and workload access, then workflows and tests. These are implementation
+dependencies, not additional student tasks. Real external-system connections
+are outside the lab scope.
+
+Before implementation edits, state the resource graph, identity boundaries,
+expected files, cost-bearing resources, and validation commands. Keep all work
+within the approved design.
 
 ## Cleanup ownership
 

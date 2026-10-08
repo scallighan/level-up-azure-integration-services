@@ -5,309 +5,114 @@ permalink: /labs/03-workbook-to-solution/
 
 # Lab 3: Workbook to Azure integration solution
 
-Turn an integration workbook containing sample payloads and transformation
-logic into an evidence-backed Azure Integration Services design, then implement
-the approved design with Bicep or Terraform.
+Use a local workbook to **propose an Azure design**, then **implement the
+approved design** with Bicep or Terraform. External systems are mocked in this
+lab.
 
 **Time:** 90-150 minutes, depending on workbook complexity and target access
 
-## Learning objectives
+![Workbook to approved design to Azure implementation](../../docs/assets/lab-03-workbook-design-architecture.svg)
 
-- Extract useful workbook evidence without uploading potentially sensitive data.
-- Separate workbook facts from assumptions and unanswered design questions.
-- Select Azure services from workload requirements rather than keywords.
-- Convert a proposed design into a schema-valid, reviewable implementation
-  contract.
-- Translate and test transformation behavior before connecting live targets.
-- Implement the approved resource graph with the same identity, networking,
-  preview, and cleanup discipline used in Labs 1 and 2.
+Read [`implementation-requirements.md`](implementation-requirements.md) for the
+technical requirements. Keep workbooks, raw evidence, and images local; never
+commit customer data or identifiers. Use sanitized fixtures and generic names
+in committed designs and code.
 
-## Design-to-implementation loop
+## Workbook interpretation rules
 
-![Lab 3 flow from workbook evidence to an approved design and Azure implementation](../../docs/assets/lab-03-workbook-design-architecture.svg)
+Trim whitespace and compare names case-insensitively. Read the actual headers
+and cell alignment, including merged headers, rather than fixed column letters.
 
-The workbook is design input, not executable infrastructure and not a complete
-runtime contract. This lab uses
-[`contracts/integration-design.schema.json`](contracts/integration-design.schema.json)
-as the approval boundary. Azure implementation begins only after a learner
-reviews the evidence and assumptions and changes the proposal status from
-`proposed` to `approved`.
-
-Workbook files are intentionally ignored by Git. Use local, sanitized copies
-and never commit customer or production data. Use generic workbook, sheet,
-system, and broker names in committed documentation and contracts. Keep the
-mapping to original customer-specific labels only in local evidence.
-
-## Implementation reference
-
-Read [`implementation-requirements.md`](implementation-requirements.md) before
-starting. It defines the evidence, approval, service-selection, identity,
-transformation, reliability, and cleanup boundaries.
-
-## How to read the workbook
-
-Classify tabs and tables before proposing resources. Compare names
-case-insensitively after trimming whitespace; keep the original names in
-evidence references.
-
-| Workbook element | Meaning in this lab |
+| Workbook element | Design rule |
 |---|---|
-| `Architect Diagram` or `Architecture Diagram` tab | Informational flow guidance: review arrows, branches, systems, and embedded images to establish how processing tabs connect. Do not create a workflow for this tab. |
-| XRef tab or table entries | Reference data for transformation lookups, not a workflow or message source. Record keys, values, consuming tabs, and missing-key behavior. |
-| Processing tab with a tab or table name beginning with `Source` | Starting point: create a workflow for the tab and a sample helper script that sends its sanitized Input example to its ingress queue. |
-| Every other non-informational tab | One separate workflow in the Azure Logic App Standard app, including processing tabs for responses or files. Do not combine multiple tabs into one workflow. |
-| Cells aligned under `Input` | Examples of the message that the tab's workflow receives. Derive a payload contract and sanitized input fixture; an example alone does not define all valid messages. |
-| Cells aligned under `Transformation rule` | Mapping behavior used to create the Output, including defaults, conditionals, XRef lookups, and conversions. These are implementation guidance, not an executable Azure workflow. |
-| Cells aligned under `Output` | Expected transformed message and output fixture, published to the next Service Bus topic for downstream consumption. |
+| `Architect Diagram` or `Architecture Diagram` tab | Flow guidance, not a workflow. Review embedded images and arrows. |
+| XRef tab or table entries | Reference lookup data, not a workflow. An XRef table inside a processing tab does not exclude that tab. |
+| Processing tab or table name beginning with `Source` | Starting point; include a workflow and a helper script to send sample Input to its ingress queue. |
+| Every non-informational tab | One separate Logic App Standard workflow. |
+| `Input` columns | Incoming-message examples used to derive sanitized fixtures and contracts. |
+| `Transformation rule`, `Transformation Logic`, or `Dataweave` columns | Mapping, validation, defaults, conversions, and lookup behavior. |
+| `Output` columns | Expected transformed message, published to an output topic for downstream consumption. |
 
-Read column alignment using the actual headers and cell positions, including
-merged headers; do not assume fixed column letters. Match each Input example
-to its transformation rule and Output example. Review any other informational
-tabs explicitly and record their purpose instead of silently discarding them.
-An XRef table within a processing tab supplies lookup data without removing
-that tab's workflow.
+Use diagram arrows and matching upstream Output/downstream Input to connect
+tabs, not worksheet order. Service Bus carries every inter-tab handoff:
+publish to a topic and receive through a downstream subscription, with separate
+subscriptions for fan-out. Resolve missing mappings, conflicting examples, and
+ambiguous tabs before approval.
 
-Use the architecture tab to establish the flow graph, then verify each arrow
-against the upstream Output and downstream Input examples. Do not infer flow
-order from tab position alone. Record missing links, conflicting examples,
-unreadable images, and ambiguous classifications as questions to resolve before
-approval.
+## Task 1: propose and approve the Azure design
 
-### Suggested runtime architecture
+**Outcome:** a reviewed design based on your workbook and the rules above.
 
-For a generic two-stage workbook, the processing tabs become two workflows:
+Reference your local workbook in this prompt, replacing `sample.xlsx` with its
+path:
 
 ```text
-Source helper script (sanitized service-request Input)
-  -> service-requests ingress queue
-  -> Source workflow (service request -> canonical Output)
-  -> canonical-requests topic
-  -> target-transform subscription
-  -> Canonical-to-target workflow (canonical Input -> target Output)
-  -> target-requests topic
-  -> mock-target subscription (mock consumer or adapter)
+Read the Lab 3 README, implementation requirements, repository implementation
+standards, and Lab 3 contracts.
+
+Use sample.xlsx locally. Run scripts/extract-integration-workbook.py to extract
+all sheets into /tmp/workbook-evidence.md, and review embedded images separately.
+Apply the workbook interpretation rules to propose the smallest secure Azure
+Integration Services design. Include one workflow per processing tab, Source
+helpers, XRef lookup artifacts, Service Bus handoffs, and mocked external systems.
+
+Summarize the flow and resource graph, identity boundaries, costs, and cleanup
+ownership. Cite workbook evidence locally; separate facts from assumptions and
+list conflicts or missing information that need my decision.
+
+Write labs/03-workbook-to-solution/design/integration-design.json using generic
+names and sanitized evidence. Validate it against the Lab 3 design schema.
+Keep status proposed. Do not initialize IaC, implement, or deploy resources.
 ```
 
-Service Bus carries every inter-tab message; do not replace a handoff with a
-direct workflow call. Senders publish to a queue or topic, not directly to a
-subscription. A downstream workflow receives from its own topic subscription.
-For a diagram branch, use one subscription per downstream workflow so each
-receives its own copy; document any routing properties and filters.
+The [sample design](contracts/sample-simple-design.json) illustrates the contract
+structure, not a solution to copy; its names and cell references are illustrative.
+Review the proposal, resolve all assumptions marked
+`mustConfirmBeforeImplementation`, and change `status` to `approved`.
 
-Architecture and XRef tabs do not add workflows. XRef data is a reviewed lookup
-artifact used by the relevant transformation; a reference table alone does not
-justify adding a database. The last processing tab still publishes its Output;
-confirm who consumes it rather than inventing another workbook workflow.
+**Done when:** the design is schema-valid, the flows and resource graph are
+understood, and you have approved it.
 
-Each Source helper accepts a namespace, ingress queue, and sanitized fixture,
-uses Microsoft Entra authentication without connection strings, and sets
-content type, message ID, and correlation ID. Document its dependencies,
-sender-only access, network reachability, invocation, and expected result.
-Create these scripts during workflow implementation, not during extraction or
-proposal approval.
+## Task 2: implement the approved design
 
-## Task 0: extract workbook evidence
+**Outcome:** the approved Azure solution working end to end against mocks.
 
-**Outcome:** create a local text representation that Copilot and reviewers can
-inspect while preserving sheet and cell references.
+Choose one starter prompt to initialize your IaC track:
 
-From the repository root, replace `sample.xlsx` with your local workbook path:
+- **Bicep:** [Lab 3 Bicep starter](../../.github/prompts/03-workbook-bicep.prompt.md)
+- **Terraform:** [Lab 3 Terraform starter](../../.github/prompts/03-workbook-terraform.prompt.md)
 
-```bash
-python scripts/extract-integration-workbook.py \
-  sample.xlsx \
-  --output /tmp/workbook-evidence.md
-```
-
-Use `--format json` for machine-readable output and
-`--max-rows-per-sheet <count>` only for an initial review. The final proposal
-must account for every relevant sheet. Inspect embedded workbook images
-separately; the extractor lists but does not interpret them.
-
-**Prompt Copilot**
+Then use this implementation prompt:
 
 ```text
-Read the extracted workbook evidence and the Lab 3 implementation requirements.
-Create an evidence table that identifies source and target systems, triggers,
-payload formats, transformations, validations, lookups, fan-out, responses, and
-failure examples. Cite sheet names and exact cell references.
+Read the Lab 3 requirements and approved design/integration-design.json.
+Stop if the design is missing, invalid, or not approved.
 
-Apply the workbook interpretation rules: classify architecture and XRef
-information separately, identify Source-prefixed starting points, and inventory
-one workflow per non-informational tab. For each processing tab, link the Input,
-Transformation rule, and Output cells. Use the reviewed architecture diagram
-and matching payloads to identify inter-tab edges, not worksheet order. Record
-image evidence by sheet and media reference; never invent a cell citation for
-an image. The extractor does not classify tabs or interpret column alignment.
+Implement the approved design in my selected IaC track: the complete private
+Logic App Standard foundation, approved integration resources and workload RBAC,
+one workflow per processing tab, tested transformations and XRef lookups, Source
+helper scripts, sanitized fixtures, and mocked external systems.
 
-Separate facts from assumptions. List every question that must be answered
-about protocols, authentication, volume, latency, ordering, idempotency,
-recovery, ownership, networking, and sensitive data. Do not propose Azure
-resources or edit files yet.
+Preserve the host-storage and workload identity boundaries. Do not add unapproved
+resources, real external-system connections, customer identifiers, or secrets.
+Complete each input message only after its validated Output is published.
+
+Before editing, explain the resource graph, identity boundaries, expected files,
+costs, and validation commands. Wait for my approval. Then implement in dependency
+order, run the selected track's format/build or validate checks, and review the
+deployment preview with me before deploying.
+
+Run each Source helper and verify expected outputs, correlation, and the
+approved failure behavior at every workflow and broker handoff against mocks.
+Document helper invocation, results, and cleanup.
 ```
 
-**Done when:** every material finding has cell evidence, embedded images have
-been reviewed or marked unresolved, and unknowns are not presented as facts.
-
-## Task 1: propose and approve the design
-
-**Outcome:** create `labs/03-workbook-to-solution/design/integration-design.json`
-as the reviewed implementation contract.
-
-Use
-[`contracts/sample-simple-design.json`](contracts/sample-simple-design.json) as
-an example of structure and evidence depth, not as a design to copy. Its workbook
-name, sheet labels, and cell references are illustrative; they are not verified
-evidence from a customer workbook.
-
-**Prompt Copilot**
-
-```text
-Using the workbook evidence table and confirmed answers, propose the smallest
-secure Azure Integration Services design that satisfies the flows.
-
-Use one flows entry per processing tab. Record the original sheet name in each
-entry's steps, its ingress queue or topic subscription in trigger, and its
-output topic and downstream subscriptions in steps. Include Source helper
-scripts, XRef lookup artifacts, and the diagram-derived routing graph. Keep
-informational tabs out of flows and reconcile every downstream Input with the
-preceding Output. Service Bus handoffs and separate tab workflows are required
-for this lab; do not propose a single combined synchronous workflow.
-
-Write labs/03-workbook-to-solution/design/integration-design.json so it
-validates against contracts/integration-design.schema.json. Include workbook
-cell evidence, remaining assumptions, flow steps, selected and optional Azure
-resources, identity and RBAC scopes, private network paths, transformation
-strategy, reliability, observability, security, cost-bearing resources,
-implementation stages, validation, ownership, and cleanup boundaries.
-
-Explain why each selected service is required and why plausible alternatives
-were rejected. Keep status proposed. Do not initialize IaC or implement Azure
-resources.
-```
-
-Validate JSON syntax:
-
-```bash
-jq empty labs/03-workbook-to-solution/design/integration-design.json
-```
-
-Validate against the schema with the JSON Schema tool available in your editor
-or development environment. Review every assumption. Resolve all items marked
-`mustConfirmBeforeImplementation`, then change `status` to `approved`.
-
-**Done when:** the proposal is schema-valid, approved, bounded, cost-aware, and
-specific enough that Bicep and Terraform learners would build equivalent
-behavior.
-
-## Choose an implementation track
-
-After approval, invoke one starter prompt:
-
-- **Bicep:** `.github/prompts/03-workbook-bicep.prompt.md`
-- **Terraform:** `.github/prompts/03-workbook-terraform.prompt.md`
-
-The prompt creates only the initial files and path-local instructions. It does
-not infer or implement the proposal.
-
-## Task 2: deploy the approved foundation
-
-**Outcome:** deploy only the approved hosting, identity, network, and
-observability foundation.
-
-**Prompt Copilot**
-
-```text
-Read the approved Lab 3 integration design and implement only its foundation in
-my selected IaC track. Include the Lab 3 resource group, required tags, complete
-private Logic App Standard hosting baseline, empty Standard site, approved
-observability, and only the private network resources required at this stage.
-
-Do not add workload resources, connections, workflow definitions,
-transformations, or external target configuration.
-
-Before editing, explain the approved resource graph, identity boundaries,
-ownership, cost-bearing resources, non-secret outputs, expected files, and
-validation commands. Wait for my approval.
-```
-
-Use the same Bicep format/build/what-if or Terraform fmt/validate/plan sequence
-as Labs 1 and 2.
-
-## Task 3: deploy approved integration resources
-
-**Outcome:** add only brokers, gateways, storage, Key Vault, private
-connectivity, and workload RBAC explicitly selected by the approved proposal.
-
-**Prompt Copilot**
-
-```text
-Implement only the approved Lab 3 integration resources and workload identity
-assignments. Preserve the deployed Logic App hosting foundation and keep its
-host-storage identity limited to host storage.
-
-Do not add workflow definitions or external-system credentials.
-
-Include the approved Source ingress queues, output topics, downstream
-subscriptions and filters, and sender/receiver role scopes for each handoff.
-
-Before editing, map each resource to the approved design evidence, explain
-network and DNS paths, managed-identity scopes, retry or broker settings,
-ownership, cost, expected preview, files, and validation commands. Wait for my
-approval.
-```
-
-## Task 4: implement transformations and workflows
-
-**Outcome:** implement the approved flows against mocks and sanitized fixtures.
-
-**Prompt Copilot**
-
-```text
-Implement the approved Lab 3 transformations, connections, and Logic App
-Standard workflows. Translate the workbook logic deliberately; do not claim a
-mechanical DataWeave conversion.
-
-Create one workflow per approved processing tab. Receive its Input from the
-approved queue or subscription, apply its transformation rules and XRef
-lookups, validate its Output, and publish that Output to the approved topic.
-Complete the input message only after successful publication. Add a sample
-helper script for each Source starting point to publish sanitized Input
-fixtures to its ingress queue, with invocation and expected-result instructions.
-
-Add sanitized source, canonical, target, response, and error fixtures and tests
-for required fields, null/default behavior, conditionals, lookups, type and date
-conversion, arrays, retries, target failures, and correlation. Connect only to
-mocks unless the approved design records the real target protocol and
-authentication method.
-
-Do not recreate foundation or workload resources, broaden RBAC, add secrets, or
-log complete payloads.
-
-Before editing, explain the per-flow artifacts, transformation choices,
-failure paths, expected files, and validation commands. Wait for my approval.
-```
-
-## Task 5: connect targets and prove failure behavior
-
-Connect live targets only after their owners approve endpoint, authentication,
-test-data, throttling, and recovery details. Use Key Vault references for
-unavoidable external credentials.
-
-Test the success path and every approved failure category. Confirm correlation
-without exposing full payloads, then review the deployment and cleanup previews.
-
-**Done when:** deployed behavior matches committed fixtures and contracts,
-failures follow the approved reliability design, and cleanup targets only Lab
-3-owned resources.
-
-For every Source starting point, run its helper and trace the same correlation
-ID through each tab workflow and broker handoff. Compare every emitted Output
-with its fixture and verify fan-out copies, lookup failures, duplicate delivery,
-failed publication, and dead-letter behavior.
+**Done when:** deployed behavior matches the approved contracts and sanitized
+fixtures, success and failure paths work, and no customer data or secrets are
+committed or logged.
 
 ## Cleanup
 
-Preview deletion first. Delete the Lab 3 resource group for a Bicep-owned
-deployment or run `terraform destroy`. Existing systems and shared Azure
-resources referenced by the design must remain untouched.
+Preview deletion first. Delete only the Lab 3-owned resource group for a
+Bicep deployment or run `terraform destroy` for the selected Terraform
+deployment. Leave existing systems and shared resources untouched.

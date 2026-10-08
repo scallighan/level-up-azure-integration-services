@@ -209,24 +209,12 @@
   ],
   "implementationStages": [
     {
-      "stage": 0,
+      "stage": 1,
       "outcome": "Approve the evidence, assumptions, service selection, and target contract."
     },
     {
-      "stage": 1,
-      "outcome": "Deploy the private Logic App Standard and observability foundation."
-    },
-    {
       "stage": 2,
-      "outcome": "Deploy approved Service Bus entities, routing, private connectivity, and least-privilege workload and helper access."
-    },
-    {
-      "stage": 3,
-      "outcome": "Implement two tab workflows, tested transformations and lookup artifacts, and a Source helper against sanitized fixtures and a mock subscriber."
-    },
-    {
-      "stage": 4,
-      "outcome": "Exercise the approved mock consumer and prove end-to-end success and failure behavior."
+      "outcome": "Implement and deploy the approved private hosting foundation, integration resources and access, two tab workflows, transformations and lookup artifacts, and Source helper; prove success and failure behavior against sanitized fixtures and a mock consumer."
     }
   ],
   "validation": [

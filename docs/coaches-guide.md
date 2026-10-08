@@ -323,7 +323,7 @@ poison-message loop.
 
 ## Lab 3 coaching map
 
-### Checkpoint 0: workbook evidence
+### Task 1: propose and approve the Azure design
 
 **Learner should explain**
 
@@ -337,6 +337,11 @@ poison-message loop.
 - Which workbook images were reviewed separately.
 - Which protocol, authentication, volume, latency, ordering, idempotency,
   recovery, ownership, and networking details remain unknown.
+- Why each selected Azure service is required and which alternatives were
+  rejected.
+- The resource graph, private data paths, identity scopes, reliability
+  behavior, cost, ownership, and cleanup boundary.
+- Which assumptions had to be confirmed before implementation.
 
 **Coach checks**
 
@@ -346,19 +351,6 @@ poison-message loop.
 - Every tab is classified; architecture and XRef information do not create
   workflows, and ambiguous diagram links are resolved before approval.
 - Customer or production payloads are not being committed.
-
-### Checkpoint 1: approved design
-
-**Learner should explain**
-
-- Why each selected Azure service is required and which alternatives were
-  rejected.
-- The resource graph, private data paths, identity scopes, reliability
-  behavior, cost, ownership, and cleanup boundary.
-- Which assumptions had to be confirmed before implementation.
-
-**Coach checks**
-
 - The proposal validates against the Lab 3 schema.
 - Every non-informational tab has its own flow/workflow; Source helpers send
   to ingress queues and inter-tab edges use topics and downstream subscriptions.
@@ -370,14 +362,12 @@ poison-message loop.
   scopes.
 - External credentials are neither invented nor placed in the proposal.
 
-### Checkpoint 2: foundation and integration resources
+### Task 2: implement the approved design
 
 Compare every planned resource with the approved proposal. Stop additions that
 are merely convenient rather than justified by a flow requirement. Require a
 complete private endpoint and DNS path for every approved Azure service whose
 public access is disabled.
-
-### Checkpoint 3: transformations and workflows
 
 Require sanitized fixtures for source, canonical, target, response, and error
 shapes. Test workbook conditionals, defaults, null handling, lookups, dates,
@@ -390,12 +380,10 @@ an approved network path. Verify every upstream Output satisfies downstream
 Input and that a workflow completes Input only after Output publication.
 Include lookup misses and publication-success/settlement-failure duplicates.
 
-### Checkpoint 4: target connection and failure proof
-
-Confirm target ownership, endpoint, authentication, throttling, test data, and
-recovery before live connection. Require success, invalid input, timeout,
+Use mocked external systems only. Require success, invalid input, timeout,
 transient failure, permanent failure, and correlation evidence without logging
-full payloads.
+full payloads. Review deployment and cleanup previews; existing shared resources
+must remain untouched.
 
 ## Troubleshooting playbook
 
