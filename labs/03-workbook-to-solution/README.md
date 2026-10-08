@@ -119,20 +119,12 @@ proposal approval.
 **Outcome:** create a local text representation that Copilot and reviewers can
 inspect while preserving sheet and cell references.
 
-From the repository root:
+From the repository root, replace `sample.xlsx` with your local workbook path:
 
 ```bash
 python scripts/extract-integration-workbook.py \
-  simple-integration-sample-payoad-and-transformation-logic.xlsx \
-  --output /tmp/simple-workbook-evidence.md
-```
-
-For the medium workbook:
-
-```bash
-python scripts/extract-integration-workbook.py \
-  Medium-integration-sample-payoad-and-transformation-logic.xlsx \
-  --output /tmp/medium-workbook-evidence.md
+  sample.xlsx \
+  --output /tmp/workbook-evidence.md
 ```
 
 Use `--format json` for machine-readable output and
