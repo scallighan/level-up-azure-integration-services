@@ -19,6 +19,11 @@ runtime behavior.
   details, and existing resource IDs.
 - Use deterministic names plus an Azure-safe unique suffix where global
   uniqueness is required.
+- Lab 0 owns the shared foundation. Later labs require its explicit handoff
+  and manage only their additions; never import or retag shared resources.
+- Ask whether the learner has an existing parent resource group before Lab 0.
+  Reference a supplied group without changing or owning it; otherwise create
+  the workshop group. Never delete an existing parent group during cleanup.
 - Apply the tags `workshop=agentic-ais` and `lab=<lab-number>`.
 - Use current stable Azure API versions and pinned Terraform provider version
   constraints. State uncertainty instead of inventing a property.

@@ -8,7 +8,9 @@ integration. Read them with [`README.md`](README.md), both files under
 
 ## Broker topology
 
-- Use a Standard Service Bus namespace because the lab requires topics.
+- Reference the Standard Service Bus namespace deployed by Lab 0. It uses
+  Entra-only authorization over its public endpoint; Standard has no private
+  endpoint support. Recommend Premium for production private networking.
 - Create the `orders` topic with duplicate detection enabled.
 - Create exactly three subscriptions: `audit`, `fulfillment`, and
   `notification`.
@@ -23,47 +25,41 @@ as the source of truth for the event.
 
 ## Logic App hosting and identities
 
-Require an explicit hosting foundation mode of `new` or `existing`. Do not
-infer the mode from repository state or from resources found in the
-subscription.
+Require [Lab 0](../00-foundation/README.md) and explicit references from its
+local `foundation.deployment.json`. Reference its integration subnet, host
+storage, host identity, WS1 plan, monitoring, Standard site, and Service Bus
+namespace. Validate subscription, deployment region, connectivity, and host
+settings. Reject missing/incompatible inputs; do not infer names or create a
+fallback foundation. There is no standalone `new` mode.
 
-- `new`: create a Lab 2-owned Logic App Standard hosting foundation with one
-  VNet, one host storage account with four private endpoints and private DNS,
-  one host-storage user-assigned identity, one Windows WS1 Workflow Standard
-  plan, observability, and one empty Logic App Standard site.
-- `existing`: require explicit references to a compatible deployed foundation
-  and Standard site, such as those from Lab 1. Reference the Logic App
-  integration subnet, host storage, host-storage identity, WS1 plan,
-  observability resources, and site without importing, retagging, modifying,
-  or deleting the foundation or taking ownership of the parent site.
-
-In both modes, create a Lab 2-owned resource group and use one Logic App
-Standard site for all three workflows. Grant the site's system identity the
+Do not import, retag, modify, or delete Lab 0 resources or own the parent group,
+site, or namespace. Use one shared site for all three workflows. Grant its system identity the
 receiver role separately at each of the three subscription scopes. Never grant
 it receiver access at namespace or topic scope. The user-assigned identity
 remains limited to host storage.
 
-Reusing the Lab 1 site means its system identity retains its Lab 1 Cosmos role
+Reusing the Lab 0 site means its system identity retains its Lab 0 Cosmos role
 and gains three Lab 2 subscription-scoped Service Bus roles. Make this
 cross-lab identity tradeoff explicit before deployment. Lab 2 may own its role
 assignments and child workflow resources, but it must not manage the existing
 parent site.
 
-Reject incomplete or mixed mode-specific inputs. Existing mode must confirm
-that the referenced resources are in the current subscription and region and
-that the subnet, plan, storage connectivity, host-storage identity roles, site,
-and host settings remain compatible with the required baseline. Never expose
-storage credentials or observability connection strings as outputs.
+Preserve other labs' workflow artifacts, app settings, and `connections.json`
+entries. Add only the Service Bus connection entry needed here. Never expose
+credentials or observability connection strings as outputs.
+
+For publishing tests, the student's Entra principal needs a separate
+topic-scoped Data Sender grant. Parameterize and confirm the student principal;
+do not grant the site sender access merely to run this manual test. Track this
+grant as Lab 2-owned and remove it during cleanup.
 
 ## Implementation sequence
 
 Keep infrastructure provisioning separate from workflow behavior in both IaC
 tracks:
 
-0. Resolve the shared hosting foundation. Create it in `new` mode when Lab 1
-   was skipped or cleaned up; otherwise reference the compatible Lab 1
-   foundation and Standard site in `existing` mode. Establish ownership and
-   cleanup boundaries before adding integration resources.
+0. Verify Lab 0 and configure existing-resource references, with no managed
+   resource changes. Lab 1 is not a prerequisite.
 1. Create the Service Bus topology, managed-identity connection configuration,
    three subscription-scoped receiver role assignments for the selected site's
    system identity, and correlated observability. Do not add workflow
@@ -71,9 +67,10 @@ tracks:
 2. Add only the audit, fulfillment, and notification workflow definitions and
    their message-processing behavior.
 
-Destroying Lab 2 must remove only Lab 2-owned resources. In `existing` mode,
-the referenced hosting and observability foundation and parent Logic App site
-must remain untouched.
+Destroying Lab 2 must remove only its messaging children, grants, and artifacts.
+The Lab 0 resource group, namespace, hosting, monitoring, and parent site remain
+untouched. Explicitly remove uploaded workflows and unused connection entries;
+Terraform action-state destruction alone may not remove deployed artifacts.
 
 ## Message processing
 

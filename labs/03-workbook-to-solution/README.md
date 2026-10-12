@@ -11,6 +11,10 @@ lab.
 
 **Time:** 90-150 minutes, depending on workbook complexity and target access
 
+**Required before Task 2:** complete [Lab 0](../00-foundation/README.md).
+Task 1 remains a local design exercise. Implementation references Lab 0's site,
+namespace, and monitoring; it does not deploy a second hosting foundation.
+
 ![Workbook to approved design to Azure implementation](../../docs/assets/lab-03-workbook-design-architecture.svg)
 
 Read [`implementation-requirements.md`](implementation-requirements.md) for the
@@ -112,12 +116,15 @@ Use its integration-design.svg to review the approved message flow.
 Stop if the plan is missing, lacks the Task 1 summary, has unresolved workbook
 or flow conflicts, or does not begin with "Status: approved".
 
-Implement the approved design in my selected IaC track: the complete private
-Logic App Standard foundation, approved integration resources and workload RBAC,
+Read foundation.deployment.json and reference Lab 0's existing private
+Logic App Standard foundation, Service Bus namespace, and monitoring.
+Implement the approved design in my selected IaC track: approved integration resources and workload RBAC,
 one workflow per processing tab, tested transformations and XRef lookups, Source
 helper scripts, sanitized fixtures, and mocked external systems.
 
-Preserve the host-storage and workload identity boundaries. Do not add unapproved
+Preserve other labs' workflows, app-level connections, and settings. Never
+import, retag, own, replace, or delete shared parents. Preserve the host-storage
+and workload identity boundaries. Do not add unapproved
 resources or real external-system connections. Scrub customer names and values
 from artifacts intended for Git; never commit secrets or log sensitive payloads.
 Complete each input message only after its validated Output is published.

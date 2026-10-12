@@ -56,7 +56,9 @@ to verify and teach participants how to retain control.
 
 ## Invoking workshop prompt files
 
-The four lab-and-track files under `.github/prompts/` are one-time starter
+Lab 0 uses committed deployment code, not a generation prompt. Complete it
+first and preserve its non-secret handoff. The lab-and-track files under
+`.github/prompts/` are one-time starter
 prompts. Invoke the selected prompt from the repository root so its relative
 paths and repository-wide instructions resolve correctly. It creates the
 selected IaC directory, minimal base files, and a path-local `AGENTS.md`; it

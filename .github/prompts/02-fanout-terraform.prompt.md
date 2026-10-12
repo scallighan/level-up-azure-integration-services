@@ -10,6 +10,10 @@ Read `AGENTS.md`, `.github/copilot-instructions.md`,
 `labs/02-topic-fanout/implementation-requirements.md`, and both files in
 `labs/02-topic-fanout/contracts/`.
 
+Also read `labs/00-foundation/implementation-requirements.md` and the local
+`foundation.deployment.json`. Require completed Lab 0; Lab 1 is not required.
+There is no standalone new-foundation mode.
+
 Initialize only `labs/02-topic-fanout/iac/terraform/` for the Terraform learner
 path. Before editing, show this starter structure and briefly explain each file:
 
@@ -36,8 +40,10 @@ Create the path-local `AGENTS.md` with concise instructions that:
   implementation requirements, both event contracts, Logic App Standard
   baseline, and matching Terraform reference before changes;
 - keep each learner request bounded to the named lab step or task;
-- require an explicit `new` or `existing` hosting-foundation mode and preserve
-  its ownership and cleanup boundary;
+- require explicit Lab 0 references using data sources or handoff IDs, never
+  imports, remote state, or managed foundation resource blocks;
+- preserve shared-resource tags, parent group/site/namespace ownership,
+  other labs' workflow artifacts, and app-level connection entries;
 - preserve the host-storage user-assigned identity and subscription-scoped
   Service Bus receiver system-assigned identity boundary;
 - use the ignored root `.env` for stable, non-secret learner inputs, map them to

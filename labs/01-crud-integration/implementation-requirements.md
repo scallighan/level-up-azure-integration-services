@@ -8,20 +8,21 @@ the repository-wide
 
 ## Resource responsibilities
 
-Both IaC tracks must create behaviorally equivalent resources:
+Complete [Lab 0](../00-foundation/README.md) first. Both tracks must reference
+its explicit non-secret handoff rather than create or own a second foundation:
 
 | Resource | Requirement |
 |---|---|
-| Resource group | Lab-specific tags and selected location |
-| Cosmos DB account | Serverless capacity with local authentication and public network access disabled |
-| Cosmos private connectivity | One `Sql` private endpoint in the private-endpoint subnet, the `privatelink.documents.azure.com` private DNS zone, a VNet link, and a private DNS zone group |
-| SQL database and container | `workshop` / `items` with partition key `/id` |
-| Logic App hosting | Complete private Logic App Standard baseline |
-| Logic App site | One Standard site with dual identities and VNet route-all |
+| Resource group | Reference Lab 0's parent without managing it; tag new frontend/extension resources `lab=01` |
+| Cosmos DB account | Reference Lab 0's private, serverless, Entra-only account |
+| Cosmos private connectivity | Verify Lab 0's `Sql` endpoint, private DNS zone, link, and zone group |
+| SQL database and container | Reference Lab 0's `workshop` / `items`, partition key `/id` |
+| Logic App hosting | Reference the complete Lab 0 private Standard baseline |
+| Logic App site | Reference Lab 0's dual-identity Standard site; never import or manage the parent |
 | Logic App workflow | One HTTP-triggered workflow implementing the OpenAPI operations |
-| Cosmos RBAC | System-assigned Logic App identity can read and write data only at the required scope |
+| Cosmos RBAC | Verify Lab 0's existing container-scoped system-identity grant; do not duplicate it |
 | Static Web App | Free SKU hosting the starter UI |
-| Application Insights | Request and workflow observability |
+| Application Insights | Use Lab 0's wired request and workflow observability |
 
 The user-assigned identity accesses only Logic App host storage. The
 system-assigned identity accesses Cosmos DB. Do not use Cosmos account keys.
@@ -31,18 +32,21 @@ system-assigned identity accesses Cosmos DB. Do not use Cosmos account keys.
 Keep infrastructure provisioning separate from workflow behavior in both IaC
 tracks:
 
-1. Deploy the complete backend infrastructure foundation: resource group,
-   private Logic App Standard hosting baseline, empty Standard site with both
-   identities, Application Insights, Cosmos account, database, container, and
-   least-privilege Cosmos RBAC. Disable Cosmos public network access and add its
-   `Sql` private endpoint and private DNS path in this phase so the
-   VNet-integrated workflow has a working data-plane route. Do not add a
-   workflow definition, Static Web App, or API Management resources in this
-   phase.
+1. Verify Lab 0 with `scripts/verify-foundation.sh` and configure explicit
+   existing-resource references from `foundation.deployment.json`. Create no
+   backend foundation resources and make no foundation writes.
 2. Add only the HTTP-triggered CRUD workflow and the configuration it needs to
    use the existing Cosmos container through the site's system-assigned
    identity. Do not recreate or replace foundation resources.
 3. Add the Static Web App and restrict workflow CORS to its deployed origin.
+
+Preserve other labs' workflow artifacts and app-level connections. Merge only
+Lab 1's required connection entry; never replace the shared site's complete
+settings or erase other workflows. Keep `lab=00` tags and Lab 0 ownership.
+Cleanup removes only Lab 1-owned resources, the CRUD workflow, and its unused
+connection entry. Terraform action-state destruction alone may not delete
+uploaded artifacts; verify their removal explicitly. Never delete the Lab 0
+parent resource group or foundation.
 
 The API Management modes below remain available when API Management is
 explicitly requested; they are not part of the three-phase direct browser path.

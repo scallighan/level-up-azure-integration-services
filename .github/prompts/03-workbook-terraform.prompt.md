@@ -11,6 +11,13 @@ current files under
 `labs/03-workbook-to-solution/plans/integration-design.md` and its
 `integration-design.svg` visual.
 
+Also read `labs/00-foundation/implementation-requirements.md` and the local
+`foundation.deployment.json`. Require completed Lab 0 before implementation.
+Reference its existing hosting/site, Service Bus namespace, and monitoring
+through explicit IDs or data sources, never imports or cross-lab remote state.
+Preserve shared ownership, tags, settings, and other labs' workflow connections.
+Never create a fallback hosting foundation.
+
 Stop if the plan is missing, lacks the concise Task 1 summary, has unresolved
 workbook/flow conflicts, or does not begin with `Status: approved`.
 Task 1 approves the message flow, not a complete deployment specification.

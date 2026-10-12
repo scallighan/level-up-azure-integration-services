@@ -10,6 +10,10 @@ Read `AGENTS.md`, `.github/copilot-instructions.md`,
 `labs/02-topic-fanout/implementation-requirements.md`, and both files in
 `labs/02-topic-fanout/contracts/`.
 
+Also read `labs/00-foundation/implementation-requirements.md` and the local
+`foundation.deployment.json`. Require completed Lab 0; Lab 1 is not required.
+There is no standalone new-foundation mode.
+
 Initialize only `labs/02-topic-fanout/iac/bicep/` for the Bicep learner path.
 Before editing, show this starter structure and briefly explain each entry:
 
@@ -20,7 +24,7 @@ labs/02-topic-fanout/iac/bicep/
 └── modules/
 ```
 
-Create `main.bicep` as a minimal subscription-scoped entry point with only the
+Create `main.bicep` as a minimal resource-group-scoped entry point with only the
 target scope and file-level teaching comments. Do not add parameters, resource
 declarations, modules, outputs, workflow definitions, or placeholder resources.
 Create `modules/` only when adding the first real module in a later lab task;
@@ -33,8 +37,9 @@ Create the path-local `AGENTS.md` with concise instructions that:
   implementation requirements, both event contracts, Logic App Standard
   baseline, and matching Bicep reference before changes;
 - keep each learner request bounded to the named lab step or task;
-- require an explicit `new` or `existing` hosting-foundation mode and preserve
-  its ownership and cleanup boundary;
+- require explicit Lab 0 existing-resource references for hosting, monitoring,
+  namespace, and site; never import, retag, manage, or delete shared parents;
+- preserve other labs' workflow artifacts and app-level connection entries;
 - preserve the host-storage user-assigned identity and subscription-scoped
   Service Bus receiver system-assigned identity boundary;
 - use the ignored root `.env` for stable, non-secret learner inputs, require it
@@ -42,9 +47,8 @@ Create the path-local `AGENTS.md` with concise instructions that:
   variable-name template so values are not repeatedly re-entered;
 - prohibit secrets, connection strings, or full event payloads in `.env`,
   prohibit committing `.env`, and prohibit changes to any `iac/.gitignore`;
-- require a subscription-scoped entry point only because the deployment creates
-  the Lab 2 resource group, with resource-group-scoped resources placed in
-  clear modules; and
+- deploy into the existing Lab 0 resource group without creating or managing
+  it; own only messaging children, scoped roles, and workflow artifacts; and
 - require `az bicep format`, `az bicep build`, and the task's deployment
   `what-if` before completion.
 

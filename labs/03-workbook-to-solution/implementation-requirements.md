@@ -153,6 +153,14 @@ exhaustive alternatives analysis.
 
 ### Logic App hosting and identities
 
+Complete Lab 0 before Task 2. Reference its existing private Standard hosting,
+Service Bus namespace, and monitoring using `foundation.deployment.json`.
+Reject missing or incompatible references; do not create a fallback foundation.
+Neither the parent group/site/namespace nor any shared foundation resource
+may be imported, retagged, managed, replaced, or deleted by Lab 3.
+Preserve other labs' workflow artifacts, app settings, and app-level connection
+entries. Merge only approved flow-specific connection entries.
+
 Every implemented design uses the complete private Logic App Standard baseline.
 The host-storage user-assigned identity remains limited to host storage. The
 Logic App system identity receives separate least-privilege roles on each Azure
@@ -223,8 +231,8 @@ logging full payloads.
    review the deployment preview before deploying, and prove end-to-end and
    failure behavior using Source helpers, sanitized fixtures, and mocks.
 
-Within Task 2, implement the hosting foundation before integration resources
-and workload access, then workflows and tests. These are implementation
+Within Task 2, verify and reference the Lab 0 foundation before implementing
+integration resources and workload access, then workflows and tests. These are implementation
 dependencies, not additional student tasks. Real external-system connections
 are outside the lab scope.
 
@@ -238,3 +246,8 @@ Task 2 must identify new versus existing resources. Existing resources
 are references and must not be imported, retagged, modified, replaced, or
 deleted unless the approved design explicitly grants that ownership. Cleanup
 must remove only Lab 3-owned resources.
+
+Lab 0 resources are always existing references, not optional ownership.
+Remove Lab 3's workflow artifacts, unused connection entries, messaging
+children, and grants explicitly; destroying Terraform action state alone may
+not delete uploaded artifacts. Never delete Lab 0's parent resource group.

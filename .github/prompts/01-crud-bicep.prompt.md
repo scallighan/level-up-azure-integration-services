@@ -10,6 +10,11 @@ Read `AGENTS.md`, `.github/copilot-instructions.md`,
 `labs/01-crud-integration/implementation-requirements.md`, and
 `labs/01-crud-integration/contracts/openapi.yaml`.
 
+Also read `labs/00-foundation/implementation-requirements.md` and the local
+`foundation.deployment.json`. Require completed Lab 0. Do not infer a fallback
+hosting deployment or overwrite an older learner implementation/state; resolve
+any migration separately before changing existing files.
+
 Initialize only `labs/01-crud-integration/iac/bicep/` for the Bicep learner
 path. Before editing, show this starter structure and briefly explain each
 entry:
@@ -21,7 +26,7 @@ labs/01-crud-integration/iac/bicep/
 └── modules/
 ```
 
-Create `main.bicep` as a minimal subscription-scoped entry point with only the
+Create `main.bicep` as a minimal resource-group-scoped entry point with only the
 target scope and file-level teaching comments. Do not add parameters, resource
 declarations, modules, outputs, workflow definitions, or placeholder resources.
 Create `modules/` only when adding the first real module in a later lab task;
@@ -34,6 +39,9 @@ Create the path-local `AGENTS.md` with concise instructions that:
   implementation requirements, OpenAPI contract, Logic App Standard baseline,
   and matching Bicep reference before changes;
 - keep each learner request bounded to the named lab task;
+- reference Lab 0's shared foundation with Bicep existing resources and
+  explicit non-secret handoff IDs; never manage, retag, replace, or delete it;
+- preserve other labs' workflow artifacts and app-level connection entries;
 - preserve the host-storage user-assigned identity and Cosmos workload
   system-assigned identity boundary;
 - use the ignored root `.env` for stable, non-secret learner inputs, require it
@@ -44,9 +52,9 @@ Create the path-local `AGENTS.md` with concise instructions that:
   while it is `none`;
 - prohibit secrets or callback URLs in `.env`, prohibit committing `.env`, and
   prohibit changes to any `iac/.gitignore`;
-- require a subscription-scoped entry point only because the deployment creates
-  the resource group, with resource-group-scoped resources placed in clear
-  modules; and
+- deploy into the existing Lab 0 group without creating or managing it; own
+  only frontend/extension resources and workflow artifacts, never a second
+  backend foundation; use clear modules where needed; and
 - require `az bicep format`, `az bicep build`, and the task's deployment
   `what-if` before completion.
 

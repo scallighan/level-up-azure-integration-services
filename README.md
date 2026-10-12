@@ -23,7 +23,7 @@ and test results remain the source of truth.
 
 | Section | Time | Outcome |
 |---|---:|---|
-| Setup and Copilot context | 30 min | Tools verified and repository context loaded |
+| Lab 0: shared Azure foundation | 30-45 min | Tools verified and shared infrastructure deployed |
 | Lab 1: CRUD integration | 90 min | Browser-to-database request path deployed and tested |
 | Break | 15 min | |
 | Lab 2: topic fan-out | 75 min | One event independently processed by three workflows |
@@ -32,15 +32,16 @@ and test results remain the source of truth.
 
 ## Start here
 
-1. Complete [the prerequisites](docs/prerequisites.md).
+1. Choose **Bicep** or **Terraform** and complete
+   [Lab 0: shared Azure foundation](labs/00-foundation/README.md).
 2. Read the [Copilot working agreement](docs/copilot-working-agreement.md).
-3. Choose one IaC track for the day: **Bicep** or **Terraform**.
-4. Complete [Lab 1](labs/01-crud-integration/README.md).
-5. Complete [Lab 2](labs/02-topic-fanout/README.md).
-6. Complete [Lab 3](labs/03-workbook-to-solution/README.md).
-7. When finished, delete workshop resources using each lab's cleanup steps.
+3. Complete [Lab 1](labs/01-crud-integration/README.md).
+4. Complete [Lab 2](labs/02-topic-fanout/README.md).
+5. Optionally complete [Lab 3](labs/03-workbook-to-solution/README.md).
+6. When finished, delete workshop resources using each lab's cleanup steps.
    Skip cleanup between labs when continuing with resources the next lab reuses.
-   Remove dependent lab resources before their shared foundation.
+   Remove dependent lab resources before Lab 0's shared foundation. Never delete
+   an existing parent resource group or unrelated resources.
 
 Instructors should also read the [instructor guide](docs/instructor-guide.md).
 People assisting learners should use the
@@ -57,6 +58,7 @@ docs/
   implementation-standards.md  Shared engineering guardrails
   logic-app-standard-baseline.md
 labs/
+  00-foundation/               Ready-to-deploy Bicep/Terraform shared infrastructure
   01-crud-integration/          Lab tasks, requirements, and API contract
   02-topic-fanout/              Lab tasks, requirements, and event contract
   03-workbook-to-solution/      Local design plans and implementation loop
@@ -74,6 +76,12 @@ implementation in `scallighan/logic-app-doc-processing`. See the
 for the exact workshop boundary. The reference project's SQL, Document
 Intelligence, and Office 365 resources remain capstone material and are not
 implicitly part of these labs.
+
+Lab 0 deterministically deploys the shared hosting foundation, private
+serverless Cosmos DB (`workshop/items`), Service Bus Standard namespace, and
+workspace-backed Application Insights. It asks for an existing parent resource
+group or creates a workshop group. Later labs reference its resources and add
+frontend, messaging entities, workflows, and tests; APIM remains optional.
 
 ## Cost and safety
 

@@ -10,6 +10,10 @@ independent copy in three workflows: audit, fulfillment, and notification.
 
 **Time:** 75 minutes
 
+**Required:** complete [Lab 0](../00-foundation/README.md). Lab 1 is not required.
+Reuse Lab 0's site, Service Bus namespace, and monitoring through the local
+`foundation.deployment.json` handoff.
+
 ## Learning objectives
 
 - Ground Copilot in an event schema and example rather than prose alone.
@@ -29,8 +33,8 @@ must not remove the audit or fulfillment copies.
 All three workflows run in one private-networked Logic App Standard site on the
 hosting foundation defined in
 [`docs/logic-app-standard-baseline.md`](../../docs/logic-app-standard-baseline.md).
-Lab 2 can create the complete foundation and site or reuse the compatible
-deployed Lab 1 foundation and site. The site's system identity receives access
+Lab 2 references the foundation, site, and namespace already deployed by
+Lab 0. The site's system identity receives access
 at each subscription scope, never at namespace scope. The host-storage identity
 remains limited to host storage.
 
@@ -72,60 +76,52 @@ the track's mandatory references and guardrails. It does not implement Step 0
 or infer what to build next. Review the starter files, then use the bounded
 prompt under Step 0.
 
-Reuse the ignored root `.env` from Lab 1 for stable, non-secret deployment
-inputs. Add Lab 2 hosting-foundation mode and reference values as the selected
-track introduces them, and add matching empty entries to `.env.example`.
+Reuse the ignored root `.env` from Lab 0 for stable, non-secret deployment
+inputs. Keep `FOUNDATION_RESOURCE_GROUP_NAME` set from the handoff.
 Source `.env` once per terminal; Terraform should consume exported `TF_VAR_*`
 values instead of repeated `-var` arguments, while Bicep commands should
 reference the exported shell values. Never store connection strings, access
 keys, or observability credentials in `.env`.
 
-## Step 0: resolve the shared hosting foundation
+## Step 0: verify the Lab 0 shared foundation
 
-**Outcome:** explicitly select a new or existing private Logic App Standard
-hosting foundation before creating Lab 2 integration resources.
+**Outcome:** reference Lab 0's private Logic App Standard site, namespace, and
+observability before creating Lab 2 integration resources.
 
-Use `existing` when the compatible Lab 1 foundation is still deployed. Use
-`new` when Lab 1 was skipped or cleaned up. Lab 2 always owns its resource
-group; in existing mode it must not own or modify the referenced foundation.
+There is no standalone `new` hosting mode. If Lab 0 was skipped or cleaned up,
+complete it first. Lab 2 owns messaging children, roles, and workflow artifacts,
+not the shared namespace, site, or parent resource group.
 
 **Prompt Copilot**
 
 ```text
-Prepare the shared Logic App Standard hosting foundation for Lab 2 in my
-selected IaC track. Require an explicit hosting foundation mode of new or
-existing.
+Read foundation.deployment.json and verify the Lab 0 resources against Azure.
+Prepare explicit existing-resource references in my selected IaC track for the
+integration subnet, host storage, host identity, WS1 plan, observability,
+Standard site, and Standard Service Bus namespace. Require
+FOUNDATION_RESOURCE_GROUP_NAME. Use Bicep existing resources or Terraform
+data sources/explicit IDs, not imports or managed foundation resource blocks.
 
-In new mode, create the Lab 2 resource group, complete private Logic App
-Standard hosting and observability foundation, and one empty Standard site. In
-existing mode, create the Lab 2 resource group and reference the compatible
-deployed Lab 1 integration subnet, host storage, host-storage identity, WS1
-plan, observability resources, and Standard site without taking ownership of
-the parent site or foundation.
+Do not create a resource group or hosting foundation, modify the namespace or
+parent site, or add messaging entities, receiver RBAC, connections, or workflows.
 
-Do not add Service Bus, receiver RBAC, connections, or workflow definitions.
-
-Before editing, explain both resource graphs, required mode-specific inputs,
+Before editing, explain the existing resource graph, required handoff inputs,
 compatibility checks, ownership and cleanup boundaries, cost-bearing resources,
 non-secret outputs, expected files, and validation commands. Wait for my
 approval.
 ```
 
-**Review before approving:** mode selection must be explicit. New mode must
-match the complete private Standard baseline. Existing mode must reject missing
-references and must not import, retag, modify, replace, or delete Lab 1
-foundation resources or the parent Logic App site. Lab 2 may later own child
-workflows and subscription-scoped RBAC associated with that site. No storage
-credential or observability connection string may be an output.
+**Review before approving:** reject missing or incompatible references. Do not
+import, retag, modify, replace, or delete Lab 0's resources. Lab 2 may later own
+child workflows and subscription-scoped roles. No credential or monitoring
+connection string may be an output.
 
-**Validate:** preview with the same native commands used in Lab 1, changing the
-path, deployment name, variables, and hosting foundation mode as appropriate.
-In existing mode, the preview contains only the Lab 2 resource group and
-references to the existing site and foundation. In new mode, it also contains
-the complete Lab 2-owned shared foundation and one empty Standard site.
+**Validate:** run `bash scripts/verify-foundation.sh foundation.deployment.json`.
+Format/build or fmt/validate/plan the configured references. This phase must
+contain no managed-resource changes.
 
-**Done when:** the selected foundation is ready, its ownership is unambiguous,
-and Lab 2 cleanup cannot remove reused Lab 1 resources.
+**Done when:** the references resolve and Lab 2 cannot delete the shared
+foundation or parent group.
 
 ## Task 1: deploy the integration infrastructure
 
@@ -136,11 +132,13 @@ site without adding receiver workflow definitions.
 
 ```text
 Using the selected shared hosting foundation, create the Lab 2 integration
-infrastructure in my selected IaC track. Add the Standard Service Bus
-namespace, orders topic, audit, fulfillment, and notification subscriptions
+infrastructure in my selected IaC track. Reference Lab 0's Standard Service Bus
+namespace and add the orders topic, audit, fulfillment, and notification subscriptions
 and rules; managed-identity connection configuration for the selected Logic App
 site; three receiver role assignments for its system identity, each scoped to
-one subscription; and correlated observability.
+one subscription; and correlated observability using Lab 0 monitoring.
+Preserve other labs' workflows and merge the app-level connection entries
+without replacing them. Do not change parent-site settings or ownership.
 
 Do not add audit, fulfillment, or notification workflow definitions.
 
@@ -158,8 +156,37 @@ all delivery settings are deliberate, the site identity receives only at the
 three subscription scopes rather than namespace scope, and no workflow
 definition or connection string is present.
 
-**Validate:** preview and deploy with the same native commands used in Lab 1,
-changing the path, deployment name, and variables as appropriate.
+**Validate and deploy:** use a resource-group-scoped Bicep entry point because
+Lab 2 does not create a group. Terraform consumes `TF_VAR_foundation_resource_group_name`.
+
+```bash
+# Bicep
+az bicep format --file labs/02-topic-fanout/iac/bicep/main.bicep
+az bicep build --file labs/02-topic-fanout/iac/bicep/main.bicep --stdout >/dev/null
+az deployment group what-if \
+  --subscription "$AZURE_SUBSCRIPTION_ID" \
+  --resource-group "$FOUNDATION_RESOURCE_GROUP_NAME" \
+  --template-file labs/02-topic-fanout/iac/bicep/main.bicep \
+  --parameters prefix="$WORKSHOP_PREFIX" location="$AZURE_LOCATION"
+# After reviewing the preview:
+az deployment group create \
+  --subscription "$AZURE_SUBSCRIPTION_ID" \
+  --resource-group "$FOUNDATION_RESOURCE_GROUP_NAME" --name "fanout-$WORKSHOP_PREFIX" \
+  --template-file labs/02-topic-fanout/iac/bicep/main.bicep \
+  --parameters prefix="$WORKSHOP_PREFIX" location="$AZURE_LOCATION"
+
+# Terraform
+terraform -chdir=labs/02-topic-fanout/iac/terraform init
+terraform -chdir=labs/02-topic-fanout/iac/terraform fmt -check
+terraform -chdir=labs/02-topic-fanout/iac/terraform validate
+terraform -chdir=labs/02-topic-fanout/iac/terraform plan
+# After reviewing the preview:
+terraform -chdir=labs/02-topic-fanout/iac/terraform apply
+```
+
+Previews must show only messaging children, scoped grants, and lab artifacts,
+not namespace/site/foundation updates. Inspect workflow artifact file maps too;
+ARM what-if may not show file-level changes for deployment actions.
 
 **Done when:** Service Bus Explorer shows the topic, exactly three
 subscriptions, and the intended rule on each; Azure shows three
@@ -203,6 +230,12 @@ the sample JSON. Set:
 - `MessageId` to the sample event ID;
 - `CorrelationId` to the sample correlation ID; and
 - the application properties from the contract table.
+
+Use Microsoft Entra authentication. Give the publishing student **Azure Service
+Bus Data Sender at the `orders` topic scope**, not namespace-wide data access;
+the site's receiver roles do not authorize the student to send. Confirm the
+student's principal and explicit role-assignment permission before granting it.
+Do not enable SAS authentication to make the portal test work.
 
 **Prompt Copilot**
 
@@ -263,11 +296,13 @@ longer need the Lab 2 deployment. Retained resources continue to incur charges;
 complete cleanup at the end of the workshop, removing dependent lab resources
 first.
 
-Use `az group delete` for a Bicep-created workshop resource group or
-`terraform destroy` for Terraform. Preview the deletion first and confirm the
-Lab 2 resource group disappears. In existing hosting-foundation mode, confirm
-the preview does not delete or modify any reused Lab 1 resource before
-approving cleanup.
+Never delete the Lab 0 resource group, namespace, or site. For Bicep, review
+and delete only Lab 2's topic (including subscriptions/rules), role assignments,
+workflow artifacts, and unused connection entry. For Terraform, review
+`plan -destroy` then `destroy` for the Lab 2 track; explicitly remove its
+uploaded workflows because destroying deployment-action state may not remove
+artifacts. Remove the student's lab-specific sender grant as well. Preserve
+Lab 1/3 artifacts and confirm Lab 0's foundation remains intact.
 
 ## Stretch goals
 

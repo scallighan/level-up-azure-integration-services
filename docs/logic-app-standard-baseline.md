@@ -14,12 +14,14 @@ connection string, or a simplified Standard deployment.
 
 ## Required resource graph
 
-Each lab has one shared Logic App hosting foundation:
+Lab 0 deploys one shared Logic App hosting foundation for the entire workshop.
+Labs 1-3 reference it; they do not create another foundation:
 
 ![Required private Logic App Standard hosting resource graph](assets/logic-app-standard-baseline.svg)
 
-The lab-specific Cosmos DB, Service Bus, APIM, Static Web App, and observability
-resources extend this graph; they do not replace or weaken it.
+Lab 0 also deploys Cosmos DB, the Service Bus namespace, and monitoring. Later
+labs add workflow artifacts, messaging entities, frontend resources, and
+explicitly selected extensions; they do not replace or weaken this graph.
 
 ## Reference-matched requirements
 
@@ -49,7 +51,7 @@ The shared hosting baseline covers host storage. A lab-specific data service
 with public network access disabled also needs a complete private data-plane
 path from the Logic App integration subnet.
 
-Lab 1 must create a Cosmos DB `Sql` private endpoint in the private-endpoint
+Lab 0 must create a Cosmos DB `Sql` private endpoint in the private-endpoint
 subnet, the `privatelink.documents.azure.com` private DNS zone, a VNet link, and
 a private DNS zone group. Keep Cosmos public network access and local
 authentication disabled. Create this path in the backend foundation before
@@ -62,7 +64,7 @@ alone do not make a private Cosmos account reachable.
 The user-assigned identity exists for Logic App host-storage access. Keep each
 Logic App's system-assigned identity for lab workload access:
 
-- Lab 1 grants its Logic App system identity only the required Cosmos DB
+- Lab 0 grants its Logic App system identity only the required Cosmos DB
   data-plane access.
 - Lab 2 grants the selected Logic App system identity receiver access
   separately at each required Service Bus subscription scope, never at
@@ -71,33 +73,31 @@ Logic App's system-assigned identity for lab workload access:
 Do not replace either identity boundary with shared keys or broaden the
 user-assigned identity to all lab data-plane resources.
 
-## Lab 2 shared foundation
+## Shared Lab 0 ownership
 
-Lab 2 must explicitly select a `new` or `existing` shared hosting foundation.
-`new` creates one Lab 2-owned VNet, host storage account, four storage private
-endpoints, host-storage user-assigned identity, WS1 plan, observability
-foundation, and empty Logic App Standard site. `existing` references a
-compatible deployed foundation and site, such as Lab 1's, without importing,
-modifying, retagging, or deleting the foundation or taking ownership of the
-parent site.
+Lab 0 accepts an optional existing parent resource group. Ask the learner for
+its name; a blank answer creates a workshop group. An existing group is a
+reference, never a managed resource or cleanup target. Its tags and unrelated
+resources remain untouched. Lab 0 owns the newly created foundation resources
+in either mode.
 
-Audit, fulfillment, and notification remain three independently deployable
-workflows in that one site. The site's system identity receives three separate
-Service Bus role assignments, each scoped to one subscription. Never broaden
-those assignments to the topic or namespace. The host-storage user-assigned
-identity remains limited to host storage.
+All later labs require the explicit non-secret `foundation` output saved as
+`foundation.deployment.json`. Verify references and compatibility rather than
+inferring names, importing resources, or creating fallback foundations.
+Keep shared resource tags `lab=00`; later labs own only their additions.
 
-When Lab 1's site is reused, its system identity retains the Lab 1 Cosmos role
-and gains the three Lab 2 subscription-scoped Service Bus roles. This is an
-intentional workshop cost tradeoff and must be explained before deployment.
-Lab 2 may manage its child workflows and role assignments, but not the existing
-parent site.
+Audit, fulfillment, and notification remain independently deployable
+workflows in the same site. Its system identity retains Lab 0's container-scoped
+Cosmos grant and gains three Lab 2 subscription-scoped receiver roles. Explain
+this shared-identity cost tradeoff: workflows are not isolated by identity.
+The host identity stays storage-only.
 
-Existing mode requires explicit references to the integration subnet, host
-storage, host-storage identity, WS1 plan, observability resources, and Standard
-site. Validate that they remain compatible with this baseline and in the
-current subscription and region. Lab 2 cleanup must never remove an existing
-foundation or parent site.
+The shared app-level `connections.json` must preserve every other lab's
+connection entry. Artifact deployment must not erase unrelated workflows.
+Later labs must not manage the parent site or replace its full app settings.
+Cleanup removes only owned artifacts, messaging children, and grants; remove
+those before Lab 0's foundation. Never delete an existing parent group.
 
-The shared hosting foundation does not change peek-lock, completion, retry, or
-dead-letter requirements.
+The shared foundation does not change peek-lock, completion, retry, or
+dead-letter requirements. Service Bus Standard deliberately uses an
+Entra-authorized public endpoint; private networking requires Premium.

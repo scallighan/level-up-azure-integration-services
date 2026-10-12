@@ -10,10 +10,15 @@ DB. The learner path connects the website directly to the workflow.
 
 **Time:** 90 minutes
 
+**Required:** complete [Lab 0](../00-foundation/README.md) and keep
+`foundation.deployment.json` locally. This lab references its shared site,
+Cosmos container, identities, private connectivity, and monitoring; it does
+not provision another foundation.
+
 ## Learning objectives
 
 - Ground Copilot in an OpenAPI contract and repository instructions.
-- Generate equivalent Bicep or Terraform through small, reviewable tasks.
+- Add workflow artifacts and frontend resources through small, reviewable tasks.
 - Grant Cosmos DB access through managed identity and least-privilege RBAC.
 - Use Copilot to diagnose a deployment or request from exact tool output.
 
@@ -105,15 +110,11 @@ for the reusable pattern.
 Review the generated starter files, then use the bounded prompt under Task 1.
 Keep local parameter values and Terraform state untracked.
 
-### Save your workshop settings
+### Reuse your workshop settings
 
-Create one local environment file from the repository root:
-
-```bash
-cp .env.example .env
-```
-
-Set `AZURE_SUBSCRIPTION_ID`, `WORKSHOP_PREFIX`, and the locations in `.env`.
+Reuse the ignored `.env` and `foundation.deployment.json` saved in Lab 0.
+Set `FOUNDATION_RESOURCE_GROUP_NAME` from the handoff and preserve
+`AZURE_SUBSCRIPTION_ID`, `WORKSHOP_PREFIX`, and the locations in `.env`.
 Keep `API_MANAGEMENT_MODE=none` for the direct learner path. The file is ignored
 by Git and must not contain credentials, callback URLs, or access keys.
 Treat `API_MANAGEMENT_MODE` as a lab-wide selection: preserve its current value
@@ -131,10 +132,10 @@ The `TF_VAR_*` mappings in `.env` let Terraform discover the same values
 without repeated `-var` arguments. Bicep commands reference the exported
 workshop values directly.
 
-## Task 1: deploy the backend infrastructure foundation
+## Task 1: verify the Lab 0 backend foundation
 
-**Outcome:** deploy the complete private hosting, data, identity, and
-observability foundation so the next task can focus only on workflow behavior.
+**Outcome:** verify and reference the deployed foundation, with no new backend
+infrastructure and no ownership transfer.
 
 **Prompt Copilot**
 
@@ -142,75 +143,39 @@ observability foundation so the next task can focus only on workflow behavior.
 Read the OpenAPI contract and inspect the starter app. Summarize every request,
 response, and required Azure resource.
 
-Then create the backend infrastructure foundation for my selected IaC track.
-Include provider or template metadata, parameters or variables, deterministic
-naming, required tags, the resource group, the complete private Logic App
-Standard hosting baseline, an empty Standard site with both identities,
-Application Insights, the serverless Cosmos DB account, the workshop database
-and items container, the Cosmos Sql private endpoint and private DNS path, and
-least-privilege Cosmos RBAC. Disable Cosmos local authentication and public
-network access.
+Read foundation.deployment.json from Lab 0 and verify its non-secret references
+against Azure. Configure my selected IaC track to reference the existing
+Standard site and Cosmos workshop/items container. Use existing resources in
+Bicep or data sources/explicit IDs in Terraform, never imports or managed
+foundation resource blocks. Require FOUNDATION_RESOURCE_GROUP_NAME.
 
-Do not add a workflow definition, Static Web App, or API Management resources.
+Do not create or modify the resource group, hosting, networking, storage,
+identities, Cosmos, Cosmos RBAC, monitoring, Service Bus, workflows, frontend,
+or API Management. Do not read Terraform state from another lab.
 
 Before editing, summarize the proposed files, resource graph, non-secret
 outputs, identity boundaries, cost-bearing resources, and validation commands.
 Wait for my approval.
 ```
 
-**Review before approving:** confirm that the complete private Standard
-baseline is present, the Standard site has no workflow definition, the
-user-assigned identity is limited to host storage, the system-assigned identity
-has only the required Cosmos data-plane role, the VNet-integrated site has a
-private DNS route to Cosmos, and no keys or callback URLs are outputs. Correct
-any contract, naming, networking, identity, or output drift before allowing
-edits.
+**Review before approving:** the preview must contain no foundation writes,
+imports, retagging, replacements, or deletes. The existing system identity has
+container-scoped Cosmos access; the host-storage identity stays storage-only.
+If you have an older, locally generated standalone Lab 1 deployment/state, do
+not apply it to Lab 0 resources. Review migration separately; never overwrite
+or import it automatically.
 
 **Validate**
 
-**Bicep**
-
 ```bash
-az bicep format --file labs/01-crud-integration/iac/bicep/main.bicep
-az bicep build --file labs/01-crud-integration/iac/bicep/main.bicep
-az deployment sub what-if \
-  --subscription "$AZURE_SUBSCRIPTION_ID" \
-  --location "$AZURE_LOCATION" \
-  --template-file labs/01-crud-integration/iac/bicep/main.bicep \
-  --parameters prefix="$WORKSHOP_PREFIX" location="$AZURE_LOCATION" \
-    apiManagementMode="$API_MANAGEMENT_MODE"
+bash scripts/verify-foundation.sh foundation.deployment.json
 ```
 
-**Terraform**
+Run the selected track's native checks after adding references. A Terraform
+plan at this phase must contain no managed-resource changes.
 
-```bash
-terraform -chdir=labs/01-crud-integration/iac/terraform init
-terraform -chdir=labs/01-crud-integration/iac/terraform fmt -check
-terraform -chdir=labs/01-crud-integration/iac/terraform validate
-terraform -chdir=labs/01-crud-integration/iac/terraform plan
-```
-
-**Deploy after reviewing the preview**
-
-```bash
-# Bicep
-az deployment sub create \
-  --subscription "$AZURE_SUBSCRIPTION_ID" \
-  --name "crud-$WORKSHOP_PREFIX" \
-  --location "$AZURE_LOCATION" \
-  --template-file labs/01-crud-integration/iac/bicep/main.bicep \
-  --parameters prefix="$WORKSHOP_PREFIX" location="$AZURE_LOCATION" \
-    apiManagementMode="$API_MANAGEMENT_MODE"
-
-# Terraform
-terraform -chdir=labs/01-crud-integration/iac/terraform apply
-```
-
-**Done when:** Azure contains the complete backend infrastructure foundation,
-the Logic App site has both identities but no workflow definition, Cosmos local
-authentication and public network access are disabled, the Cosmos private
-endpoint is approved with a private DNS record, and no secret appears in
-parameters, variables, or outputs.
+**Done when:** Lab 0 readiness checks pass and both the site and Cosmos
+references resolve without taking ownership.
 
 ## Task 2: implement the CRUD workflow
 
@@ -220,7 +185,7 @@ without changing the hosting or data foundation.
 **Prompt Copilot**
 
 ```text
-Use the deployed Lab 1 infrastructure foundation to add the HTTP-triggered CRUD
+Use the deployed Lab 0 infrastructure foundation to add the HTTP-triggered CRUD
 workflow. Add only the workflow definition and the configuration needed to
 route the starter app's canonical request by operationId and access the
 existing Cosmos items container through the Logic App system identity.
@@ -249,18 +214,42 @@ does not expose account keys or the callback URL. For Terraform, confirm that
 workflow artifacts use `deployWorkflowArtifacts` rather than a child-resource
 `PUT`.
 
-**Validate:** repeat the format, build or validate, and preview commands from
-Task 1. The preview must add the workflow behavior without replacing the
-deployed hosting or data foundation.
+Preserve other labs' workflow files and app-level `connections.json` entries.
+Add only this lab's connection; never replace the site's full app settings or
+erase another lab's artifacts.
+
+**Validate**
+
+```bash
+# Bicep
+az bicep format --file labs/01-crud-integration/iac/bicep/main.bicep
+az bicep build --file labs/01-crud-integration/iac/bicep/main.bicep --stdout >/dev/null
+az deployment group what-if \
+  --subscription "$AZURE_SUBSCRIPTION_ID" \
+  --resource-group "$FOUNDATION_RESOURCE_GROUP_NAME" \
+  --template-file labs/01-crud-integration/iac/bicep/main.bicep \
+  --parameters prefix="$WORKSHOP_PREFIX" location="$AZURE_LOCATION" \
+    apiManagementMode="$API_MANAGEMENT_MODE"
+
+# Terraform
+terraform -chdir=labs/01-crud-integration/iac/terraform init
+terraform -chdir=labs/01-crud-integration/iac/terraform fmt -check
+terraform -chdir=labs/01-crud-integration/iac/terraform validate
+terraform -chdir=labs/01-crud-integration/iac/terraform plan
+```
+
+The preview must add workflow artifacts without replacing the foundation.
+Artifact deployment actions may not expose workflow-file differences in an ARM
+what-if; inspect the file map as well as the infrastructure preview.
 
 **Deploy after reviewing the preview**
 
 ```bash
 # Bicep
-az deployment sub create \
+az deployment group create \
   --subscription "$AZURE_SUBSCRIPTION_ID" \
   --name "crud-$WORKSHOP_PREFIX" \
-  --location "$AZURE_LOCATION" \
+  --resource-group "$FOUNDATION_RESOURCE_GROUP_NAME" \
   --template-file labs/01-crud-integration/iac/bicep/main.bicep \
   --parameters prefix="$WORKSHOP_PREFIX" location="$AZURE_LOCATION" \
     apiManagementMode="$API_MANAGEMENT_MODE"
@@ -338,26 +327,27 @@ syntax differences.
 
 ## Optional cleanup
 
-**Skip this section if you are continuing to another lab that reuses these
-resources.** Keep the Lab 1 foundation deployed for Lab 2's `existing` mode;
-Lab 3 may reuse it only when its approved design explicitly references it.
+**Skip this section if you are continuing with this CRUD exercise.** Lab 0's
+foundation remains deployed for the entire workshop.
 
 Clean up when you stop or no longer need the resources. Retained resources
 continue to incur charges. At the end of the workshop, remove dependent lab
-resources before deleting this shared foundation.
+resources before following Lab 0 cleanup.
 
 Preview cleanup before approving it:
 
 ```bash
-# Bicep-created resource group
-az group delete --name "<resource-group-name>" --yes --no-wait
+# Bicep: only the individually reviewed Lab 1-owned frontend resource ID
+az resource delete --ids "<static-web-app-resource-id>"
 
 # Terraform
 terraform -chdir=labs/01-crud-integration/iac/terraform destroy
 ```
 
-Confirm the workshop resource group is deleted before moving to another
-subscription.
+Explicitly delete only the `items-crud` workflow and its unused connection
+entry from the shared site; destroying an artifact-deployment action's Terraform
+state does not necessarily remove uploaded files. Preserve Lab 2/3 artifacts.
+Confirm that Lab 0's site, Cosmos, roles, and monitoring remain untouched.
 
 ## Stretch goals
 

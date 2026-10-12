@@ -25,7 +25,7 @@ destructive deployment, or use of the wrong Azure subscription.
 
 ## Before learners arrive
 
-1. Complete [`prerequisites.md`](prerequisites.md) using the same workstation
+1. Complete [Lab 0](../labs/00-foundation/README.md) using the same workstation
    constraints as learners.
 2. Read `AGENTS.md`, `.github/copilot-instructions.md`, all lab READMEs, all
    committed contracts, and
@@ -43,7 +43,8 @@ destructive deployment, or use of the wrong Azure subscription.
 6. Run:
 
    ```bash
-   ./scripts/check-prereqs.sh
+   ./scripts/check-prereqs.sh bicep
+   # or: ./scripts/check-prereqs.sh terraform
    ./scripts/validate-workshop.sh
    ```
 
@@ -99,15 +100,28 @@ for the lab workload: Cosmos DB in Lab 1 and the assigned Service Bus
 subscription in Lab 2. Lab 3 derives workload roles from the approved design
 and keeps each role at the narrowest individual resource scope.
 
-For Lab 2, learners explicitly create a new shared hosting foundation or
-reference the compatible foundation from Lab 1. Existing resources remain
-owned by Lab 1 and must not appear as managed or deleted in the Lab 2 preview.
-In either mode, learners create three separate Lab 2-owned Logic App Standard
-workflows in one selected Logic App Standard site. The site's system identity
-receives three separate subscription-scoped roles; do not allow topic- or
-namespace-scoped receiver access. In existing mode, Lab 2 may add child
-workflows and its own role assignments but must not manage the Lab 1 parent
-site.
+Lab 0 owns the single shared foundation, including Cosmos and the Service Bus
+namespace. Ask students about an existing parent group; only a blank answer
+creates a workshop group. Existing group metadata and unrelated resources must
+stay untouched, including during cleanup. Verify the explicit handoff before
+later labs; never infer a new-foundation mode or silently migrate learner state.
+
+Lab 2 adds three independently deployable workflows in that site and three
+subscription-scoped receiver grants. Stop namespace/topic receiver grants.
+The publishing student separately needs topic-scoped sender access with Entra
+authentication. Preserve other labs' app-level connection entries and workflows;
+do not let a later deployment replace the shared parent's settings.
+
+## Lab 0 coaching map
+
+- Compare the provided Bicep and Terraform graphs, not generated foundations.
+- Check WS1 quota before previewing; account for five private endpoints and
+  monitoring costs.
+- Review both identity boundaries and the container-scoped Cosmos grant.
+- Confirm Service Bus Standard uses a public endpoint with SAS disabled;
+  Premium is the production private-networking alternative.
+- Run `bash scripts/verify-foundation.sh foundation.deployment.json`.
+- Confirm the handoff, parent-group selection, and cleanup ownership are saved.
 
 ## Lab 1 coaching map
 
@@ -131,7 +145,7 @@ site.
 **Useful hint**
 
 > Compare the preview with the target resource graph one resource type at a
-> time. Do not add the data or workflow checkpoint yet.
+> time. The shared foundation should have no writes. Add no workflow yet.
 
 ### Checkpoint 2: data and workflow
 
@@ -246,19 +260,18 @@ from the exact response body.
 
 ## Lab 2 coaching map
 
-### Checkpoint 0: shared hosting foundation
+### Checkpoint 0: reference Lab 0
 
 **Learner should explain**
 
-- Why `new` is required when Lab 1 was skipped or cleaned up.
-- Which deployed Lab 1 resources are referenced by `existing`.
-- Which resources Lab 2 owns and what its cleanup is allowed to delete.
+- Why Lab 0 is mandatory even if Lab 1 was skipped.
+- Which deployed Lab 0 resources are referenced through the handoff.
+- Why Lab 2 cleanup cannot delete the parent group, namespace, or site.
 
 **Coach checks**
 
-- The mode is explicit rather than inferred from repository or Azure state.
-- Existing mode references a compatible integration subnet, host storage,
-  host-storage identity, WS1 plan, and observability foundation.
+- Explicit references identify the integration subnet, host storage,
+  host identity, WS1 plan, monitoring, site, and namespace.
 - The preview never modifies, imports, retags, replaces, or deletes reused
   resources.
 
@@ -425,9 +438,9 @@ Use the least-direct intervention that gets the learner moving:
 6. Demonstrate the smallest correction only after the learner understands the
    cause.
 
-Avoid pasting complete finished infrastructure into a learner's branch. The
-goal is to teach a repeatable engineering loop, not merely reach a green
-deployment.
+Lab 0 deliberately provides finished foundation infrastructure. In later labs,
+avoid pasting a complete integration into a learner's branch. The goal is to
+teach a repeatable engineering loop, not merely reach a green deployment.
 
 ## Escalation and safety
 
@@ -452,7 +465,9 @@ Before a learner leaves, confirm:
 
 - the deletion or destroy preview targets only workshop resources;
 - existing API Management mode removes only workshop-owned child resources;
-- the lab resource group is gone;
+- lab-owned additions and artifacts are gone before Lab 0 cleanup;
+- an existing parent group and unrelated resources remain; a Lab 0-created
+  group is deleted only after reviewing all remaining contents;
 - no Terraform state or plan file was committed;
 - no callback URL or local configuration was committed; and
 - no deliberately failing workflow remains deployed.

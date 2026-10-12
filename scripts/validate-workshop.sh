@@ -12,6 +12,17 @@ required_files=(
   "docs/logic-app-standard-baseline.md"
   "docs/prerequisites.md"
   "index.md"
+  "labs/00-foundation/README.md"
+  "labs/00-foundation/implementation-requirements.md"
+  "labs/00-foundation/iac/bicep/main.bicep"
+  "labs/00-foundation/iac/bicep/resources.bicep"
+  "labs/00-foundation/iac/terraform/main.tf"
+  "labs/00-foundation/iac/terraform/variables.tf"
+  "labs/00-foundation/iac/terraform/providers.tf"
+  "labs/00-foundation/iac/terraform/versions.tf"
+  "labs/00-foundation/iac/terraform/outputs.tf"
+  "scripts/verify-foundation.sh"
+  "scripts/test_verify_foundation.py"
   "labs/01-crud-integration/implementation-requirements.md"
   "labs/01-crud-integration/contracts/openapi.yaml"
   "labs/02-topic-fanout/implementation-requirements.md"
@@ -31,6 +42,8 @@ done
 
 jq empty labs/02-topic-fanout/contracts/order-created.schema.json
 jq empty labs/02-topic-fanout/contracts/sample-order-created.json
+bash -n scripts/verify-foundation.sh
+PYTHONDONTWRITEBYTECODE=1 python scripts/test_verify_foundation.py
 PYTHONPYCACHEPREFIX="${TMPDIR:-/tmp}/level-up-azure-integration-services-pycache" \
   python -m py_compile scripts/extract-integration-workbook.py
 

@@ -25,14 +25,13 @@ ladder, troubleshooting guidance, and cleanup sign-off criteria.
 
 | Time | Activity | Teaching point |
 |---:|---|---|
-| 0:00 | Welcome and architecture overview | Copilot is a collaborator, not an authority |
-| 0:15 | Context and prompt demonstration | Repository instructions beat repeated prose |
-| 0:30 | Lab 1 | Contract-first synchronous integration |
-| 2:00 | Break | Compare direct and APIM modes |
-| 2:15 | Lab 2 | Asynchronous fan-out and independent failure |
-| 3:30 | Cross-track review | Compare Bicep and Terraform resource graphs |
-| 3:45 | Optional Lab 3 extension | Design from workbook evidence |
-| 4:45 | Cleanup and discussion | Cost, security, and production hardening |
+| 0:00 | Lab 0 and architecture overview | Deploy the reviewed shared foundation, not generated infrastructure |
+| 0:45 | Lab 1 and context demonstration | Contract-first synchronous integration |
+| 2:15 | Break | Compare direct and APIM modes |
+| 2:30 | Lab 2 | Asynchronous fan-out and independent failure |
+| 3:45 | Cross-track review | Compare Bicep and Terraform resource graphs |
+| 4:00 | Cleanup and discussion | Remove lab additions before the shared foundation |
+| Optional extension | Lab 3, 90-150 minutes | Design from workbook evidence |
 
 ## Pairing model
 
@@ -42,9 +41,19 @@ behavior should match even when implementation details differ.
 
 ## Checkpoints
 
+**Lab 0**
+
+- Ask each student whether they have an existing parent resource group.
+- Review the committed Bicep or Terraform preview; an existing group and its
+  unrelated resources must remain untouched.
+- Check WS1 quota, all five private endpoints/DNS paths, keyless identities,
+  Cosmos RBAC, Service Bus Standard/Entra auth, and wired monitoring.
+- Save `foundation.deployment.json` and make cleanup ownership explicit.
+- Do not deploy both tracks or silently migrate earlier learner state.
+
 **Lab 1**
 
-- The OpenAPI contract is valid before infrastructure work begins.
+- The OpenAPI contract is valid and Lab 0 references resolve without writes.
 - The selected API mode is explicit: direct, new APIM, or existing APIM.
 - APIM modes expose operations without revealing the Logic App callback URL.
 - The Logic App identity, not a shared key, accesses Cosmos DB.
@@ -52,7 +61,8 @@ behavior should match even when implementation details differ.
 
 **Lab 2**
 
-- The shared hosting foundation mode and ownership boundary are explicit.
+- Lab 0's site and namespace are existing references, not Lab 2-owned parents.
+- The publishing student has topic-scoped Entra Data Sender access.
 - One topic has three subscriptions with explicit filters.
 - Each workflow uses its own subscription.
 - A workflow failure does not prevent the other subscriptions from processing.

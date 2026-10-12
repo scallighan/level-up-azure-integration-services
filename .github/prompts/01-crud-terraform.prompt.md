@@ -10,6 +10,11 @@ Read `AGENTS.md`, `.github/copilot-instructions.md`,
 `labs/01-crud-integration/implementation-requirements.md`, and
 `labs/01-crud-integration/contracts/openapi.yaml`.
 
+Also read `labs/00-foundation/implementation-requirements.md` and the local
+`foundation.deployment.json`. Require completed Lab 0. Do not infer a fallback
+hosting deployment or overwrite an older learner implementation/state; resolve
+any migration separately before changing existing files.
+
 Initialize only `labs/01-crud-integration/iac/terraform/` for the Terraform
 learner path. Before editing, show this starter structure and briefly explain
 each file:
@@ -37,6 +42,10 @@ Create the path-local `AGENTS.md` with concise instructions that:
   implementation requirements, OpenAPI contract, Logic App Standard baseline,
   and matching Terraform reference before changes;
 - keep each learner request bounded to the named lab task;
+- reference Lab 0 using data sources or explicit IDs from its non-secret
+  handoff, never imports, remote state, or managed foundation resource blocks;
+- preserve shared-resource tags, parent site/group ownership, other labs'
+  workflow artifacts, and app-level connection entries;
 - preserve the host-storage user-assigned identity and Cosmos workload
   system-assigned identity boundary;
 - use the ignored root `.env` for stable, non-secret learner inputs, map them to
