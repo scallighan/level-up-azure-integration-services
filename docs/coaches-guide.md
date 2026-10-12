@@ -43,8 +43,8 @@ destructive deployment, or use of the wrong Azure subscription.
 6. Run:
 
    ```bash
-   ./scripts/check-prereqs.sh bicep
-   # or: ./scripts/check-prereqs.sh terraform
+   ./scripts/check-prereqs.sh bicep "$AZURE_LOCATION"
+   # or: ./scripts/check-prereqs.sh terraform "$AZURE_LOCATION"
    ./scripts/validate-workshop.sh
    ```
 

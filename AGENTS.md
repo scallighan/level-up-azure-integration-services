@@ -3,6 +3,8 @@
 This repository is a half-day workshop about building Azure Integration
 Services with GitHub Copilot. Favor clear teaching code over abstraction.
 
+Keep things clean, clear and concise. 
+
 Before proposing or making a change, read:
 
 1. [`docs/implementation-standards.md`](docs/implementation-standards.md);

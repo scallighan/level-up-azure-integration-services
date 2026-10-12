@@ -2,12 +2,14 @@
 set -euo pipefail
 
 track="${1:-}"
-if [[ "$track" != "bicep" && "$track" != "terraform" ]]; then
-  echo "Usage: $0 <bicep|terraform>" >&2
+location="${2:-}"
+if [[ $# != 2 || ( "$track" != "bicep" && "$track" != "terraform" ) ||
+  ! "$location" =~ ^[a-z][a-z0-9]+$ ]]; then
+  echo "Usage: $0 <bicep|terraform> <azure-region>" >&2
   exit 2
 fi
 
-required=(az gh git jq)
+required=(az jq)
 if [[ "$track" == "terraform" ]]; then
   required+=(terraform)
 fi
@@ -24,75 +26,51 @@ if ((${#missing[@]})); then
   exit 1
 fi
 
-suggest_ws1_region() {
-  local api_version="2026-07-15"
-  local display_name region usage current limit
-  local -a catalog_regions=()
-  local -a preferred_regions=(
-    eastus2
-    centralus
-    eastus
-    northcentralus
-    southcentralus
-    westcentralus
-    westus2
-    westus3
-    westus
-    canadacentral
-    canadaeast
-    northeurope
-    westeurope
-    uksouth
-    ukwest
-  )
-  declare -A supported_regions=()
-  declare -A checked_regions=()
-
-  while IFS= read -r display_name; do
-    [[ "$display_name" == *"(Stage)"* ]] && continue
-    region="$(tr '[:upper:]' '[:lower:]' <<<"$display_name" | tr -d ' ')"
-    catalog_regions+=("$region")
-    supported_regions["$region"]=1
-  done < <(az appservice list-locations --sku WS1 --query '[].name' --output tsv)
-
-  for region in "${preferred_regions[@]}" "${catalog_regions[@]}"; do
-    [[ -n "${supported_regions[$region]:-}" ]] || continue
-    [[ -z "${checked_regions[$region]:-}" ]] || continue
-    checked_regions["$region"]=1
-
-    usage="$(
-      az rest \
-        --method get \
-        --url "https://management.azure.com/subscriptions/{subscriptionId}/providers/Microsoft.Web/locations/$region/usages?api-version=$api_version" \
-        --query "value[?name.value == 'WS1'].[currentValue, limit] | [0]" \
-        --output tsv 2>/dev/null || true
-    )"
-    read -r current limit <<<"$usage"
-
-    if [[ "$current" =~ ^[0-9]+$ && "$limit" =~ ^[0-9]+$ ]] &&
-      ((limit - current >= 1)); then
-      echo "Suggested WS1 region: $region ($((limit - current)) worker available)."
-      return
-    fi
-  done
-
-  echo "No catalog-supported region with available WS1 quota was found." >&2
-  echo "Request at least 1 WS1 VM from App Service (Microsoft.Web) quotas." >&2
-  return 1
-}
-
 az account show --query '{subscription:name, tenant:tenantId}' --output table
-ws1_capacity_available=true
-if ! suggest_ws1_region; then
-  ws1_capacity_available=false
-fi
-gh auth status
 if [[ "$track" == "bicep" ]]; then
   az bicep version
+else
+  version="$(terraform version -json | jq -r .terraform_version)"
+  if [[ "$version" != "1.14.4" ]]; then
+    echo "This workshop requires Terraform 1.14.4; found $version." >&2
+    exit 1
+  fi
 fi
 
-if [[ "$ws1_capacity_available" != true ]]; then
+locations="$(az appservice list-locations --sku WS1 --query '[].name' --output tsv)"
+supported=false
+while IFS= read -r display_name; do
+  [[ "$display_name" == *"(Stage)"* ]] && continue
+  region="$(tr '[:upper:]' '[:lower:]' <<<"$display_name" | tr -d ' ')"
+  if [[ "$region" == "$location" ]]; then
+    supported=true
+    break
+  fi
+done <<<"$locations"
+
+if [[ "$supported" != true ]]; then
+  echo "Windows WS1 is not available in $location. Choose a region from:" >&2
+  printf '%s\n' "$locations" >&2
   exit 1
 fi
 
-echo "Prerequisites are available for the $track track."
+if ! usage="$(az rest --method get \
+  --url "https://management.azure.com/subscriptions/{subscriptionId}/providers/Microsoft.Web/locations/$location/usages?api-version=2026-07-15" \
+  --query "value[?name.value == 'WS1'] | [0].{current:currentValue,limit:limit}" --output json)"; then
+  echo "Unable to check WS1 quota in $location. Resolve the Azure error above." >&2
+  exit 1
+fi
+if ! quota="$(jq -er '
+  select(type == "object") | [.current, .limit] |
+  select(all(.[]; type == "number" and . >= 0 and floor == .)) | @tsv
+' <<<"$usage")"; then
+  echo "Azure did not return WS1 quota for $location. Confirm App Service quotas before deploying." >&2
+  exit 1
+fi
+read -r current limit <<<"$quota"
+if ((limit - current < 1)); then
+  echo "No WS1 capacity remains in $location. Request at least one WS1 worker or choose another region." >&2
+  exit 1
+fi
+
+echo "Ready for $track in $location: $((limit - current)) WS1 worker(s) available."

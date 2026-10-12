@@ -5,10 +5,8 @@ permalink: /labs/00-foundation/
 
 # Lab 0: Shared Azure foundation
 
-Deploy the shared Azure infrastructure once, then use Copilot to implement the
-integrations in Labs 1-3. Choose **Bicep or Terraform**; both deployments are
-provided and behaviorally equivalent. Do not generate a second foundation in
-later labs.
+Deploy the shared Azure infrastructure once using the provided **Bicep or
+Terraform** code. Later labs reuse it to build integrations.
 
 **Time:** 30-45 minutes plus Azure provisioning and RBAC propagation.
 
@@ -30,59 +28,47 @@ New or existing resource group
 
 The user-assigned identity accesses host storage only. The system-assigned
 identity receives Cosmos data contributor at the `items` container scope.
-Service Bus entities and receiver roles come in Lab 2. Static Web Apps comes
-in Lab 1. No workflows, APIM, SQL, Key Vault, or Document Intelligence are
-created here.
+Workflows, frontend resources, and messaging entities are added in later labs.
 
 **Cost:** WS1, five private endpoints, storage, Cosmos usage, Service Bus
 Standard, and monitoring ingestion/retention are billable. Service Bus Standard
 uses its public endpoint with Entra ID, not Private Link; production private
 networking calls for Premium. No NAT Gateway is required.
 
-## 1. Prepare the workstation and inputs
+## 1. Configure and check Azure access
 
 Use a non-production Azure subscription. You need permission to deploy these
 resources and create role assignments. New-group deployment also needs
 permission to create resource groups. Bicep's subscription entry point needs
 subscription deployment permission even when reusing a group.
 
-Install Git, GitHub CLI, Azure CLI, jq, VS Code with Copilot, and Bicep
-(`az bicep install`) or Terraform **1.14.4**. Sign in:
+From the repository root, use **Bash**, **Azure CLI**, **jq**, and either
+**Bicep** (`az bicep install`) or **Terraform 1.14.4**. No GitHub CLI login,
+editor, or Copilot session is needed for this lab.
 
 ```bash
-gh auth login
-az login
-az account set --subscription "<subscription-id-or-name>"
-az account show --query '{name:name,id:id,tenantId:tenantId}' --output table
-./scripts/check-prereqs.sh bicep
-# or: ./scripts/check-prereqs.sh terraform
-```
-
-The check suggests a WS1 region with available quota. Set that region rather
-than assuming every subscription can deploy WS1 in the sample region.
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env`: set `AZURE_SUBSCRIPTION_ID`, a distinctive `WORKSHOP_PREFIX`
-(3-12 lowercase letters/numbers, starting with a letter), and `AZURE_LOCATION`.
-Leave `API_MANAGEMENT_MODE=none`. Keep this file local and free of credentials.
-
-**Ask the student about the parent group before deploying:**
-
-```bash
+[[ -f .env ]] || cp .env.example .env
 read -r -p "Existing Azure resource group (press Enter to create a workshop group): " EXISTING_RESOURCE_GROUP_NAME
-export EXISTING_RESOURCE_GROUP_NAME
 ```
 
-Copy that answer into the matching `.env` entry, leaving it empty for a new
-group. Then load settings once per terminal:
+Edit only these four inputs in `.env`, using the resource-group answer above:
+
+| Input | Value |
+|---|---|
+| `AZURE_SUBSCRIPTION_ID` | Your subscription ID |
+| `WORKSHOP_PREFIX` | 3-12 lowercase letters/numbers, starting with a letter |
+| `AZURE_LOCATION` | Region identifier, such as `westus` |
+| `EXISTING_RESOURCE_GROUP_NAME` | Existing group name, or empty to create one |
+
+Leave the Terraform mappings unchanged. Ignore the later-lab settings for now.
+Keep `.env` local and free of credentials. Load it and select your subscription:
 
 ```bash
 set -a
 source .env
 set +a
+az login
+az account set --subscription "$AZURE_SUBSCRIPTION_ID"
 
 [[ "$WORKSHOP_PREFIX" =~ ^[a-z][a-z0-9]{2,11}$ ]] || {
   echo "Use a 3-12 character lowercase alphanumeric prefix starting with a letter." >&2
@@ -94,6 +80,18 @@ if [[ -n "$EXISTING_RESOURCE_GROUP_NAME" ]]; then
     --name "$EXISTING_RESOURCE_GROUP_NAME" --query '{name:name,id:id}' -o table || exit 1
 fi
 ```
+
+Check **only your selected track** and region:
+
+```bash
+./scripts/check-prereqs.sh bicep "$AZURE_LOCATION"
+# Or, for Terraform:
+./scripts/check-prereqs.sh terraform "$AZURE_LOCATION"
+```
+
+The check verifies the deployment tools, Azure sign-in, and available WS1
+quota in that region. If quota is unavailable, choose another region or request
+quota, update `.env`, and repeat the check.
 
 An existing group must exist in the selected subscription. Its tags, metadata,
 and unrelated resources remain untouched. Check for name collisions, including
@@ -111,16 +109,6 @@ done
 ```
 
 ## 2. Review and preview your selected track
-
-Ask Copilot to explain the committed graph, not to regenerate it:
-
-```text
-Read Lab 0's README, implementation requirements, selected IaC track, and
-the Logic App Standard baseline. Ask whether I have an existing resource group;
-if yes, require its name, otherwise use the new-group path. Explain ownership,
-identity scopes, costs, and non-secret outputs. Help me review the deployment
-preview. Do not deploy, recreate the foundation, or weaken networking or auth.
-```
 
 **Bicep**
 
@@ -141,7 +129,6 @@ az deployment sub what-if \
 terraform -chdir=labs/00-foundation/iac/terraform init
 terraform -chdir=labs/00-foundation/iac/terraform fmt -check
 terraform -chdir=labs/00-foundation/iac/terraform validate
-terraform -chdir=labs/00-foundation/iac/terraform test
 terraform -chdir=labs/00-foundation/iac/terraform plan
 ```
 
@@ -158,8 +145,9 @@ identities are present, and the output contains no secrets.
 
 Only after reviewing the preview, run your selected track:
 
+**Bicep**
+
 ```bash
-# Bicep
 az deployment sub create \
   --subscription "$AZURE_SUBSCRIPTION_ID" --name "foundation-$WORKSHOP_PREFIX" \
   --location "$AZURE_LOCATION" \
@@ -170,8 +158,11 @@ az deployment sub create \
 az deployment sub show \
   --subscription "$AZURE_SUBSCRIPTION_ID" --name "foundation-$WORKSHOP_PREFIX" \
   --query properties.outputs.foundation.value -o json > foundation.deployment.json
+```
 
-# Terraform
+**Terraform**
+
+```bash
 terraform -chdir=labs/00-foundation/iac/terraform apply
 terraform -chdir=labs/00-foundation/iac/terraform output -json foundation \
   > foundation.deployment.json
@@ -220,8 +211,9 @@ az resource list --subscription "$AZURE_SUBSCRIPTION_ID" \
   --query '[].{id:id,lab:tags.lab,workshop:tags.workshop}' -o table
 ```
 
-Check `resource_group_created` in the saved handoff. If Lab 0 **created** the group and all remaining contents belong to the
-workshop, delete that exact group with `az group delete --name "<reviewed-group>"`
+Check `resource_group_created` in the saved handoff. If Lab 0 **created** the
+group and all remaining contents belong to the workshop, delete that exact
+group with `az group delete --name "<reviewed-group>"`
 after confirmation. If the group was **existing**, never delete it. Delete
 only individually reviewed Lab 0 resource IDs: site, private endpoints, private
 DNS VNet links and zones, VNet, storage/host identity, plan, Cosmos account,

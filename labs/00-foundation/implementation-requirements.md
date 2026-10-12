@@ -4,6 +4,12 @@ Lab 0 is mandatory before implementing Labs 1-3. Its committed Bicep and
 Terraform deployments create the same shared infrastructure. Learners configure,
 review, and deploy this code rather than asking Copilot to regenerate it.
 
+Keep the learner setup Azure-only: Bash, Azure CLI, jq, and the selected IaC
+tool. Require only subscription, prefix, region, and optional existing group.
+Check WS1 quota in that selected region, not a global region scan. GitHub CLI
+authentication, an editor/Copilot session, frontend settings, and APIM inputs
+are not prerequisites for this deployment.
+
 Read this file with the [README](README.md), [implementation standards](../../docs/implementation-standards.md),
 and [Logic App Standard baseline](../../docs/logic-app-standard-baseline.md).
 The Lab 1 OpenAPI contract defines `workshop/items` with partition key `/id`;
