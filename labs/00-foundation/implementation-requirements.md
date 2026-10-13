@@ -106,7 +106,7 @@ The single system identity intentionally accumulates workload grants across
 labs. This is a workshop cost tradeoff, not per-workflow identity isolation.
 The host-storage identity must never receive Cosmos or Service Bus roles.
 
-## Validation and cleanup
+## Validation
 
 Format/build/what-if Bicep; fmt/validate/plan Terraform. Preview both new-group
 and existing-group paths. Existing mode must contain no resource-group writes.
@@ -115,7 +115,40 @@ DNS records/links, disabled storage/Cosmos public access and local auth,
 Cosmos role scope, Service Bus SKU/auth, and monitoring wiring.
 Later labs prove actual data access and telemetry with workflow tests.
 
-Remove later-lab artifacts and roles before destroying Lab 0. In an existing
-group, remove only Lab 0-owned resources, never the group or unrelated contents.
-In a newly created group, delete the group only after reviewing its contents
-and confirming that all remaining resources belong to the workshop.
+## Cleanup
+
+Keep this foundation for the whole workshop. First remove Lab 3, Lab 2, and
+Lab 1 artifacts and their owned resources/roles. Shared resources remain tagged
+`lab=00` throughout; do not change their ownership.
+
+For manual cleanup, first load `.env` with exported variables:
+
+```bash
+set -a; source .env; set +a
+```
+
+For Terraform, review `terraform -chdir=labs/00-foundation/iac/terraform plan -destroy`,
+then run `terraform -chdir=labs/00-foundation/iac/terraform destroy`.
+In existing-group mode the group is a data source and cannot be deleted by
+this deployment. In new-group mode the provider refuses group deletion while
+unmanaged resources remain; investigate rather than disabling this safeguard.
+
+For Bicep, there is no Terraform-style destroy state. List and review the
+resources in the handoff's group:
+
+```bash
+az resource list --subscription "$AZURE_SUBSCRIPTION_ID" \
+  --resource-group "$(jq -r .resource_group_name foundation.deployment.json)" \
+  --query '[].{id:id,lab:tags.lab,workshop:tags.workshop}' -o table
+```
+
+Check `resource_group_created` in the saved handoff. If Lab 0 **created** the
+group and all remaining contents belong to the workshop, delete that exact
+group with `az group delete --name "<reviewed-group>"` after confirmation.
+If the group was **existing**, never delete it. Delete only individually
+reviewed Lab 0 resource IDs: site, private endpoints, private DNS VNet links
+and zones, VNet, storage/host identity, plan, Cosmos account, Service Bus
+namespace, Application Insights, and workspace, in dependency order.
+Use `az resource delete --ids "<reviewed-resource-id>"`; remove DNS links
+before their VNet/zones. Parent service deletion removes its children and
+scoped grants. Leave unrelated resources and group metadata untouched.
