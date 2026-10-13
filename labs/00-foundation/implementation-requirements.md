@@ -10,6 +10,12 @@ Check WS1 quota in that selected region, not a global region scan. GitHub CLI
 authentication, an editor/Copilot session, frontend settings, and APIM inputs
 are not prerequisites for this deployment.
 
+Keep setup, preview, and deployment commands in `scripts/foundation.sh`;
+the README invokes its actions rather than duplicating shell logic. Setup
+prompts for the four inputs, preserves later-lab `.env` settings, checks access
+and quota, and registers providers. Preview never deploys. Deployment preserves
+Terraform confirmation and saves the non-secret handoff only after success.
+
 Read this file with the [README](README.md), [implementation standards](../../docs/implementation-standards.md),
 and [Logic App Standard baseline](../../docs/logic-app-standard-baseline.md).
 The Lab 1 OpenAPI contract defines `workshop/items` with partition key `/id`;

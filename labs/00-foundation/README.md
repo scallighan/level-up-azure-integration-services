@@ -46,12 +46,15 @@ From the repository root, use **Bash**, **Azure CLI**, **jq**, and either
 **Bicep** (`az bicep install`) or **Terraform 1.14.4**. No GitHub CLI login,
 editor, or Copilot session is needed for this lab.
 
+Run setup for **only your selected track**:
+
 ```bash
-[[ -f .env ]] || cp .env.example .env
-read -r -p "Existing Azure resource group (press Enter to create a workshop group): " EXISTING_RESOURCE_GROUP_NAME
+bash scripts/foundation.sh setup bicep
+# Or: bash scripts/foundation.sh setup terraform
 ```
 
-Edit only these four inputs in `.env`, using the resource-group answer above:
+The helper prompts for four inputs and saves them in ignored root `.env`,
+preserving later-lab settings and using existing values as defaults:
 
 | Input | Value |
 |---|---|
@@ -60,81 +63,27 @@ Edit only these four inputs in `.env`, using the resource-group answer above:
 | `AZURE_LOCATION` | Region identifier, such as `westus` |
 | `EXISTING_RESOURCE_GROUP_NAME` | Existing group name, or empty to create one |
 
-Leave the Terraform mappings unchanged. Ignore the later-lab settings for now.
-Keep `.env` local and free of credentials. Load it and select your subscription:
-
-```bash
-set -a
-source .env
-set +a
-az login
-az account set --subscription "$AZURE_SUBSCRIPTION_ID"
-
-[[ "$WORKSHOP_PREFIX" =~ ^[a-z][a-z0-9]{2,11}$ ]] || {
-  echo "Use a 3-12 character lowercase alphanumeric prefix starting with a letter." >&2
-  exit 1
-}
-
-if [[ -n "$EXISTING_RESOURCE_GROUP_NAME" ]]; then
-  az group show --subscription "$AZURE_SUBSCRIPTION_ID" \
-    --name "$EXISTING_RESOURCE_GROUP_NAME" --query '{name:name,id:id}' -o table || exit 1
-fi
-```
-
-Check **only your selected track** and region:
-
-```bash
-./scripts/check-prereqs.sh bicep "$AZURE_LOCATION"
-# Or, for Terraform:
-./scripts/check-prereqs.sh terraform "$AZURE_LOCATION"
-```
-
-The check verifies the deployment tools, Azure sign-in, and available WS1
-quota in that region. If quota is unavailable, choose another region or request
-quota, update `.env`, and repeat the check.
+Setup signs in to Azure if needed, selects the subscription, validates an
+existing group, runs `check-prereqs.sh` for the selected track/region, and
+registers the required resource providers. Registration may require subscription
+permissions. If WS1 quota is unavailable, choose another region or request
+quota and rerun setup. Keep `.env` local and free of credentials.
 
 An existing group must exist in the selected subscription. Its tags, metadata,
 and unrelated resources remain untouched. Check for name collisions, including
 the fixed private DNS zones; do not share one group across multiple foundations.
 
-Register required providers (registration may require subscription permissions):
-
-```bash
-for provider in Microsoft.Network Microsoft.Storage Microsoft.ManagedIdentity \
-  Microsoft.Web Microsoft.DocumentDB Microsoft.ServiceBus Microsoft.Insights \
-  Microsoft.OperationalInsights; do
-  az provider register --subscription "$AZURE_SUBSCRIPTION_ID" \
-    --namespace "$provider" --wait
-done
-```
-
 ## 2. Review and preview your selected track
 
-**Bicep**
-
 ```bash
-az bicep format --file labs/00-foundation/iac/bicep/main.bicep
-az bicep format --file labs/00-foundation/iac/bicep/resources.bicep
-az bicep build --file labs/00-foundation/iac/bicep/main.bicep --stdout >/dev/null
-az deployment sub what-if \
-  --subscription "$AZURE_SUBSCRIPTION_ID" --location "$AZURE_LOCATION" \
-  --template-file labs/00-foundation/iac/bicep/main.bicep \
-  --parameters prefix="$WORKSHOP_PREFIX" location="$AZURE_LOCATION" \
-    existingResourceGroupName="$EXISTING_RESOURCE_GROUP_NAME"
+bash scripts/foundation.sh preview bicep
+# Or: bash scripts/foundation.sh preview terraform
 ```
 
-**Terraform**
-
-```bash
-terraform -chdir=labs/00-foundation/iac/terraform init
-terraform -chdir=labs/00-foundation/iac/terraform fmt -check
-terraform -chdir=labs/00-foundation/iac/terraform validate
-terraform -chdir=labs/00-foundation/iac/terraform plan
-```
-
-Terraform reads the exported `TF_VAR_*` values in `.env`. Keep its local state
-and plan files untracked. Do not change tracks after deploying, import resources
-into another lab's state, or apply both tracks to the same group.
+The helper loads `.env`, formats/builds Bicep and runs what-if, or initializes
+Terraform and runs fmt/validate/plan. Keep Terraform state and plan files
+untracked. Do not change tracks after deploying, import resources into another
+lab's state, or apply both tracks to the same group.
 
 **Review gate:** the preview creates only the graph above. Existing-group mode
 does not create, update, retag, or delete the resource group. No unrelated
@@ -145,33 +94,18 @@ identities are present, and the output contains no secrets.
 
 Only after reviewing the preview, run your selected track:
 
-**Bicep**
-
 ```bash
-az deployment sub create \
-  --subscription "$AZURE_SUBSCRIPTION_ID" --name "foundation-$WORKSHOP_PREFIX" \
-  --location "$AZURE_LOCATION" \
-  --template-file labs/00-foundation/iac/bicep/main.bicep \
-  --parameters prefix="$WORKSHOP_PREFIX" location="$AZURE_LOCATION" \
-    existingResourceGroupName="$EXISTING_RESOURCE_GROUP_NAME" \
-  --output none
-az deployment sub show \
-  --subscription "$AZURE_SUBSCRIPTION_ID" --name "foundation-$WORKSHOP_PREFIX" \
-  --query properties.outputs.foundation.value -o json > foundation.deployment.json
+bash scripts/foundation.sh deploy bicep
+# Or: bash scripts/foundation.sh deploy terraform
 ```
 
-**Terraform**
-
-```bash
-terraform -chdir=labs/00-foundation/iac/terraform apply
-terraform -chdir=labs/00-foundation/iac/terraform output -json foundation \
-  > foundation.deployment.json
-```
-
-Run **only one** of these paths. `foundation.deployment.json` is ignored and
-contains only the explicit non-secret references needed by later labs.
+The helper deploys the selected track and saves `foundation.deployment.json`.
+Terraform still asks for apply confirmation. Run **only one** of these paths.
+The handoff is ignored and contains only the explicit non-secret references
+needed by later labs.
 Copy its `resource_group_name` to `FOUNDATION_RESOURCE_GROUP_NAME` in `.env`,
-then source `.env` again. Keep the group selection and input values stable.
+then load `.env` when starting later labs. Keep the group selection and input
+values stable; helpers load `.env` themselves.
 
 ## 4. Verify readiness
 
@@ -196,6 +130,12 @@ Keep this foundation for the whole workshop. First remove Lab 3, Lab 2, and
 Lab 1 artifacts and their owned resources/roles. Shared resources remain tagged
 `lab=00` throughout; do not change their ownership.
 
+For manual cleanup, first load `.env` with exported variables:
+
+```bash
+set -a; source .env; set +a
+```
+
 For Terraform, review `terraform -chdir=labs/00-foundation/iac/terraform plan -destroy`,
 then run `terraform -chdir=labs/00-foundation/iac/terraform destroy`.
 In existing-group mode the group is a data source and cannot be deleted by
@@ -207,7 +147,7 @@ resources in the handoff's group:
 
 ```bash
 az resource list --subscription "$AZURE_SUBSCRIPTION_ID" \
-  --resource-group "$FOUNDATION_RESOURCE_GROUP_NAME" \
+  --resource-group "$(jq -r .resource_group_name foundation.deployment.json)" \
   --query '[].{id:id,lab:tags.lab,workshop:tags.workshop}' -o table
 ```
 
