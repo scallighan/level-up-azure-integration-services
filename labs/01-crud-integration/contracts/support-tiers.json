@@ -1,0 +1,20 @@
+[
+  {
+    "id": "lab01-support-basic",
+    "supportTier": "basic",
+    "displayName": "Basic",
+    "responseTimeHours": 48
+  },
+  {
+    "id": "lab01-support-standard",
+    "supportTier": "standard",
+    "displayName": "Standard",
+    "responseTimeHours": 8
+  },
+  {
+    "id": "lab01-support-priority",
+    "supportTier": "priority",
+    "displayName": "Priority",
+    "responseTimeHours": 1
+  }
+]
