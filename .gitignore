@@ -57,4 +57,7 @@ _site/
 .jekyll-cache/
 .sass-cache/
 
+# Python bytecode caches
+__pycache__/
+
 *.xlsx

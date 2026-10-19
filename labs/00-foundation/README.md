@@ -25,9 +25,16 @@ WS1, private endpoints, storage, Cosmos, Service Bus, and monitoring are billabl
 
 From the repository root, choose one track:
 
+### Bicep
+
 ```bash
 ./scripts/foundation.sh setup bicep
-# Or: ./scripts/foundation.sh setup terraform
+```
+
+### Terraform
+
+```bash
+./scripts/foundation.sh setup terraform
 ```
 
 Enter your subscription, prefix, region, and optional existing resource group.
@@ -36,9 +43,16 @@ Setup saves `.env`, checks tools/access/quota, and registers providers.
 
 ## 2. Preview
 
+### Bicep
+
 ```bash
 ./scripts/foundation.sh preview bicep
-# Or: ./scripts/foundation.sh preview terraform
+```
+
+### Terraform
+
+```bash
+./scripts/foundation.sh preview terraform
 ```
 
 Review the changes before deploying. Only the foundation may be created;
@@ -46,9 +60,16 @@ existing group metadata and unrelated resources must remain untouched.
 
 ## 3. Deploy
 
+### Bicep
+
 ```bash
 ./scripts/foundation.sh deploy bicep
-# Or: ./scripts/foundation.sh deploy terraform
+```
+
+### Terraform
+
+```bash
+./scripts/foundation.sh deploy terraform
 ```
 
 Keep the same track and inputs throughout the workshop. The helper saves

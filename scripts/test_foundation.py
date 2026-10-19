@@ -135,6 +135,61 @@ class FoundationTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertTrue(any(call["args"][0] == "login" for call in self.commands()))
 
+    def test_setup_persists_missing_keys_for_subsequent_actions(self):
+        for track in ["bicep", "terraform"]:
+            for missing_keys in [
+                {"EXISTING_RESOURCE_GROUP_NAME"},
+                {
+                    "AZURE_SUBSCRIPTION_ID", "WORKSHOP_PREFIX",
+                    "AZURE_LOCATION", "EXISTING_RESOURCE_GROUP_NAME",
+                },
+            ]:
+                with self.subTest(track=track, missing_keys=missing_keys):
+                    self.write_config()
+                    config_path = self.root / ".env"
+                    config_path.write_text("".join(
+                        line for line in config_path.read_text().splitlines(keepends=True)
+                        if line.split("=", 1)[0] not in missing_keys
+                    ))
+                    result = self.run_helper(
+                        "setup", track, "subscription-demo\ndemo\nwestus\nexisting-group\n"
+                    )
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertIn(
+                        'FOUNDATION_RESOURCE_GROUP_NAME="later-lab-group"',
+                        config_path.read_text(),
+                    )
+                    loaded = subprocess.run(
+                        ["/bin/bash", "-c",
+                         'source .env; printf "%s" "$TF_VAR_existing_resource_group_name"'],
+                        cwd=self.root, capture_output=True, text=True, check=True,
+                    )
+                    self.assertEqual(loaded.stdout, "existing-group")
+                    for action in ["preview", "deploy"]:
+                        self.log.unlink()
+                        result = self.run_helper(action, track)
+                        self.assertEqual(result.returncode, 0, result.stderr)
+                        calls = self.commands()
+                        if track == "bicep":
+                            deployment = next(
+                                call for call in calls
+                                if ("what-if" if action == "preview" else "create")
+                                in call["args"]
+                            )
+                            self.assertIn(
+                                "existingResourceGroupName=existing-group", deployment["args"]
+                            )
+                        else:
+                            deployment = next(
+                                call for call in calls
+                                if ("plan" if action == "preview" else "apply")
+                                in call["args"]
+                            )
+                            self.assertEqual(
+                                deployment["inputs"]["TF_VAR_existing_resource_group_name"],
+                                "existing-group",
+                            )
+
     def test_missing_existing_group_stops_without_creating_or_saving_changes(self):
         self.write_config()
         before = (self.root / ".env").read_text()

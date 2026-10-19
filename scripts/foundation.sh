@@ -92,9 +92,12 @@ if [[ "$action" == "setup" ]]; then
     FOUNDATION_CONFIG_AZURE_LOCATION FOUNDATION_CONFIG_EXISTING_RESOURCE_GROUP_NAME
   temporary_file="$(mktemp "$root/.env.XXXXXX")"
   awk '
+    BEGIN {
+      count = split("AZURE_SUBSCRIPTION_ID WORKSHOP_PREFIX AZURE_LOCATION EXISTING_RESOURCE_GROUP_NAME", keys, " ")
+      for (i = 1; i <= count; i++)
+        print keys[i] "=" ENVIRON["FOUNDATION_CONFIG_" keys[i]]
+    }
     /^(AZURE_SUBSCRIPTION_ID|WORKSHOP_PREFIX|AZURE_LOCATION|EXISTING_RESOURCE_GROUP_NAME)=/ {
-      split($0, parts, "=")
-      print parts[1] "=" ENVIRON["FOUNDATION_CONFIG_" parts[1]]
       next
     }
     { print }
