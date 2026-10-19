@@ -55,7 +55,7 @@ Lab 0 must create a Cosmos DB `Sql` private endpoint in the private-endpoint
 subnet, the `privatelink.documents.azure.com` private DNS zone, a VNet link, and
 a private DNS zone group. Keep Cosmos public network access and local
 authentication disabled. Create this path in the backend foundation before
-deploying the CRUD workflow, and verify the endpoint connection, private A
+deploying the lookup workflow, and verify the endpoint connection, private A
 record, and VNet link after deployment. VNet integration and managed identity
 alone do not make a private Cosmos account reachable.
 

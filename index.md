@@ -25,8 +25,8 @@ contract-first, evidence-driven workflow with GitHub Copilot.
   </article>
   <article class="workshop-card">
     <span class="step-number">1</span>
-    <h3>Lab 1: build a CRUD integration</h3>
-    <p>Add a website and CRUD workflow using Lab 0's Logic App, private Cosmos DB, and monitoring.</p>
+    <h3>Lab 1: look up and transform JSON</h3>
+    <p>Seed Azure region data in Cosmos DB, then generate an HTTP workflow that returns a region's physical location.</p>
     <a href="{{ '/labs/01-crud-integration/' | relative_url }}">Open Lab 1</a>
   </article>
   <article class="workshop-card">
@@ -53,8 +53,8 @@ identity boundaries, and runtime behavior.
 
 | Track | Lab 0 deployment code | Lab 1 prompt | Lab 2 prompt | Lab 3 prompt |
 |---|---|---|---|---|
-| Bicep | [Foundation Bicep](labs/00-foundation/iac/bicep/main.bicep) | [CRUD Bicep prompt](https://github.com/scallighan/level-up-azure-integration-services/blob/main/.github/prompts/01-crud-bicep.prompt.md) | [Fan-out Bicep prompt](https://github.com/scallighan/level-up-azure-integration-services/blob/main/.github/prompts/02-fanout-bicep.prompt.md) | [Workbook Bicep prompt](https://github.com/scallighan/level-up-azure-integration-services/blob/main/.github/prompts/03-workbook-bicep.prompt.md) |
-| Terraform | [Foundation Terraform](labs/00-foundation/iac/terraform/main.tf) | [CRUD Terraform prompt](https://github.com/scallighan/level-up-azure-integration-services/blob/main/.github/prompts/01-crud-terraform.prompt.md) | [Fan-out Terraform prompt](https://github.com/scallighan/level-up-azure-integration-services/blob/main/.github/prompts/02-fanout-terraform.prompt.md) | [Workbook Terraform prompt](https://github.com/scallighan/level-up-azure-integration-services/blob/main/.github/prompts/03-workbook-terraform.prompt.md) |
+| Bicep | [Foundation Bicep](labs/00-foundation/iac/bicep/main.bicep) | [Lookup Bicep starter](https://github.com/scallighan/level-up-azure-integration-services/blob/main/.github/prompts/01-crud-bicep.prompt.md) | [Fan-out Bicep prompt](https://github.com/scallighan/level-up-azure-integration-services/blob/main/.github/prompts/02-fanout-bicep.prompt.md) | [Workbook Bicep prompt](https://github.com/scallighan/level-up-azure-integration-services/blob/main/.github/prompts/03-workbook-bicep.prompt.md) |
+| Terraform | [Foundation Terraform](labs/00-foundation/iac/terraform/main.tf) | [Lookup Terraform starter](https://github.com/scallighan/level-up-azure-integration-services/blob/main/.github/prompts/01-crud-terraform.prompt.md) | [Fan-out Terraform prompt](https://github.com/scallighan/level-up-azure-integration-services/blob/main/.github/prompts/02-fanout-terraform.prompt.md) | [Workbook Terraform prompt](https://github.com/scallighan/level-up-azure-integration-services/blob/main/.github/prompts/03-workbook-terraform.prompt.md) |
 
 > **Cost notice:** The labs create billable resources, including Windows WS1
 > Workflow Standard plans and private endpoints. Use a non-production

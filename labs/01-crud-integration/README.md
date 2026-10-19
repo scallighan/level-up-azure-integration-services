@@ -1,83 +1,102 @@
 ---
-title: "Lab 1: CRUD integration"
+title: "Lab 1: Lookup and transform"
 permalink: /labs/01-crud-integration/
 ---
 
-# Lab 1: CRUD integration
+# Lab 1: Lookup and transform
 
-Connect a small item-management website to an HTTP-triggered Logic App and
-Cosmos DB.
+Use Cosmos DB as a lookup table. Send an Azure region's programmatic name to
+an HTTP-triggered Logic App and return its physical location as JSON.
 
-**Time:** 90 minutes. **Required:** [Lab 0](../00-foundation/README.md).
+**Time:** 60 minutes. **Required:** [Lab 0](../00-foundation/README.md),
+Python 3, and the same Azure CLI session.
 
-![Browser to Static Web Apps to Logic App to private Cosmos DB](../../docs/assets/lab-01-crud-architecture.svg)
+![HTTP request to Logic App to private Cosmos DB and a transformed JSON response](../../docs/assets/lab-01-lookup-architecture.svg)
 
-## Start
+This lab uses public data from Microsoft's
+[Azure regions list](https://learn.microsoft.com/en-us/azure/reliability/regions-list?tabs=all).
+It needs no website or API Management.
 
-Read the [implementation requirements](implementation-requirements.md) and
-[OpenAPI contract](contracts/openapi.yaml).
-Initialize one track with the
-[Bicep starter](https://github.com/scallighan/level-up-azure-integration-services/blob/main/.github/prompts/01-crud-bicep.prompt.md)
-or [Terraform starter](https://github.com/scallighan/level-up-azure-integration-services/blob/main/.github/prompts/01-crud-terraform.prompt.md)
-([how to invoke](../../docs/copilot-working-agreement.md#invoking-workshop-prompt-files)).
-The starter creates files only; use the task prompts below one at a time.
+## Task 1: populate the lookup table
 
-Reuse Lab 0's `.env` and `foundation.deployment.json`. Set
-`FOUNDATION_RESOURCE_GROUP_NAME` from the handoff and keep
-`API_MANAGEMENT_MODE=none` for this direct browser exercise.
+From the repository root, run:
 
 ```bash
-set -a; source .env; set +a
+python3 scripts/seed-region-lookups.py foundation.deployment.json
 ```
 
-For each change, have Copilot explain the resource graph, identities, files,
-and checks before approval. Run Bicep format/build/what-if or Terraform
-fmt/validate/plan; review the preview and artifact files before deploying.
+The script loads [six sample regions](contracts/regions.json) into Lab 0's
+`workshop/items` container. It runs a temporary helper workflow inside the
+existing site so Cosmos DB stays private. It removes the helper afterward
+and leaves the `lab01Cosmos` connection ready for your workflow.
+Rerunning the script updates the same six records.
 
-## Task 1: reference the foundation
+## Task 2: generate the workflow
+
+Give Copilot this prompt. Keep the Bicep or Terraform track you chose in Lab 0.
 
 ```text
-Verify foundation.deployment.json against Azure and configure existing-resource
-references in my selected track. Follow the Lab 1 implementation requirements.
-Do not create, import, or modify any Lab 0 resource or implement later tasks.
+Build the region-lookup HTTP workflow for Lab 1. Follow
+labs/01-crud-integration/implementation-requirements.md and its OpenAPI contract.
+Read programmaticName from the JSON request, look it up in Cosmos DB, and
+return the name and physicalLocation as JSON. Reuse Lab 0 and lab01Cosmos;
+do not hardcode the lookup values. Show the files and checks before deploying.
 ```
 
-Run `bash scripts/verify-foundation.sh foundation.deployment.json`.
-The references must resolve with no managed-resource changes.
+Review the generated workflow and deployment artifacts. Approve deployment
+only to the existing Lab 0 site; there should be no foundation changes.
+The [implementation requirements](implementation-requirements.md) contain
+the connection, lookup, and error-handling details.
 
-## Task 2: add the CRUD workflow
+## Task 3: send a request
 
-```text
-Add only the HTTP-triggered CRUD workflow to the existing site. Route the
-starter app's operationId requests using the OpenAPI contract and access
-workshop/items with the site's system identity. Follow the tested artifact,
-connection, retry, and response requirements. Preserve other labs' artifacts.
+In the Azure portal, open `region-lookup` and copy its HTTP trigger callback
+URL. Paste it into the hidden prompt below. Do not save it in a file or commit it.
+
+```bash
+read -r -s -p "Workflow callback URL: " WORKFLOW_URL
+printf '\n'
+curl --silent --show-error --fail-with-body \
+  --header 'Content-Type: application/json' \
+  --data @labs/01-crud-integration/contracts/sample-request.json \
+  "$WORKFLOW_URL"
+unset WORKFLOW_URL
 ```
 
-Check create, list, get, update, and delete against the contract before adding
-the frontend. Do not change hosting, Cosmos, or existing RBAC.
+Request:
 
-## Task 3: connect the frontend
-
-```text
-Add the Free-tier Static Web App for app/ and restrict workflow CORS, including
-preflight, to its deployed origin. Keep the direct Logic App path; do not add
-API Management or retrieve, output, log, or persist the callback URL.
+```json
+{
+  "programmaticName": "westus"
+}
 ```
 
-Deploy `app/`. Retrieve the callback URL privately in the Azure portal, select
-**Direct Logic App** in the UI, and paste it for this session only.
-Never commit it or save it in browser storage.
+Expected HTTP `200` response:
 
-## Task 4: test end to end
+```json
+{
+  "programmaticName": "westus",
+  "physicalLocation": "California"
+}
+```
 
-Create, list, get, update, and delete an item in the browser. Check contracted
-status codes and bodies, validation/conflict/not-found responses, and the same
-correlation ID in telemetry. Responses must not expose Cosmos system fields.
+## Task 4: check lookup and error behavior
+
+Use the [test cases](contracts/test-cases.json) to check:
+
+| Request | Expected result |
+|---|---|
+| `westus` | `200`, physical location `California` |
+| `westeurope` | `200`, physical location `Netherlands` |
+| `notaregion` | `404`, lookup not found |
+| Missing or non-string `programmaticName` | `400`, invalid request |
+
+Only the six seeded regions are available in this exercise. A valid Azure
+region that is not seeded also returns `404`. Confirm the workflow reads
+Cosmos DB rather than using a hardcoded map, and returns no Cosmos system fields.
 
 ## Cleanup
 
-Remove only Lab 1's frontend, `items-crud` workflow, and unused connection
-entry. Verify uploaded artifacts are removed; Terraform destroy alone may
-leave them behind. Preserve Lab 0 and other labs' resources
-([ownership details](implementation-requirements.md#implementation-sequence)).
+Remove only the `region-lookup` workflow and the `lab01Cosmos` connection entry
+if nothing else uses it. Preserve other workflows, connections, and all Lab 0
+resources. The six sample documents can remain until Lab 0 cleanup.

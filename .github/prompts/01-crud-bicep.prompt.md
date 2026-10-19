@@ -1,5 +1,5 @@
 ---
-description: Create the Lab 1 Bicep starter structure and local instructions
+description: Create the Lab 1 region lookup Bicep starter structure
 ---
 
 Read `AGENTS.md`, `.github/copilot-instructions.md`,
@@ -9,6 +9,8 @@ Read `AGENTS.md`, `.github/copilot-instructions.md`,
 `labs/01-crud-integration/README.md`, and
 `labs/01-crud-integration/implementation-requirements.md`, and
 `labs/01-crud-integration/contracts/openapi.yaml`.
+Use `contracts/regions.json` and its request/response fixtures as the lookup
+exercise. Do not add a CRUD workflow, website, or API Management.
 
 Also read `labs/00-foundation/implementation-requirements.md` and the local
 `foundation.deployment.json`. Require completed Lab 0. Do not infer a fallback
@@ -47,13 +49,12 @@ Create the path-local `AGENTS.md` with concise instructions that:
 - use the ignored root `.env` for stable, non-secret learner inputs, require it
   to be sourced before Azure CLI commands, and keep `.env.example` as the
   variable-name template so values are not repeatedly re-entered;
-- preserve the selected `API_MANAGEMENT_MODE` across tasks unless the learner
-  explicitly requests a mode change, and create no API Management resources
-  while it is `none`;
+- reuse the seed script's `lab01Cosmos` connection and existing container grant;
+  add no website, API Management, or extra backend resources;
 - prohibit secrets or callback URLs in `.env`, prohibit committing `.env`, and
   prohibit changes to any `iac/.gitignore`;
 - deploy into the existing Lab 0 group without creating or managing it; own
-  only frontend/extension resources and workflow artifacts, never a second
+  only Lab 1 workflow artifacts and lookup data, never a second
   backend foundation; use clear modules where needed; and
 - require `az bicep format`, `az bicep build`, and the task's deployment
   `what-if` before completion.

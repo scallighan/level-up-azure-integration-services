@@ -1,123 +1,153 @@
 # Lab 1 implementation requirements
 
-These requirements define the implementation boundary for the CRUD integration.
-Read them with [`README.md`](README.md), [`contracts/openapi.yaml`](contracts/openapi.yaml),
-the repository-wide
-[`implementation standards`](../../docs/implementation-standards.md), and the
-[`Logic App Standard baseline`](../../docs/logic-app-standard-baseline.md).
+Build one lookup-and-transform workflow, not a CRUD API or website. Read the
+[README](README.md), [OpenAPI contract](contracts/openapi.yaml),
+[sample data](contracts/regions.json),
+[implementation standards](../../docs/implementation-standards.md), and
+[Logic App Standard baseline](../../docs/logic-app-standard-baseline.md).
 
 ## Resource responsibilities
 
-Complete [Lab 0](../00-foundation/README.md) first. Both tracks must reference
-its explicit non-secret handoff rather than create or own a second foundation:
+Complete Lab 0 first. Use `foundation.deployment.json` as the explicit handoff.
+Both Bicep and Terraform learners must produce the same behavior.
 
-| Resource | Requirement |
+| Resource | Lab 1 responsibility |
 |---|---|
-| Resource group | Reference Lab 0's parent without managing it; tag new frontend/extension resources `lab=01` |
-| Cosmos DB account | Reference Lab 0's private, serverless, Entra-only account |
-| Cosmos private connectivity | Verify Lab 0's `Sql` endpoint, private DNS zone, link, and zone group |
-| SQL database and container | Reference Lab 0's `workshop` / `items`, partition key `/id` |
-| Logic App hosting | Reference the complete Lab 0 private Standard baseline |
-| Logic App site | Reference Lab 0's dual-identity Standard site; never import or manage the parent |
-| Logic App workflow | One HTTP-triggered workflow implementing the OpenAPI operations |
-| Cosmos RBAC | Verify Lab 0's existing container-scoped system-identity grant; do not duplicate it |
-| Static Web App | Free SKU hosting the starter UI |
-| Application Insights | Use Lab 0's wired request and workflow observability |
+| Parent group, site, hosting, networking, storage, monitoring | Reference Lab 0; do not import, retag, replace, or manage these resources |
+| Cosmos DB | Use the existing private, Entra-only account and `workshop/items`, partition key `/id` |
+| Cosmos authorization | Reuse the site's existing container-scoped system-identity grant |
+| Workflow | Add only `region-lookup`, with an HTTP request trigger and synchronous JSON response |
+| Connection | Reuse the seed script's `lab01Cosmos` built-in connection |
+| Website, API Management, new backend resources | None |
 
-The user-assigned identity accesses only Logic App host storage. The
-system-assigned identity accesses Cosmos DB. Do not use Cosmos account keys.
+The user-assigned identity remains host-storage-only. Use the system-assigned
+identity for Cosmos access. Do not enable public Cosmos access, use account
+keys, or grant the workstation additional Cosmos data-plane roles.
 
-## Implementation sequence
+## Lookup data
 
-Keep infrastructure provisioning separate from workflow behavior in both IaC
-tracks:
+`contracts/regions.json` is a small teaching snapshot of the programmatic names
+and physical locations in Microsoft's
+[Azure regions list](https://learn.microsoft.com/en-us/azure/reliability/regions-list?tabs=all),
+checked on October 19, 2026. It is not a complete or live Azure region catalog.
+Use these public sample values, not customer system names or cross-reference data.
 
-1. Verify Lab 0 with `scripts/verify-foundation.sh` and configure explicit
-   existing-resource references from `foundation.deployment.json`. Create no
-   backend foundation resources and make no foundation writes.
-2. Add only the HTTP-triggered CRUD workflow and the configuration it needs to
-   use the existing Cosmos container through the site's system-assigned
-   identity. Do not recreate or replace foundation resources.
-3. Add the Static Web App and restrict workflow CORS to its deployed origin.
+Each document has this shape:
 
-Preserve other labs' workflow artifacts and app-level connections. Merge only
-Lab 1's required connection entry; never replace the shared site's complete
-settings or erase other workflows. Keep `lab=00` tags and Lab 0 ownership.
-Cleanup removes only Lab 1-owned resources, the CRUD workflow, and its unused
-connection entry. Terraform action-state destruction alone may not delete
-uploaded artifacts; verify their removal explicitly. Never delete the Lab 0
-parent resource group or foundation.
+```json
+{
+  "id": "lab01-region-westus",
+  "programmaticName": "westus",
+  "physicalLocation": "California"
+}
+```
 
-The API Management modes below remain available when API Management is
-explicitly requested; they are not part of the three-phase direct browser path.
+`id` is also the partition-key value. Look up
+`concat('lab01-region-', <programmaticName>)` with `ReadDocument`, passing that
+same value as `itemId` and `partitionKey`. Do not query across partitions,
+call the region-list website at runtime, or copy lookup values into the workflow.
 
-## API Management modes
+`scripts/seed-region-lookups.py` supplies the data, not the learner's solution.
+It uses a uniquely named temporary workflow in the existing VNet-integrated
+site to upsert only these document IDs. It preserves existing connections,
+uses the site's system identity, checks the run result, and removes its
+temporary workflow on success or failure. The `lab01Cosmos` entry remains
+for the learner. No callback URL or account key is needed by the seed script.
+Do not run simultaneous artifact deployments while seeding.
 
-Model API Management as `none`, `new`, or `existing`, defaulting to `none`.
+## Request, transformation, and response
 
-- `none`: create no API Management resources.
-- `new`: create an API Management instance only when explicitly selected.
-- `existing`: require its name and resource group, reference the instance in the
-  current subscription, and add only the workshop API, operations, and
-  API-scoped policies.
+Treat `contracts/openapi.yaml` as the source of truth.
+`POST /region-lookup` describes the operation; the deployed workflow uses its
+HTTP trigger callback URL, not an API gateway route.
 
-Treat the selected mode as a stable, lab-wide input. Preserve it across tasks
-unless the learner explicitly requests a mode change. When the mode is `none`,
-later tasks must continue to create no API Management resources.
+1. Accept a JSON object with exactly one required string, `programmaticName`.
+   It must be 2-40 lowercase letters or digits, starting with a letter.
+   Do not silently trim, lowercase, substitute, or default invalid values.
+2. Read the matching document from Cosmos DB. This workflow is read-only.
+3. Return HTTP `200`, `Content-Type: application/json`, and exactly
+   `programmaticName` and `physicalLocation`.
 
-Reject inconsistent mode-specific inputs. Never change service-wide settings on
-an existing API Management instance.
+Return deliberate JSON errors containing only `code` and `message`:
 
-## API and workflow behavior
+| Status | Code | Meaning |
+|---|---|---|
+| `400` | `InvalidRequest` | Malformed JSON, missing/invalid field, or extra fields |
+| `404` | `RegionNotFound` | No seeded document for the supplied name |
+| `503` | `LookupUnavailable` | Cosmos read failed for a reason other than not found |
+| `500` | `InternalError` | Unexpected transformation or workflow failure |
 
-- Treat [`contracts/openapi.yaml`](contracts/openapi.yaml) as the source of truth
-  for operations, request bodies, responses, and status codes.
-- Use `/id` as the Cosmos container partition key.
-- Route the starter app's canonical request by OpenAPI `operationId`.
-- Return deliberate validation, conflict, not-found, and unexpected-error
-  responses that match the contract.
-- Make write retry behavior safe and explicit.
-- Handle CORS preflight and allow only the deployed Static Web App origin.
+Catch validation failures inside the workflow so they produce the contracted
+error envelope. Do not let an overly restrictive trigger schema bypass that
+handling. An HTTP response must exist for each handled path; never return
+partial data or a successful response on a failed lookup. A repeated request
+must produce the same response without changing any documents.
 
-## Known-good Standard workflow and Cosmos shape
+Use two fixed read retries at `PT5S`, followed by the explicit error response.
+Read connector errors from `actions('<read-action>').code`; `NotFound` maps
+to `404`. Do not assume a ServiceProvider action has `outputs.statusCode`.
+Keep the response within the synchronous HTTP window; do not introduce polling
+or long-running work into this read-only transformation.
 
-Use these tested requirements instead of inventing a connector or artifact
-deployment shape:
+Do not return `_rid`, `_self`, `_etag`, `_attachments`, `_ts`, connector
+diagnostics, failure bodies, or the document ID. Do not record full request
+or response payloads in run history; secure trigger and data-action inputs
+and outputs. Use run IDs for diagnosis, not payload logging.
 
-- Deploy Standard workflow artifacts through the App Service
-  `deployWorkflowArtifacts` operation. The files map contains the app-level
-  `connections.json` and `<workflow-name>/workflow.json`. Do not create the
-  workflow by sending `PUT` to `Microsoft.Web/sites/workflows`; that endpoint
-  returns `405 Method Not Allowed` for this deployment shape.
-- For Terraform, use an `azapi_resource_action` against the existing
-  `Microsoft.Web/sites` resource with action `deployWorkflowArtifacts` and
-  method `POST`. Keep the reason for AzAPI documented.
-- Configure the built-in `/serviceProviders/AzureCosmosDB` connection with
-  `parameterSetName` set to `ManagedServiceIdentity`,
-  `parameterValues.accountURI` set to the non-secret Cosmos endpoint app
-  setting, and `authProvider.Type` set to `ManagedServiceIdentity`. Do not use
-  `accountEndpoint` as the connector parameter name and do not select the
-  host-storage user-assigned identity.
-- Put a ServiceProvider action's `retryPolicy` inside `inputs`. Fixed retry
-  intervals must be at least `PT5S`.
-- Read connector failures from `actions('<action-name>').code`. The tested
-  codes used by this workflow are `Conflict` and `NotFound`; do not expect an
-  HTTP-style `outputs.statusCode`.
-- Use `CreateOrUpdateDocument` with `isUpsert=false` for create. For update,
-  first use `ReadDocument` to preserve the contracted `404`, then use
-  `CreateOrUpdateDocument` with the path ID copied into the document and
-  `isUpsert=true`. The required update path does not use `PatchItem`.
-- Disable automatic retries for create, update, and delete writes. Bounded
-  read/query retries may use two fixed retries at `PT5S`.
-- Project only `id`, `name`, and `status` from Cosmos results. Never return
-  `_rid`, `_self`, `_etag`, `_attachments`, `_ts`, connector diagnostics, or
-  full failure output.
+## Workflow artifacts and connection
 
-Before deploying the workflow, verify that the Cosmos private endpoint
-connection is approved, the private DNS zone has an A record, and the VNet link
-is provisioned. A successful Terraform or Bicep deployment does not prove the
-workflow can resolve or reach Cosmos.
+Deploy Standard artifacts through the site's `deployWorkflowArtifacts`
+operation. The files map contains `region-lookup/workflow.json`; preserve every
+other workflow. Do not `PUT` to `Microsoft.Web/sites/workflows`.
 
-The direct browser path uses a temporary Logic App callback URL for this
-exercise. Never commit, output, log, or persist it in browser storage. Retrieve
-it only for the active exercise and delete the workflow during cleanup.
+The seed script creates this `serviceProviderConnections` entry in the shared
+`connections.json`:
+
+```json
+{
+  "lab01Cosmos": {
+    "displayName": "Lab 1 region lookup",
+    "parameterSetName": "ManagedServiceIdentity",
+    "parameterValues": {
+      "accountURI": "@appsetting('AzureCosmosDB_accountEndpoint')"
+    },
+    "serviceProvider": {
+      "id": "/serviceProviders/AzureCosmosDB"
+    },
+    "authProvider": {
+      "Type": "ManagedServiceIdentity"
+    }
+  }
+}
+```
+
+Reference it using `connectionName: lab01Cosmos`. For `ReadDocument`,
+`inputs.parameters` contains `databaseId`, `containerId`, `itemId`, and
+`partitionKey`. Put `retryPolicy` under the action's `inputs`, not beside them.
+The built-in `ReadDocument` result contains the document as a JSON string in
+`content`. Parse that string before projecting the two response fields.
+
+Do not replace the site's full settings or connection file. If an artifact
+deployment needs to update connections, read the current file and merge only
+the required entry. Terraform may use `azapi_resource_action` for
+`deployWorkflowArtifacts`, with that reason documented; Bicep must use the
+same supported artifact operation through its deployment tooling.
+
+## Validation and cleanup
+
+Verify Lab 0's readiness first if it has changed. Before deploying, validate
+workflow/connection JSON and review the selected track's format/build/preview
+or fmt/validate/plan. The preview must have no foundation writes.
+
+Test every case in `contracts/test-cases.json`, compare the successful response
+with `sample-response.json`, and inspect a run to prove an actual Cosmos read.
+A different seeded name must return its own physical location. Check the
+unavailable-store error path without weakening networking or RBAC.
+
+Retrieve the callback URL privately for the exercise only. Never commit,
+output in IaC, log, or persist it. There is no browser/CORS task in this lab.
+
+Cleanup removes `region-lookup` and only its unused connection entry. Verify
+artifact removal explicitly; Terraform state destruction alone may leave
+uploaded files. Keep the sample documents until Lab 0 cleanup, and preserve
+all other labs' artifacts and the shared foundation.

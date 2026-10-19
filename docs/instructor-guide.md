@@ -26,11 +26,11 @@ ladder, troubleshooting guidance, and cleanup sign-off criteria.
 | Time | Activity | Teaching point |
 |---:|---|---|
 | 0:00 | Lab 0 and architecture overview | Deploy the reviewed shared foundation, not generated infrastructure |
-| 0:45 | Lab 1 and context demonstration | Contract-first synchronous integration |
-| 2:15 | Break | Compare direct and APIM modes |
-| 2:30 | Lab 2 | Asynchronous fan-out and independent failure |
-| 3:45 | Cross-track review | Compare Bicep and Terraform resource graphs |
-| 4:00 | Cleanup and discussion | Remove lab additions before the shared foundation |
+| 0:45 | Lab 1 and context demonstration | Seed a lookup table, then generate a synchronous transformation |
+| 1:45 | Break | Compare request and response contracts |
+| 2:00 | Lab 2 | Asynchronous fan-out and independent failure |
+| 3:15 | Cross-track review | Compare Bicep and Terraform resource graphs |
+| 3:30 | Cleanup and discussion | Remove lab additions before the shared foundation |
 | Optional extension | Lab 3, 90-150 minutes | Design from workbook evidence |
 
 ## Pairing model
@@ -54,10 +54,13 @@ behavior should match even when implementation details differ.
 **Lab 1**
 
 - The OpenAPI contract is valid and Lab 0 references resolve without writes.
-- The selected API mode is explicit: direct, new APIM, or existing APIM.
-- APIM modes expose operations without revealing the Logic App callback URL.
+- The provided script seeds six public Azure region records through a temporary
+  workflow in the existing site; Cosmos stays private.
+- The learner generates the lookup workflow from the short prompt, not a
+  supplied complete solution. There is no CRUD API, website, or APIM task.
 - The Logic App identity, not a shared key, accesses Cosmos DB.
-- Create, read, update, and delete tests each return an expected status.
+- Requests for two seeded names return different physical locations; missing
+  mappings and invalid requests return deliberate errors.
 
 **Lab 2**
 
@@ -85,9 +88,9 @@ behavior should match even when implementation details differ.
 
 ## Recovery strategies
 
-- If new APIM provisioning is slow, switch to direct mode or point the
-  deployment at a prepared existing instance. Never replace or reconfigure the
-  existing APIM service itself.
+- If seed execution fails, inspect the reported workflow/run and the existing
+  private endpoint and system-identity grant. Do not enable public Cosmos
+  access or grant account-key access as a shortcut.
 - If role assignments have not propagated, inspect the principal and scope,
   wait briefly, and retry; do not replace managed identity with an account key.
 - If a generated resource type is unsupported by the Terraform AzureRM
@@ -97,8 +100,8 @@ behavior should match even when implementation details differ.
 
 ## Production-hardening discussion
 
-The lowest-cost direct mode intentionally exposes a temporary callback URL to
-the browser and is not a production architecture. Discuss an API gateway,
+The workshop uses a temporary HTTP trigger callback URL in a local test client
+and is not a production architecture. Discuss an API gateway,
 Microsoft Entra authorization, private endpoints, custom domains and
 certificates, rate limits, WAF, centralized observability, deployment
 environments, remote Terraform state, test automation, and workload-specific

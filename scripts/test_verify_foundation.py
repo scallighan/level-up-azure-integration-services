@@ -49,6 +49,8 @@ def azure_response(args):
     if args[:2] == ["identity", "show"]:
         return "host-principal"
     if args[:3] == ["role", "assignment", "list"]:
+        if "--all" in args and "--scope" in args:
+            raise AssertionError("Azure CLI rejects --all combined with --scope")
         return [
             {"principalId": "host-principal", "scope": IDS["host_storage_id"],
              "roleDefinitionId": f"/roles/{role}"}
@@ -97,7 +99,17 @@ def azure_response(args):
             },
             IDS["log_analytics_workspace_id"]: {"properties": {"retentionInDays": 30}},
         }
-        return responses[resource]
+        response = responses[resource]
+        case = os.environ["FAKE_AZ_CASE"]
+        if resource == IDS["logic_app_id"] and case in ["identity-id-casing", "wrong-identity"]:
+            identity = IDS["host_storage_identity_id"]
+            identity = (
+                identity.replace("/resourceGroups/", "/resourcegroups/")
+                if case == "identity-id-casing"
+                else identity.replace("/student/", "/other-group/")
+            )
+            response["identity"]["userAssignedIdentities"] = {identity: {}}
+        return response
     if args[:3] == ["network", "vnet", "show"]:
         return {
             "addressSpace": {"addressPrefixes": ["172.22.0.0/16"]},
@@ -141,6 +153,8 @@ def azure_response(args):
         return [{"name": "cosmos" if "documents" in zone else "storage",
                  "aRecords": [{"ipv4Address": "172.22.2.4"}]}]
     if args[:4] == ["webapp", "config", "appsettings", "list"]:
+        if "--resource-group" not in args or "--name" not in args:
+            raise AssertionError("App settings require --resource-group and --name")
         if args[args.index("--query") + 1].startswith("length("):
             return 1
         settings = {
@@ -178,16 +192,32 @@ class ReadinessTests(unittest.TestCase):
     def test_ready_foundation_passes(self):
         result = self.run_check("ready")
         self.assertEqual(result.returncode, 0, result.stderr)
+        for service in ["blob", "queue", "table", "file", "Sql"]:
+            self.assertIn(f"Checking {service} private endpoint and DNS...", result.stdout)
+        self.assertIn("Checking Logic App telemetry setting...", result.stdout)
+        self.assertIn("Foundation provisioning checks passed.", result.stdout)
 
     def test_public_cosmos_is_rejected(self):
         result = self.run_check("public-cosmos")
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("private serverless Cosmos", result.stderr)
 
+    def test_identity_resource_id_casing_is_accepted(self):
+        result = self.run_check("identity-id-casing")
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_different_host_identity_is_rejected(self):
+        result = self.run_check("wrong-identity")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("dual identities", result.stderr)
+
     def test_missing_dns_is_rejected(self):
         result = self.run_check("missing-dns")
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("private DNS A record", result.stderr)
+        self.assertIn("Checking blob private endpoint and DNS...", result.stdout)
+        self.assertNotIn("Checking queue private endpoint and DNS...", result.stdout)
+        self.assertNotIn("Foundation provisioning checks passed.", result.stdout)
 
     def test_incomplete_handoff_is_rejected_before_azure(self):
         result = self.run_check("unexpected", {"resource_group_name": "student"})

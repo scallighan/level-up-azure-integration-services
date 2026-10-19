@@ -1,175 +1,106 @@
 openapi: 3.0.3
 info:
-  title: Workshop Items API
-  version: 1.0.0
-  description: Contract for the CRUD integration workshop.
-servers:
-  - url: https://example.azure-api.net/workshop
+  title: Region Lookup API
+  version: 2.0.0
+  description: Enrich a programmatic Azure region name with a physical location from Cosmos DB.
 paths:
-  /items:
-    get:
-      operationId: listItems
-      summary: List items
-      responses:
-        "200":
-          description: Items returned
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Item"
-        "500":
-          $ref: "#/components/responses/UnexpectedError"
+  /region-lookup:
     post:
-      operationId: createItem
-      summary: Create an item
+      operationId: lookupRegion
+      summary: Look up a region's physical location
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Item"
-      responses:
-        "201":
-          description: Item created
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Item"
-        "400":
-          $ref: "#/components/responses/ValidationError"
-        "409":
-          description: An item with the ID already exists
-        "500":
-          $ref: "#/components/responses/UnexpectedError"
-  /items/{id}:
-    parameters:
-      - $ref: "#/components/parameters/ItemId"
-    get:
-      operationId: getItem
-      summary: Get one item
+              $ref: "#/components/schemas/RegionRequest"
+            example:
+              programmaticName: westus
       responses:
         "200":
-          description: Item returned
+          description: Region found and payload transformed
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Item"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/UnexpectedError"
-    put:
-      operationId: updateItem
-      summary: Update one item
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ItemUpdate"
-      responses:
-        "200":
-          description: Item updated
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Item"
+                $ref: "#/components/schemas/RegionResponse"
+              example:
+                programmaticName: westus
+                physicalLocation: California
         "400":
-          $ref: "#/components/responses/ValidationError"
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: InvalidRequest
+                message: Supply a valid programmaticName.
         "404":
-          $ref: "#/components/responses/NotFound"
+          description: No lookup record for this programmatic name
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: RegionNotFound
+                message: No region lookup was found.
+        "503":
+          description: Cosmos lookup failed after bounded retries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: LookupUnavailable
+                message: The region lookup is temporarily unavailable.
         "500":
-          $ref: "#/components/responses/UnexpectedError"
-    delete:
-      operationId: deleteItem
-      summary: Delete one item
-      responses:
-        "204":
-          description: Item deleted
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/UnexpectedError"
+          description: Unexpected workflow failure
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: InternalError
+                message: The request could not be processed.
 components:
-  parameters:
-    ItemId:
-      name: id
-      in: path
-      required: true
-      schema:
-        type: string
-        format: uuid
   schemas:
-    Item:
+    RegionRequest:
       type: object
       additionalProperties: false
       required:
-        - id
-        - name
-        - status
+        - programmaticName
       properties:
-        id:
+        programmaticName:
           type: string
-          format: uuid
-        name:
-          type: string
-          minLength: 1
-          maxLength: 100
-        status:
-          type: string
-          enum:
-            - new
-            - active
-            - complete
-    ItemUpdate:
+          minLength: 2
+          maxLength: 40
+          pattern: "^[a-z][a-z0-9]+$"
+    RegionResponse:
       type: object
       additionalProperties: false
       required:
-        - name
-        - status
+        - programmaticName
+        - physicalLocation
       properties:
-        name:
+        programmaticName:
+          type: string
+        physicalLocation:
           type: string
           minLength: 1
-          maxLength: 100
-        status:
-          type: string
-          enum:
-            - new
-            - active
-            - complete
     Error:
       type: object
       additionalProperties: false
       required:
         - code
         - message
-        - correlationId
       properties:
         code:
           type: string
+          enum:
+            - InvalidRequest
+            - RegionNotFound
+            - LookupUnavailable
+            - InternalError
         message:
           type: string
-        correlationId:
-          type: string
-  responses:
-    ValidationError:
-      description: Request validation failed
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/Error"
-    NotFound:
-      description: Item not found
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/Error"
-    UnexpectedError:
-      description: Unexpected server error
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/Error"
+          minLength: 1

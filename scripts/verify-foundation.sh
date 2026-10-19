@@ -31,6 +31,7 @@ require "$foundation" '.resource_group_created | type == "boolean"' \
 
 rg="$(jq -r .resource_group_name <<<"$foundation")"
 site_id="$(jq -r .logic_app_id <<<"$foundation")"
+site_name="$(jq -r .logic_app_name <<<"$foundation")"
 storage_id="$(jq -r .host_storage_id <<<"$foundation")"
 identity_id="$(jq -r .host_storage_identity_id <<<"$foundation")"
 cosmos_id="$(jq -r .cosmos_account_id <<<"$foundation")"
@@ -41,6 +42,7 @@ workspace_id="$(jq -r .log_analytics_workspace_id <<<"$foundation")"
 vnet_id="$(jq -r .virtual_network_id <<<"$foundation")"
 subnet_id="$(jq -r .integration_subnet_id <<<"$foundation")"
 principal_id="$(jq -r .logic_app_principal_id <<<"$foundation")"
+echo "Checking Azure subscription and handoff (Azure queries may take several minutes)..."
 subscription_id="$(az account show --query id -o tsv)"
 require "$foundation" '
   [.virtual_network_id, .integration_subnet_id, .private_endpoint_subnet_id,
@@ -52,12 +54,14 @@ require "$foundation" '
 ' "select the subscription and group recorded in the handoff" \
   --arg subscription "$subscription_id" --arg rg "$rg"
 
+echo "Checking Logic App site, identities and routing..."
 site="$(az resource show --ids "$site_id" --api-version 2025-03-01 -o json)"
 require "$site" '
   (.kind | contains("functionapp") and contains("workflowapp")) and
   (.identity.type | contains("SystemAssigned") and contains("UserAssigned")) and
   .identity.principalId == $principal and
-  (.identity.userAssignedIdentities | has($identity)) and
+  (.identity.userAssignedIdentities | keys |
+    any(.[]; ascii_downcase == ($identity | ascii_downcase))) and
   (.properties.serverFarmId | ascii_downcase) == ($plan | ascii_downcase) and
   (.properties.virtualNetworkSubnetId | ascii_downcase) == ($subnet | ascii_downcase) and
   .properties.httpsOnly == true and .properties.outboundVnetRouting.allTraffic == true
@@ -65,9 +69,11 @@ require "$site" '
   --arg principal "$principal_id" --arg identity "$identity_id" \
   --arg plan "$plan_id" --arg subnet "$subnet_id"
 
+echo "Checking Windows WS1 plan..."
 plan="$(az resource show --ids "$plan_id" --api-version 2025-03-01 -o json)"
 require "$plan" '.sku.name == "WS1" and .properties.reserved == false' "Windows WS1 plan"
 
+echo "Checking VNet, subnets and delegations..."
 vnet="$(az network vnet show --ids "$vnet_id" -o json)"
 require "$vnet" '
   .addressSpace.addressPrefixes == ["172.22.0.0/16"] and
@@ -79,6 +85,7 @@ require "$vnet" '
     any(.delegations[]; .serviceName == "Microsoft.App/environments"))
 ' "reference VNet, private subnets and delegations"
 
+echo "Checking private host storage..."
 storage="$(az resource show --ids "$storage_id" --api-version 2025-01-01 -o json)"
 require "$storage" '
   .kind == "StorageV2" and .sku.name == "Standard_LRS" and
@@ -87,8 +94,9 @@ require "$storage" '
   .properties.allowSharedKeyAccess == false and .properties.publicNetworkAccess == "Disabled"
 ' "private, keyless, HTTPS-only host storage"
 
+echo "Checking host-storage identity and roles..."
 host_principal="$(az identity show --ids "$identity_id" --query principalId -o tsv)"
-roles="$(az role assignment list --scope "$storage_id" --all -o json)"
+roles="$(az role assignment list --scope "$storage_id" -o json)"
 for role in ba92f5b4-2d11-453d-a403-e96b0029c9fe \
   974c5e8b-45b9-4653-ba55-5f855dd0fb88 0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3; do
   require "$roles" '
@@ -99,6 +107,7 @@ for role in ba92f5b4-2d11-453d-a403-e96b0029c9fe \
     --arg principal "$host_principal" --arg storage "$storage_id" --arg role "$role"
 done
 
+echo "Checking Cosmos DB, container and workload role..."
 cosmos="$(az resource show --ids "$cosmos_id" --api-version 2025-04-15 -o json)"
 require "$cosmos" '
   .properties.publicNetworkAccess == "Disabled" and .properties.disableLocalAuth == true and
@@ -116,8 +125,10 @@ require "$cosmos_roles" '
     (.roleDefinitionId | endswith("/00000000-0000-0000-0000-000000000002")))
 ' "site system identity Cosmos contributor at container scope" --arg principal "$principal_id"
 
+echo "Checking private endpoints..."
 endpoints="$(az network private-endpoint list -g "$rg" -o json)"
 for service in blob queue table file Sql; do
+  echo "Checking $service private endpoint and DNS..."
   target_id="$storage_id"
   zone="privatelink.${service}.core.windows.net"
   if [[ "$service" == "Sql" ]]; then
@@ -153,12 +164,14 @@ for service in blob queue table file Sql; do
   ' "$service private DNS A record" --arg record "$record_name"
 done
 
+echo "Checking Service Bus authorization..."
 bus="$(az resource show --ids "$bus_id" --api-version 2024-01-01 -o json)"
 require "$bus" '
   .sku.name == "Standard" and .properties.disableLocalAuth == true and
   .properties.minimumTlsVersion == "1.2" and .properties.publicNetworkAccess == "Enabled"
 ' "Service Bus Standard with Entra-only authorization"
 
+echo "Checking Application Insights and monitoring workspace..."
 insights="$(az resource show --ids "$insights_id" --api-version 2020-02-02 -o json)"
 require "$insights" '
   (.properties.WorkspaceResourceId | ascii_downcase) == ($workspace | ascii_downcase)
@@ -166,7 +179,8 @@ require "$insights" '
 workspace="$(az resource show --ids "$workspace_id" --api-version 2023-09-01 -o json)"
 require "$workspace" '.properties.retentionInDays == 30' "30-day monitoring retention"
 
-settings="$(az webapp config appsettings list --ids "$site_id" \
+echo "Checking Logic App host settings..."
+settings="$(az webapp config appsettings list --resource-group "$rg" --name "$site_name" \
   --query "[?starts_with(name, 'AzureWebJobsStorage__') || name=='FUNCTIONS_EXTENSION_VERSION' || name=='FUNCTIONS_WORKER_RUNTIME' || name=='APP_KIND' || name=='FUNCTIONS_INPROC_NET8_ENABLED' || name=='LOGIC_APPS_POWERSHELL_VERSION' || starts_with(name, 'AzureFunctionsJobHost__extensionBundle__')].{name:name,value:value}" -o json)"
 require "$settings" '
   (map({key: .name, value: .value}) | from_entries) as $s |
@@ -182,7 +196,8 @@ require "$settings" '
   $s.AzureFunctionsJobHost__extensionBundle__version == "[1.*, 2.0.0)"
 ' "reference host settings and identity-based storage URIs" \
   --arg identity "$identity_id" --arg storage "$(jq -r .name <<<"$storage")"
-monitoring_count="$(az webapp config appsettings list --ids "$site_id" \
+echo "Checking Logic App telemetry setting..."
+monitoring_count="$(az webapp config appsettings list --resource-group "$rg" --name "$site_name" \
   --query "length([?name=='APPLICATIONINSIGHTS_CONNECTION_STRING' && value!=''])" -o tsv)"
 [[ "$monitoring_count" == 1 ]] || {
   echo "Foundation check failed: missing Application Insights host setting" >&2

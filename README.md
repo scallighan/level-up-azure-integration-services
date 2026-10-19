@@ -7,8 +7,8 @@ review, and operate Azure Integration Services solutions.
 
 Participants build the same solutions with either **Bicep** or **Terraform**:
 
-1. A CRUD application using Azure Static Web Apps, Logic Apps, and Azure Cosmos
-   DB, with optional new or existing API Management.
+1. An HTTP-triggered Logic App that looks up an Azure region in Cosmos DB and
+   transforms the JSON request into a response containing its physical location.
 2. An event fan-out solution using an Azure Service Bus topic and three Logic
    App subscribers.
 3. An optional workbook-driven capstone that turns payload and transformation
@@ -24,7 +24,7 @@ and test results remain the source of truth.
 | Section | Time | Outcome |
 |---|---:|---|
 | Lab 0: shared Azure foundation | 30-45 min | Tools verified and shared infrastructure deployed |
-| Lab 1: CRUD integration | 90 min | Browser-to-database request path deployed and tested |
+| Lab 1: lookup and transform | 60 min | Cosmos lookup enriches an HTTP JSON payload |
 | Break | 15 min | |
 | Lab 2: topic fan-out | 75 min | One event independently processed by three workflows |
 | Optional Lab 3 capstone | 90-150 min | Workbook evidence becomes an approved design and implementation |
@@ -59,7 +59,7 @@ docs/
   logic-app-standard-baseline.md
 labs/
   00-foundation/               Ready-to-deploy Bicep/Terraform shared infrastructure
-  01-crud-integration/          Lab tasks, requirements, and API contract
+  01-crud-integration/          Region lookup lab, seed data, and API contract
   02-topic-fanout/              Lab tasks, requirements, and event contract
   03-workbook-to-solution/      Local design plans and implementation loop
 scripts/                        Local workshop checks
@@ -81,7 +81,7 @@ Lab 0 deterministically deploys the shared hosting foundation, private
 serverless Cosmos DB (`workshop/items`), Service Bus Standard namespace, and
 workspace-backed Application Insights. It asks for an existing parent resource
 group or creates a workshop group. Later labs reference its resources and add
-frontend, messaging entities, workflows, and tests; APIM remains optional.
+lookup data, messaging entities, workflows, and tests.
 
 ## Cost and safety
 

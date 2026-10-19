@@ -18,7 +18,7 @@ Terraform confirmation and saves the non-secret handoff only after success.
 
 Read this file with the [README](README.md), [implementation standards](../../docs/implementation-standards.md),
 and [Logic App Standard baseline](../../docs/logic-app-standard-baseline.md).
-The Lab 1 OpenAPI contract defines `workshop/items` with partition key `/id`;
+Lab 1 uses `workshop/items` with partition key `/id` for region lookup records;
 Lab 2's event contract is implemented later, not in this foundation.
 
 ## Resource graph and ownership
@@ -95,8 +95,8 @@ or credentials may be outputs. Save it locally as `foundation.deployment.json`
 for explicit later-lab references; never depend on Terraform remote state from
 another lab.
 
-Lab 0 owns the foundation and container-scoped Cosmos grant. Lab 1 adds its
-frontend and workflow artifacts. Lab 2 adds topics/subscriptions/rules,
+Lab 0 owns the foundation and container-scoped Cosmos grant. Lab 1 adds region
+lookup data and workflow artifacts. Lab 2 adds topics/subscriptions/rules,
 subscription-scoped receiver roles, and workflow artifacts to the existing
 namespace/site. Lab 3 references the same foundation and adds only approved
 flow-specific entities, grants, artifacts, and dependencies. No later lab
@@ -130,11 +130,15 @@ set -a; source .env; set +a
 For Terraform, review `terraform -chdir=labs/00-foundation/iac/terraform plan -destroy`,
 then run `terraform -chdir=labs/00-foundation/iac/terraform destroy`.
 In existing-group mode the group is a data source and cannot be deleted by
-this deployment. In new-group mode the provider refuses group deletion while
-unmanaged resources remain; investigate rather than disabling this safeguard.
+this deployment. In new-group mode,
+`prevent_deletion_if_contains_resources = false` allows Azure to delete the
+workshop group and **all remaining contents**, including resources Terraform
+does not manage. Before destroying, review the group's resources with the
+`az resource list` command below. Terraform's plan does not enumerate unmanaged
+resources that will be deleted with the group. Move or preserve anything that
+must survive before continuing.
 
-For Bicep, there is no Terraform-style destroy state. List and review the
-resources in the handoff's group:
+For either track, list and review the resources in the handoff's group:
 
 ```bash
 az resource list --subscription "$AZURE_SUBSCRIPTION_ID" \
@@ -142,6 +146,7 @@ az resource list --subscription "$AZURE_SUBSCRIPTION_ID" \
   --query '[].{id:id,lab:tags.lab,workshop:tags.workshop}' -o table
 ```
 
+For Bicep, there is no Terraform-style destroy state.
 Check `resource_group_created` in the saved handoff. If Lab 0 **created** the
 group and all remaining contents belong to the workshop, delete that exact
 group with `az group delete --name "<reviewed-group>"` after confirmation.

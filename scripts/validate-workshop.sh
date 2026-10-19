@@ -28,6 +28,12 @@ required_files=(
   "scripts/test_foundation.py"
   "labs/01-crud-integration/implementation-requirements.md"
   "labs/01-crud-integration/contracts/openapi.yaml"
+  "labs/01-crud-integration/contracts/regions.json"
+  "labs/01-crud-integration/contracts/sample-request.json"
+  "labs/01-crud-integration/contracts/sample-response.json"
+  "labs/01-crud-integration/contracts/test-cases.json"
+  "scripts/seed-region-lookups.py"
+  "scripts/test_seed_region_lookups.py"
   "labs/02-topic-fanout/implementation-requirements.md"
   "labs/02-topic-fanout/contracts/order-created.schema.json"
   "labs/02-topic-fanout/contracts/sample-order-created.json"
@@ -45,10 +51,12 @@ done
 
 jq empty labs/02-topic-fanout/contracts/order-created.schema.json
 jq empty labs/02-topic-fanout/contracts/sample-order-created.json
+jq empty labs/01-crud-integration/contracts/{regions,sample-request,sample-response,test-cases}.json
 bash -n scripts/check-prereqs.sh scripts/verify-foundation.sh scripts/foundation.sh
 PYTHONDONTWRITEBYTECODE=1 python scripts/test_check_prereqs.py
 PYTHONDONTWRITEBYTECODE=1 python scripts/test_foundation.py
 PYTHONDONTWRITEBYTECODE=1 python scripts/test_verify_foundation.py
+PYTHONDONTWRITEBYTECODE=1 python scripts/test_seed_region_lookups.py
 PYTHONPYCACHEPREFIX="${TMPDIR:-/tmp}/level-up-azure-integration-services-pycache" \
   python -m py_compile scripts/extract-integration-workbook.py
 

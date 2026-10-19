@@ -125,138 +125,36 @@ do not let a later deployment replace the shared parent's settings.
 
 ## Lab 1 coaching map
 
-### Checkpoint 1: contract and resource graph
+### Task 1: seed the lookup table
 
-**Learner should explain**
+- Run `python3 scripts/seed-region-lookups.py foundation.deployment.json`.
+- Explain why the temporary seed workflow, not the workstation, reaches private
+  Cosmos DB. It uses the site's existing system identity and container grant.
+- Check that only the six `lab01-region-*` records are upserted and the helper
+  workflow is removed. Other workflows and connections must remain.
+- The sample is public Azure region data, not customer cross-reference content.
 
-- All CRUD operations and deliberate HTTP statuses in `openapi.yaml`.
-- The canonical backend request containing `operationId`, optional item ID,
-  body, and correlation ID.
-- The Logic App Standard hosting foundation and identity boundaries.
+### Task 2: generate the workflow
 
-**Coach checks**
+- Give Copilot the README's short prompt and the committed contract.
+- Reference Lab 0 without creating or modifying hosting, Cosmos, networking,
+  identities, or roles. Add no website or API Management.
+- Use `ReadDocument` with the same prefixed document ID and partition key.
+- Reuse `lab01Cosmos`, managed identity, and the `accountURI` connection shape.
+- Deploy artifacts through `deployWorkflowArtifacts`, preserving other labs.
+- Put two fixed `PT5S` read retries under `inputs`; handle `NotFound` using the
+  action's `code`. Do not return connector diagnostics or full document data.
 
-- `none` is the default and creates no API Management resources.
-- Names, locations, prefixes, publisher details, and existing resource
-  references are parameterized.
-- Required tags are `workshop=agentic-ais` and `lab=01`.
-- No secrets or callback URLs appear in parameters, variables, or outputs.
+### Tasks 3-4: test the transformation
 
-**Useful hint**
-
-> Compare the preview with the target resource graph one resource type at a
-> time. The shared foundation should have no writes. Add no workflow yet.
-
-### Checkpoint 2: data and workflow
-
-**Learner should explain**
-
-- Why `/id` is the partition key for this workshop.
-- Which Cosmos DB data-plane role is assigned to the Logic App system identity
-  and at what scope.
-- How each operation maps contract errors and success responses to HTTP
-  statuses.
-- Which writes can be repeated and how retry behavior is controlled.
-
-**Coach checks**
-
-- Cosmos local authentication is disabled.
-- Cosmos public network access is disabled.
-- A Cosmos `Sql` private endpoint, `privatelink.documents.azure.com` zone,
-  VNet link, and DNS zone group provide the workflow's data-plane path.
-- Host storage uses the user-assigned identity and keyless app settings.
-- Cosmos DB access uses the Logic App system identity.
-- The callback URL is not an IaC output.
-- The Standard site waits for its plan, host-storage roles, and private
-  endpoints.
-- Standard workflow artifacts are deployed with the supported artifact
-  operation, and the built-in Cosmos connection uses managed identity with
-  `accountURI`.
-- ServiceProvider retry policies are under `inputs`, fixed intervals are at
-  least `PT5S`, and `Conflict`/`NotFound` use the action `code`.
-- Responses contain only `id`, `name`, and `status`, never Cosmos system
-  properties.
-
-### Checkpoint 3: direct frontend path
-
-- The learner retrieves the callback URL only for the current exercise.
-- The URL is not written to source, shell scripts, outputs, logs, or browser
-  local storage.
-- CORS allows only the deployed Static Web App origin.
-- The workflow handles preflight and the canonical request shape.
-
-### Coach-led API Management extension
-
-API Management is not part of the learner path. Offer this extension only when
-the core direct flow works and the group has enough time. Keep the three modes
-consistent across both IaC tracks:
-
-| Mode | Behavior |
-|---|---|
-| `none` | Default. Creates no API Management resources. |
-| `new` | Creates a workshop API Management instance, API, operations, and API-scoped policies. |
-| `existing` | References an instance in the current subscription and creates only workshop-owned child resources. |
-
-Use these matching inputs:
-
-| Bicep | Terraform | Requirement |
-|---|---|---|
-| `apiManagementMode` | `api_management_mode` | `none`, `new`, or `existing`; default `none` |
-| `existingApimName` | `existing_apim_name` | Required only for `existing` |
-| `existingApimResourceGroupName` | `existing_apim_resource_group_name` | Required only for `existing` |
-
-**New instance checks**
-
-- The learner explicitly selected `new`.
-- The preview includes a new low-cost workshop instance and required child
-  resources.
-
-**Existing instance checks**
-
-- The learner supplied the existing name and resource group.
-- The preview adds only the workshop API, operations, and API-scoped policies.
-- No service-wide policy, hostname, certificate, identity, diagnostic, SKU, or
-  network setting changes.
-
-For either API Management path, import `contracts/openapi.yaml`, map every
-operation to the canonical backend request, and apply:
-
-- a correlation ID when the client did not provide one;
-- JSON content-type enforcement for writes;
-- a small workshop rate limit;
-- removal of backend-only headers from responses; and
-- CORS restricted to the deployed Static Web App hostname.
-
-Inspect policy XML for callback URL exposure and verify every OpenAPI operation
-is mapped. In `existing` mode, stop if the preview replaces the service or
-changes service-wide policy, hostnames, certificates, identity, diagnostics,
-SKU, or networking.
-
-Example existing-instance inputs:
-
-```bash
-# Bicep
---parameters apiManagementMode="existing" \
-  existingApimName="<apim-name>" \
-  existingApimResourceGroupName="<apim-resource-group>"
-
-# Terraform
--var="api_management_mode=existing" \
--var="existing_apim_name=<apim-name>" \
--var="existing_apim_resource_group_name=<apim-resource-group>"
-```
-
-Use the API Management test console or contract-derived requests to prove
-create, list, get, update, and delete return the expected statuses. During
-cleanup, `existing` mode must remove only workshop API resources and never the
-API Management instance.
-
-### Checkpoint 4: end-to-end test
-
-Require create, list, get, update, and delete evidence. A successful deployment
-is not evidence that the contract works. Ask the learner to correlate one
-request across the available telemetry and explain unexpected status codes
-from the exact response body.
+- `westus` returns `California`; `westeurope` returns `Netherlands`.
+- Only the seeded subset is supported. An unseeded name returns `404`, not a
+  default location or a successful partial response.
+- Missing, invalid, or extra fields return the contracted `400` JSON error.
+- The response contains only `programmaticName` and `physicalLocation`.
+- Inspect a run to prove Cosmos was read; do not accept hardcoded mappings.
+- Protect the callback URL and secure payloads in run history.
+- Remove only the learner's workflow and unused connection during cleanup.
 
 ## Lab 2 coaching map
 

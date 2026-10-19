@@ -1,0 +1,44 @@
+[
+  {
+    "name": "known region",
+    "request": {"programmaticName": "westus"},
+    "status": 200,
+    "response": {"programmaticName": "westus", "physicalLocation": "California"}
+  },
+  {
+    "name": "different lookup value",
+    "request": {"programmaticName": "westeurope"},
+    "status": 200,
+    "response": {"programmaticName": "westeurope", "physicalLocation": "Netherlands"}
+  },
+  {
+    "name": "unknown region",
+    "request": {"programmaticName": "notaregion"},
+    "status": 404,
+    "errorCode": "RegionNotFound"
+  },
+  {
+    "name": "missing programmatic name",
+    "request": {},
+    "status": 400,
+    "errorCode": "InvalidRequest"
+  },
+  {
+    "name": "wrong value type",
+    "request": {"programmaticName": 42},
+    "status": 400,
+    "errorCode": "InvalidRequest"
+  },
+  {
+    "name": "display name instead of programmatic name",
+    "request": {"programmaticName": "West US"},
+    "status": 400,
+    "errorCode": "InvalidRequest"
+  },
+  {
+    "name": "extra field",
+    "request": {"programmaticName": "westus", "extra": true},
+    "status": 400,
+    "errorCode": "InvalidRequest"
+  }
+]
