@@ -48,7 +48,7 @@ Each document has this shape:
 same value as `itemId` and `partitionKey`. Do not query across partitions,
 call the region-list website at runtime, or copy lookup values into the workflow.
 
-`scripts/seed-region-lookups.py` supplies the data, not the learner's solution.
+`scripts/prepare-lab1.py` prepares the data and connection, not the learner's solution.
 It uses a uniquely named temporary workflow in the existing VNet-integrated
 site to upsert only these document IDs. It preserves existing connections,
 uses the site's system identity, checks the run result, and removes its

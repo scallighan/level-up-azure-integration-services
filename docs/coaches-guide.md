@@ -125,9 +125,9 @@ do not let a later deployment replace the shared parent's settings.
 
 ## Lab 1 coaching map
 
-### Task 1: seed the lookup table
+### Task 1: prepare the lookup data and connection
 
-- Run `python3 scripts/seed-region-lookups.py foundation.deployment.json`.
+- Run `python3 scripts/prepare-lab1.py foundation.deployment.json`.
 - Explain why the temporary seed workflow, not the workstation, reaches private
   Cosmos DB. It uses the site's existing system identity and container grant.
 - Check that only the six `lab01-region-*` records are upserted and the helper

@@ -18,12 +18,12 @@ This lab uses public data from Microsoft's
 [Azure regions list](https://learn.microsoft.com/en-us/azure/reliability/regions-list?tabs=all).
 It needs no website or API Management.
 
-## Task 1: populate the lookup table
+## Task 1: prepare the lookup data and connection
 
 From the repository root, run:
 
 ```bash
-python3 scripts/seed-region-lookups.py foundation.deployment.json
+python3 scripts/prepare-lab1.py foundation.deployment.json
 ```
 
 The script loads [six sample regions](contracts/regions.json) into Lab 0's
