@@ -3,6 +3,5 @@
   "workloadName": "inventory-api",
   "instanceCount": 2,
   "programmaticName": "westus",
-  "regionDisplayName": "unresolved",
-  "physicalLocation": "unresolved"
+  "supportTier": "standard"
 }

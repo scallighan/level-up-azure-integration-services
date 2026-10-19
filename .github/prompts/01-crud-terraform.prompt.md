@@ -1,5 +1,5 @@
 ---
-description: Create the Lab 1 region lookup Terraform starter structure
+description: Create the Lab 1 lookup-and-transform Terraform starter structure
 ---
 
 Read `AGENTS.md`, `.github/copilot-instructions.md`,
@@ -9,8 +9,9 @@ Read `AGENTS.md`, `.github/copilot-instructions.md`,
 `labs/01-crud-integration/README.md`, and
 `labs/01-crud-integration/implementation-requirements.md`, and
 `labs/01-crud-integration/contracts/openapi.yaml`.
-Use `contracts/regions.json` and its request/response fixtures as the lookup
-exercise. Do not add a CRUD workflow, website, or API Management.
+Use `contracts/regions.json`, `contracts/support-tiers.json`, and the
+request/response fixtures for two independent lookups. Do not add a CRUD
+workflow, website, or API Management.
 
 Also read `labs/00-foundation/implementation-requirements.md` and the local
 `foundation.deployment.json`. Require completed Lab 0. Do not infer a fallback

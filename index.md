@@ -26,7 +26,7 @@ contract-first, evidence-driven workflow with GitHub Copilot.
   <article class="workshop-card">
     <span class="step-number">1</span>
     <h3>Lab 1: look up and transform JSON</h3>
-    <p>Seed Azure region data in Cosmos DB, then generate an HTTP workflow that returns a region's physical location.</p>
+    <p>Seed region and synthetic support-tier data in Cosmos DB, then generate an HTTP workflow that enriches a JSON request from both lookups.</p>
     <a href="{{ '/labs/01-crud-integration/' | relative_url }}">Open Lab 1</a>
   </article>
   <article class="workshop-card">

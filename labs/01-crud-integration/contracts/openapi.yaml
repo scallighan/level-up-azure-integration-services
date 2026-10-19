@@ -1,13 +1,13 @@
 openapi: 3.0.3
 info:
-  title: Deployment Region Transformation API
-  version: 3.0.0
-  description: Preserve request details and replace region labels with trusted Cosmos lookup values. No resources are provisioned.
+  title: Deployment Lookup Transformation API
+  version: 4.0.0
+  description: Preserve request details and add region and synthetic support-tier details from Cosmos. No resources are provisioned.
 paths:
   /region-lookup:
     post:
       operationId: lookupRegion
-      summary: Transform a deployment request using a region lookup
+      summary: Enrich a deployment request using region and support-tier lookups
       requestBody:
         required: true
         content:
@@ -19,11 +19,10 @@ paths:
               workloadName: inventory-api
               instanceCount: 2
               programmaticName: westus
-              regionDisplayName: unresolved
-              physicalLocation: unresolved
+              supportTier: standard
       responses:
         "200":
-          description: Region found and payload transformed
+          description: Both lookups found and payload enriched
           content:
             application/json:
               schema:
@@ -33,8 +32,11 @@ paths:
                 workloadName: inventory-api
                 instanceCount: 2
                 programmaticName: westus
+                supportTier: standard
                 regionDisplayName: West US
                 physicalLocation: California
+                supportTierDisplayName: Standard
+                responseTimeHours: 8
         "400":
           description: Invalid request
           content:
@@ -45,7 +47,7 @@ paths:
                 code: InvalidRequest
                 message: Supply a valid deployment request.
         "404":
-          description: No lookup record for this programmatic name
+          description: No lookup record for the region or support tier
           content:
             application/json:
               schema:
@@ -61,7 +63,7 @@ paths:
                 $ref: "#/components/schemas/Error"
               example:
                 code: LookupUnavailable
-                message: The region lookup is temporarily unavailable.
+                message: A lookup is temporarily unavailable.
         "500":
           description: Unexpected workflow failure
           content:
@@ -81,8 +83,7 @@ components:
         - workloadName
         - instanceCount
         - programmaticName
-        - regionDisplayName
-        - physicalLocation
+        - supportTier
       properties:
         requestId:
           type: string
@@ -100,12 +101,12 @@ components:
           minLength: 2
           maxLength: 40
           pattern: "^[a-z][a-z0-9]+$"
-        regionDisplayName:
+        supportTier:
           type: string
-          description: Unverified incoming label; always replaced by the lookup's displayName.
-        physicalLocation:
-          type: string
-          description: Unverified incoming location; always replaced by the lookup's physicalLocation.
+          minLength: 2
+          maxLength: 40
+          pattern: "^[a-z][a-z0-9]+$"
+          description: Synthetic support-tier lookup key, independent of the region.
     RegionResponse:
       type: object
       additionalProperties: false
@@ -114,8 +115,11 @@ components:
         - workloadName
         - instanceCount
         - programmaticName
+        - supportTier
         - regionDisplayName
         - physicalLocation
+        - supportTierDisplayName
+        - responseTimeHours
       properties:
         requestId:
           type: string
@@ -133,12 +137,23 @@ components:
           minLength: 2
           maxLength: 40
           pattern: "^[a-z][a-z0-9]+$"
+        supportTier:
+          type: string
+          minLength: 2
+          maxLength: 40
+          pattern: "^[a-z][a-z0-9]+$"
         regionDisplayName:
           type: string
           minLength: 1
         physicalLocation:
           type: string
           minLength: 1
+        supportTierDisplayName:
+          type: string
+          minLength: 1
+        responseTimeHours:
+          type: integer
+          minimum: 1
     Error:
       type: object
       additionalProperties: false
@@ -151,6 +166,7 @@ components:
           enum:
             - InvalidRequest
             - RegionNotFound
+            - SupportTierNotFound
             - LookupUnavailable
             - InternalError
         message:

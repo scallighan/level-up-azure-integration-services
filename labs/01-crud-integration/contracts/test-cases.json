@@ -1,13 +1,12 @@
 [
   {
-    "name": "preserve request values and resolve region labels",
+    "name": "preserve request values and enrich from both lookups",
     "request": {
       "requestId": "REQ-1042",
       "workloadName": "inventory-api",
       "instanceCount": 2,
       "programmaticName": "westus",
-      "regionDisplayName": "unresolved",
-      "physicalLocation": "unresolved"
+      "supportTier": "standard"
     },
     "status": 200,
     "response": {
@@ -15,19 +14,21 @@
       "workloadName": "inventory-api",
       "instanceCount": 2,
       "programmaticName": "westus",
+      "supportTier": "standard",
       "regionDisplayName": "West US",
-      "physicalLocation": "California"
+      "physicalLocation": "California",
+      "supportTierDisplayName": "Standard",
+      "responseTimeHours": 8
     }
   },
   {
-    "name": "different lookup value and request details",
+    "name": "different region and request details with the same support tier",
     "request": {
       "requestId": "REQ-1043",
       "workloadName": "billing-api",
       "instanceCount": 3,
       "programmaticName": "westeurope",
-      "regionDisplayName": "unresolved",
-      "physicalLocation": "unresolved"
+      "supportTier": "standard"
     },
     "status": 200,
     "response": {
@@ -35,19 +36,21 @@
       "workloadName": "billing-api",
       "instanceCount": 3,
       "programmaticName": "westeurope",
+      "supportTier": "standard",
       "regionDisplayName": "West Europe",
-      "physicalLocation": "Netherlands"
+      "physicalLocation": "Netherlands",
+      "supportTierDisplayName": "Standard",
+      "responseTimeHours": 8
     }
   },
   {
-    "name": "replace incorrect labels without changing other values",
+    "name": "different support tier independent of region",
     "request": {
       "requestId": "REQ-8888",
       "workloadName": "catalog-api",
       "instanceCount": 5,
       "programmaticName": "westus",
-      "regionDisplayName": "East US",
-      "physicalLocation": "Virginia"
+      "supportTier": "priority"
     },
     "status": 200,
     "response": {
@@ -55,8 +58,11 @@
       "workloadName": "catalog-api",
       "instanceCount": 5,
       "programmaticName": "westus",
+      "supportTier": "priority",
       "regionDisplayName": "West US",
-      "physicalLocation": "California"
+      "physicalLocation": "California",
+      "supportTierDisplayName": "Priority",
+      "responseTimeHours": 1
     }
   },
   {
@@ -66,11 +72,22 @@
       "workloadName": "inventory-api",
       "instanceCount": 2,
       "programmaticName": "notaregion",
-      "regionDisplayName": "unresolved",
-      "physicalLocation": "unresolved"
+      "supportTier": "standard"
     },
     "status": 404,
     "errorCode": "RegionNotFound"
+  },
+  {
+    "name": "unknown support tier",
+    "request": {
+      "requestId": "REQ-1044",
+      "workloadName": "inventory-api",
+      "instanceCount": 2,
+      "programmaticName": "westus",
+      "supportTier": "unknown"
+    },
+    "status": 404,
+    "errorCode": "SupportTierNotFound"
   },
   {
     "name": "missing programmatic name",
@@ -78,8 +95,18 @@
       "requestId": "REQ-1042",
       "workloadName": "inventory-api",
       "instanceCount": 2,
-      "regionDisplayName": "unresolved",
-      "physicalLocation": "unresolved"
+      "supportTier": "standard"
+    },
+    "status": 400,
+    "errorCode": "InvalidRequest"
+  },
+  {
+    "name": "missing support tier",
+    "request": {
+      "requestId": "REQ-1042",
+      "workloadName": "inventory-api",
+      "instanceCount": 2,
+      "programmaticName": "westus"
     },
     "status": 400,
     "errorCode": "InvalidRequest"
@@ -91,8 +118,19 @@
       "workloadName": "inventory-api",
       "instanceCount": 2,
       "programmaticName": 42,
-      "regionDisplayName": "unresolved",
-      "physicalLocation": "unresolved"
+      "supportTier": "standard"
+    },
+    "status": 400,
+    "errorCode": "InvalidRequest"
+  },
+  {
+    "name": "wrong support tier value type",
+    "request": {
+      "requestId": "REQ-1042",
+      "workloadName": "inventory-api",
+      "instanceCount": 2,
+      "programmaticName": "westus",
+      "supportTier": 42
     },
     "status": 400,
     "errorCode": "InvalidRequest"
@@ -104,8 +142,33 @@
       "workloadName": "inventory-api",
       "instanceCount": 2,
       "programmaticName": "West US",
-      "regionDisplayName": "unresolved",
-      "physicalLocation": "unresolved"
+      "supportTier": "standard"
+    },
+    "status": 400,
+    "errorCode": "InvalidRequest"
+  },
+  {
+    "name": "support tier keys are not silently normalized",
+    "request": {
+      "requestId": "REQ-1042",
+      "workloadName": "inventory-api",
+      "instanceCount": 2,
+      "programmaticName": "westus",
+      "supportTier": " Standard "
+    },
+    "status": 400,
+    "errorCode": "InvalidRequest"
+  },
+  {
+    "name": "output labels are not accepted as request fields",
+    "request": {
+      "requestId": "REQ-1042",
+      "workloadName": "inventory-api",
+      "instanceCount": 2,
+      "programmaticName": "westus",
+      "supportTier": "standard",
+      "regionDisplayName": "West US",
+      "physicalLocation": "California"
     },
     "status": 400,
     "errorCode": "InvalidRequest"
@@ -117,8 +180,7 @@
       "workloadName": "inventory-api",
       "instanceCount": 2,
       "programmaticName": "westus",
-      "regionDisplayName": "unresolved",
-      "physicalLocation": "unresolved",
+      "supportTier": "standard",
       "extra": true
     },
     "status": 400,
@@ -130,8 +192,7 @@
       "requestId": "REQ-1042",
       "instanceCount": 2,
       "programmaticName": "westus",
-      "regionDisplayName": "unresolved",
-      "physicalLocation": "unresolved"
+      "supportTier": "standard"
     },
     "status": 400,
     "errorCode": "InvalidRequest"
@@ -143,8 +204,7 @@
       "workloadName": "inventory-api",
       "instanceCount": "2",
       "programmaticName": "westus",
-      "regionDisplayName": "unresolved",
-      "physicalLocation": "unresolved"
+      "supportTier": "standard"
     },
     "status": 400,
     "errorCode": "InvalidRequest"

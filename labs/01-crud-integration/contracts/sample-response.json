@@ -3,6 +3,9 @@
   "workloadName": "inventory-api",
   "instanceCount": 2,
   "programmaticName": "westus",
+  "supportTier": "standard",
   "regionDisplayName": "West US",
-  "physicalLocation": "California"
+  "physicalLocation": "California",
+  "supportTierDisplayName": "Standard",
+  "responseTimeHours": 8
 }

@@ -54,13 +54,14 @@ behavior should match even when implementation details differ.
 **Lab 1**
 
 - The OpenAPI contract is valid and Lab 0 references resolve without writes.
-- The provided script seeds six public Azure region records through a temporary
-  workflow in the existing site; Cosmos stays private.
+- The provided script seeds six public Azure region records and three synthetic
+  support-tier records through a temporary workflow in the existing site;
+  Cosmos stays private.
 - The learner generates the lookup workflow from the short prompt, not a
   supplied complete solution. There is no CRUD API, website, or APIM task.
 - The Logic App identity, not a shared key, accesses Cosmos DB.
-- Request metadata passes through unchanged; two seeded names produce different
-  lookup-derived display names and locations, replacing unverified input labels.
+- All five request fields pass through unchanged. Region and support-tier keys
+  independently add lookup-derived details; no output placeholders are sent.
   Missing mappings and invalid requests return deliberate errors.
 
 **Lab 2**

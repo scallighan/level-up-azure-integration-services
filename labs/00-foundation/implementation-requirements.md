@@ -18,7 +18,7 @@ Terraform confirmation and saves the non-secret handoff only after success.
 
 Read this file with the [README](README.md), [implementation standards](../../docs/implementation-standards.md),
 and [Logic App Standard baseline](../../docs/logic-app-standard-baseline.md).
-Lab 1 uses `workshop/items` with partition key `/id` for region lookup records;
+Lab 1 uses `workshop/items` with partition key `/id` for region and support-tier lookups;
 Lab 2's event contract is implemented later, not in this foundation.
 
 ## Resource graph and ownership
@@ -95,7 +95,7 @@ or credentials may be outputs. Save it locally as `foundation.deployment.json`
 for explicit later-lab references; never depend on Terraform remote state from
 another lab.
 
-Lab 0 owns the foundation and container-scoped Cosmos grant. Lab 1 adds region
+Lab 0 owns the foundation and container-scoped Cosmos grant. Lab 1 adds
 lookup data and workflow artifacts. Lab 2 adds topics/subscriptions/rules,
 subscription-scoped receiver roles, and workflow artifacts to the existing
 namespace/site. Lab 3 references the same foundation and adds only approved

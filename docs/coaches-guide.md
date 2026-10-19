@@ -130,17 +130,21 @@ do not let a later deployment replace the shared parent's settings.
 - Run `python3 scripts/prepare-lab1.py foundation.deployment.json`.
 - Explain why the temporary seed workflow, not the workstation, reaches private
   Cosmos DB. It uses the site's existing system identity and container grant.
-- Check that only the six `lab01-region-*` records are upserted and the helper
-  workflow is removed. Other workflows and connections must remain.
+- Check that only the six `lab01-region-*` and three `lab01-support-*` records
+  are upserted and the helper workflow is removed. Other workflows and connections
+  must remain.
 - The sample is public Azure region data, not customer cross-reference content.
-  Each record includes a display name and physical location.
+  Each region includes a display name and physical location. The separate
+  support tiers are fictional teaching values, not Azure support plans.
 
 ### Task 2: generate the workflow
 
 - Give Copilot the README's short prompt and the committed contract.
 - Reference Lab 0 without creating or modifying hosting, Cosmos, networking,
   identities, or roles. Add no website or API Management.
-- Use `ReadDocument` with the same prefixed document ID and partition key.
+- Use two `ReadDocument` actions, each with its prefixed ID as both document
+  ID and partition key: `lab01-region-<programmaticName>` and
+  `lab01-support-<supportTier>`.
 - Reuse `lab01Cosmos`, managed identity, and the `accountURI` connection shape.
 - Deploy artifacts through `deployWorkflowArtifacts`, preserving other labs.
 - Put two fixed `PT5S` read retries under `inputs`; handle `NotFound` using the
@@ -150,15 +154,16 @@ do not let a later deployment replace the shared parent's settings.
 
 - `westus` resolves to `West US` / `California`; `westeurope` resolves to
   `West Europe` / `Netherlands`.
+- `standard` adds `Standard` / `8` hours; `priority` adds `Priority` / `1` hour.
+  Change one key at a time to prove the lookups are independent.
 - Only the seeded subset is supported. An unseeded name returns `404`, not a
   default location or a successful partial response.
 - Missing, invalid, or extra fields return the contracted `400` JSON error.
-- Request ID, workload name, instance count, and programmatic name pass through
-  unchanged. Region display name and physical location are replaced from
-  Cosmos, even if the incoming labels contain incorrect values.
-- Return only the six contracted fields; do not expose the document ID or
+- All five request fields pass through unchanged. Add region and support
+  details from Cosmos; no placeholder output fields belong in the request.
+- Return only the nine contracted fields; do not expose the document ID or
   Cosmos metadata. This exercise transforms JSON, not Azure resources.
-- Inspect a run to prove Cosmos was read; do not accept hardcoded mappings.
+- Inspect a run to prove both Cosmos reads occurred; do not accept hardcoded mappings.
 - Protect the callback URL and secure payloads in run history.
 - Remove only the learner's workflow and unused connection during cleanup.
 

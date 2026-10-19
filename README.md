@@ -7,8 +7,8 @@ review, and operate Azure Integration Services solutions.
 
 Participants build the same solutions with either **Bicep** or **Terraform**:
 
-1. An HTTP-triggered Logic App that looks up an Azure region in Cosmos DB and
-   transforms the JSON request into a response containing its physical location.
+1. An HTTP-triggered Logic App that looks up an Azure region and a synthetic
+   support tier in Cosmos DB and enriches a JSON request with both sets of details.
 2. An event fan-out solution using an Azure Service Bus topic and three Logic
    App subscribers.
 3. An optional workbook-driven capstone that turns payload and transformation
