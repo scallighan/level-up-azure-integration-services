@@ -41,6 +41,9 @@ To keep the helper and its run history for debugging, use:
 python3 scripts/prepare-lab1.py foundation.deployment.json --keep-workflow
 ```
 
+The helper shows public seed inputs/outputs by default too. Add
+`--no-show-sample-payloads` to hide them in new helper runs.
+
 The script prints the retained workflow's name and disables it to prevent
 scheduled runs. Open it under the site's **Workflows** in the Azure portal.
 Disabling it updates an app setting and may restart the shared site.
@@ -53,7 +56,7 @@ setting. Normal runs without the flag still remove their helper.
 Give Copilot this prompt. Keep the Bicep or Terraform track you chose in Lab 0.
 
 ```text
-Build the region-lookup HTTP workflow for Lab 1. Follow
+Build the lab01-workflow HTTP workflow for Lab 1. Follow
 labs/01-crud-integration/implementation-requirements.md and its OpenAPI contract.
 Use programmaticName and supportTier for two independent Cosmos DB lookups.
 Preserve all five request fields. Add regionDisplayName, physicalLocation,
@@ -69,7 +72,7 @@ the connection, lookup, and error-handling details.
 
 ## Task 3: send a request
 
-In the Azure portal, open `region-lookup` and copy its HTTP trigger callback
+In the Azure portal, open `lab01-workflow` and copy its HTTP trigger callback
 URL. Paste it into the hidden prompt below. Do not save it in a file or commit it.
 
 ```bash
@@ -81,6 +84,25 @@ curl --silent --show-error --fail-with-body \
   "$WORKFLOW_URL"
 unset WORKFLOW_URL
 ```
+
+### Showing sample payloads in run history
+
+Public sample inputs and outputs are visible by default
+(`show_sample_payloads=true`) so learners can inspect the transformation.
+Use only the committed public samples in this mode. Before using real or
+sensitive data, enable payload protection in the generated Terraform track:
+
+```bash
+TF_VAR_show_sample_payloads=false \
+  terraform -chdir=labs/01-crud-integration/iac/terraform plan
+```
+
+Review and approve the corresponding apply with the same variable set, and
+keep that override for subsequent plans and applies using sensitive data.
+`Content not shown due to security configuration` is expected when protection
+is enabled. Inspect a new run after a visibility change; previously secured
+history is not made visible by changing the workflow. Never use visible
+history for secrets, callback URLs in payloads, or customer data.
 
 Request:
 
@@ -145,6 +167,6 @@ system fields. Neither lookup may fail silently or return a partial response.
 
 ## Cleanup
 
-Remove only the `region-lookup` workflow and the `lab01Cosmos` connection entry
+Remove only the `lab01-workflow` workflow and the `lab01Cosmos` connection entry
 if nothing else uses it. Preserve other workflows, connections, and all Lab 0
 resources. The nine sample documents can remain until Lab 0 cleanup.

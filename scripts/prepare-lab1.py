@@ -128,7 +128,7 @@ def read_connections(site_id):
     return connections
 
 
-def seed_workflow(documents):
+def seed_workflow(documents, show_sample_payloads=True):
     actions = {}
     previous_action = None
     for document in documents:
@@ -149,11 +149,12 @@ def seed_workflow(documents):
                 },
                 "retryPolicy": {"type": "none"},
             },
-            "runtimeConfiguration": {
-                "secureData": {"properties": ["inputs", "outputs"]}
-            },
             "runAfter": {previous_action: ["Succeeded"]} if previous_action else {},
         }
+        if not show_sample_payloads:
+            actions[action_name]["runtimeConfiguration"] = {
+                "secureData": {"properties": ["inputs", "outputs"]}
+            }
         previous_action = action_name
     # Keep the schedule dormant; the script starts the trigger through Azure ARM.
     start_time = (datetime.now(timezone.utc) + timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -247,7 +248,7 @@ def wait_for_completion(runtime_path, name):
     raise TimeoutError(f"Seed workflow {name} did not finish within five minutes.")
 
 
-def seed(foundation, documents, keep_workflow=False):
+def seed(foundation, documents, keep_workflow=False, show_sample_payloads=True):
     subscription = validate_inputs(foundation, documents)
     active_subscription = az_json(["account", "show", "--query", "id"])
     if not isinstance(active_subscription, str) or active_subscription.casefold() != subscription.casefold():
@@ -275,7 +276,7 @@ def seed(foundation, documents, keep_workflow=False):
         request("post", f"{site_id}/deployWorkflowArtifacts", {
             "files": {
                 "connections.json": connections,
-                f"{name}/workflow.json": seed_workflow(documents),
+                f"{name}/workflow.json": seed_workflow(documents, show_sample_payloads),
             }
         })
         start_seed_workflow(site_id, name, runtime_path)
@@ -326,6 +327,11 @@ def main():
         "--keep-workflow", action="store_true",
         help="Retain the seed workflow and run history for debugging; disable it instead of deleting it.",
     )
+    parser.add_argument(
+        "--no-show-sample-payloads", dest="show_sample_payloads",
+        action="store_false", default=True,
+        help="Hide helper inputs/outputs in run history instead of showing the public samples.",
+    )
     args = parser.parse_args()
     try:
         regions = json.loads(REGIONS.read_text())
@@ -336,6 +342,7 @@ def main():
             json.loads(args.handoff.read_text()),
             regions + support_tiers,
             keep_workflow=args.keep_workflow,
+            show_sample_payloads=args.show_sample_payloads,
         )
     except (OSError, ValueError, KeyError, RuntimeError, subprocess.TimeoutExpired) as error:
         print(f"Lookup seeding failed: {error}", file=sys.stderr)

@@ -41,6 +41,26 @@ runtime behavior.
 - Use workflow managed identity for Azure data-plane access.
 - Do not emit secrets or full sensitive payloads to Logic App run history.
 
+## Sample payload visibility
+
+- Every workshop workflow, including temporary seed helpers and workflows
+  generated for Labs 1-3, must expose `show_sample_payloads` defaulting to `true`
+  in both Bicep and Terraform tracks.
+- Show public or sanitized teaching inputs and outputs in run history by
+  default. Apply the choice to triggers and every data action; do not hardcode
+  payload masking in helper generators.
+- In visible mode, omit `secureData`; omit `runtimeConfiguration` too if it
+  would otherwise be empty. Empty or null protection arrays are not a valid
+  way to disable masking.
+- Preserve `show_sample_payloads=false` for protected history. Use supported
+  settings per action type: Request and ServiceProvider operations use Secure
+  Inputs/Outputs; Parse JSON, Compose, and Response use Secure Inputs only.
+  Do not add these settings to unsupported control actions such as Scope or If.
+- Require protected mode before processing real or sensitive data. Visibility
+  never permits logging credentials, callback URLs, or full app settings, and
+  does not change authentication, authorization, identities, or networking.
+  Keep console output and telemetry focused on status and correlation IDs.
+
 ## Logic App Standard
 
 Every Logic App must use the private Logic App Standard resource graph in

@@ -1,0 +1,428 @@
+{
+  "kind": "Stateful",
+  "definition": {
+    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+    "contentVersion": "1.0.0.0",
+    "triggers": {
+      "Receive_Request": {
+        "type": "Request",
+        "kind": "Http",
+%{ if !show_sample_payloads ~}
+        "runtimeConfiguration": {
+          "secureData": {
+            "properties": ["inputs", "outputs"]
+          }
+        },
+%{ endif ~}
+        "inputs": {
+          "method": "POST",
+          "schema": {}
+        }
+      }
+    },
+    "actions": {
+      "Process_Request": {
+        "type": "Scope",
+        "actions": {
+          "Validate_Request": {
+            "type": "ParseJson",
+            "inputs": {
+              "content": "@triggerBody()",
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["requestId", "workloadName", "instanceCount", "programmaticName", "supportTier"],
+                "properties": {
+                  "requestId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 40
+                  },
+                  "workloadName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "instanceCount": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "programmaticName": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 40
+                  },
+                  "supportTier": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 40
+                  }
+                }
+              }
+            },
+%{ if !show_sample_payloads ~}
+            "runtimeConfiguration": {
+              "secureData": {
+                "properties": ["inputs"]
+              }
+            },
+%{ endif ~}
+            "runAfter": {}
+          },
+          "Lookup_Keys": {
+            "type": "Compose",
+            "inputs": {
+              "root": {
+                "programmaticName": "@body('Validate_Request')['programmaticName']",
+                "supportTier": "@body('Validate_Request')['supportTier']"
+              }
+            },
+%{ if !show_sample_payloads ~}
+            "runtimeConfiguration": {
+              "secureData": {
+                "properties": ["inputs"]
+              }
+            },
+%{ endif ~}
+            "runAfter": {
+              "Validate_Request": ["Succeeded"]
+            }
+          },
+          "Validate_Keys": {
+            "type": "ParseJson",
+            "description": "Parse JSON does not support pattern. XPath checks allowed ASCII characters and the first letter without changing either key.",
+            "inputs": {
+              "content": "@xpath(xml(outputs('Lookup_Keys')), 'boolean(contains(\"abcdefghijklmnopqrstuvwxyz\", substring(/root/programmaticName, 1, 1)) and string-length(translate(/root/programmaticName, \"abcdefghijklmnopqrstuvwxyz0123456789\", \"\")) = 0 and contains(\"abcdefghijklmnopqrstuvwxyz\", substring(/root/supportTier, 1, 1)) and string-length(translate(/root/supportTier, \"abcdefghijklmnopqrstuvwxyz0123456789\", \"\")) = 0)')",
+              "schema": {
+                "type": "boolean",
+                "enum": [true]
+              }
+            },
+%{ if !show_sample_payloads ~}
+            "runtimeConfiguration": {
+              "secureData": {
+                "properties": ["inputs"]
+              }
+            },
+%{ endif ~}
+            "runAfter": {
+              "Lookup_Keys": ["Succeeded"]
+            }
+          },
+          "Read_Region": {
+            "type": "ServiceProvider",
+            "inputs": {
+              "parameters": {
+                "databaseId": "workshop",
+                "containerId": "items",
+                "itemId": "@concat('lab01-region-', body('Validate_Request')['programmaticName'])",
+                "partitionKey": "@concat('lab01-region-', body('Validate_Request')['programmaticName'])"
+              },
+              "serviceProviderConfiguration": {
+                "connectionName": "lab01Cosmos",
+                "operationId": "ReadDocument",
+                "serviceProviderId": "/serviceProviders/AzureCosmosDB"
+              },
+              "retryPolicy": {
+                "type": "fixed",
+                "count": 2,
+                "interval": "PT5S"
+              }
+            },
+%{ if !show_sample_payloads ~}
+            "runtimeConfiguration": {
+              "secureData": {
+                "properties": ["inputs", "outputs"]
+              }
+            },
+%{ endif ~}
+            "runAfter": {
+              "Validate_Keys": ["Succeeded"]
+            }
+          },
+          "Validate_Region": {
+            "type": "ParseJson",
+            "inputs": {
+              "content": "@body('Read_Region')['content']",
+              "schema": {
+                "type": "object",
+                "required": ["displayName", "physicalLocation"],
+                "properties": {
+                  "displayName": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "physicalLocation": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            },
+%{ if !show_sample_payloads ~}
+            "runtimeConfiguration": {
+              "secureData": {
+                "properties": ["inputs"]
+              }
+            },
+%{ endif ~}
+            "runAfter": {
+              "Read_Region": ["Succeeded"]
+            }
+          },
+          "Read_Support_Tier": {
+            "type": "ServiceProvider",
+            "inputs": {
+              "parameters": {
+                "databaseId": "workshop",
+                "containerId": "items",
+                "itemId": "@concat('lab01-support-', body('Validate_Request')['supportTier'])",
+                "partitionKey": "@concat('lab01-support-', body('Validate_Request')['supportTier'])"
+              },
+              "serviceProviderConfiguration": {
+                "connectionName": "lab01Cosmos",
+                "operationId": "ReadDocument",
+                "serviceProviderId": "/serviceProviders/AzureCosmosDB"
+              },
+              "retryPolicy": {
+                "type": "fixed",
+                "count": 2,
+                "interval": "PT5S"
+              }
+            },
+%{ if !show_sample_payloads ~}
+            "runtimeConfiguration": {
+              "secureData": {
+                "properties": ["inputs", "outputs"]
+              }
+            },
+%{ endif ~}
+            "runAfter": {
+              "Validate_Region": ["Succeeded"]
+            }
+          },
+          "Validate_Support_Tier": {
+            "type": "ParseJson",
+            "inputs": {
+              "content": "@body('Read_Support_Tier')['content']",
+              "schema": {
+                "type": "object",
+                "required": ["displayName", "responseTimeHours"],
+                "properties": {
+                  "displayName": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "responseTimeHours": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                }
+              }
+            },
+%{ if !show_sample_payloads ~}
+            "runtimeConfiguration": {
+              "secureData": {
+                "properties": ["inputs"]
+              }
+            },
+%{ endif ~}
+            "runAfter": {
+              "Read_Support_Tier": ["Succeeded"]
+            }
+          },
+          "Validate_Lookup_Labels": {
+            "type": "ParseJson",
+            "inputs": {
+              "content": "@and(not(empty(trim(body('Validate_Region')['displayName']))), not(empty(trim(body('Validate_Region')['physicalLocation']))), not(empty(trim(body('Validate_Support_Tier')['displayName']))))",
+              "schema": {
+                "type": "boolean",
+                "enum": [true]
+              }
+            },
+%{ if !show_sample_payloads ~}
+            "runtimeConfiguration": {
+              "secureData": {
+                "properties": ["inputs"]
+              }
+            },
+%{ endif ~}
+            "runAfter": {
+              "Validate_Support_Tier": ["Succeeded"]
+            }
+          },
+          "Build_Response": {
+            "type": "Compose",
+            "inputs": {
+              "requestId": "@body('Validate_Request')['requestId']",
+              "workloadName": "@body('Validate_Request')['workloadName']",
+              "instanceCount": "@body('Validate_Request')['instanceCount']",
+              "programmaticName": "@body('Validate_Request')['programmaticName']",
+              "supportTier": "@body('Validate_Request')['supportTier']",
+              "regionDisplayName": "@body('Validate_Region')['displayName']",
+              "physicalLocation": "@body('Validate_Region')['physicalLocation']",
+              "supportTierDisplayName": "@body('Validate_Support_Tier')['displayName']",
+              "responseTimeHours": "@body('Validate_Support_Tier')['responseTimeHours']"
+            },
+%{ if !show_sample_payloads ~}
+            "runtimeConfiguration": {
+              "secureData": {
+                "properties": ["inputs"]
+              }
+            },
+%{ endif ~}
+            "runAfter": {
+              "Validate_Lookup_Labels": ["Succeeded"]
+            }
+          }
+        },
+        "runAfter": {}
+      },
+      "Respond_Success": {
+        "type": "Response",
+        "kind": "Http",
+        "inputs": {
+          "statusCode": 200,
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "body": "@outputs('Build_Response')"
+        },
+%{ if !show_sample_payloads ~}
+        "runtimeConfiguration": {
+          "secureData": {
+            "properties": ["inputs"]
+          }
+        },
+%{ endif ~}
+        "runAfter": {
+          "Process_Request": ["Succeeded"]
+        }
+      },
+      "Handle_Failure": {
+        "type": "If",
+        "expression": "@or(equals(actions('Validate_Request').status, 'Failed'), equals(actions('Validate_Keys').status, 'Failed'))",
+        "actions": {
+          "Respond_Invalid_Request": {
+            "type": "Response",
+            "kind": "Http",
+            "inputs": {
+              "statusCode": 400,
+              "headers": {
+                "Content-Type": "application/json"
+              },
+              "body": {
+                "code": "InvalidRequest",
+                "message": "Supply a valid deployment request."
+              }
+            },
+%{ if !show_sample_payloads ~}
+            "runtimeConfiguration": {
+              "secureData": {
+                "properties": ["inputs"]
+              }
+            },
+%{ endif ~}
+            "runAfter": {}
+          }
+        },
+        "else": {
+          "actions": {
+            "Handle_Region_Read_Failure": {
+              "type": "If",
+              "expression": "@or(equals(actions('Read_Region').status, 'Failed'), equals(actions('Read_Region').status, 'TimedOut'))",
+              "actions": {
+                "Respond_Region_Read_Failure": {
+                  "type": "Response",
+                  "kind": "Http",
+                  "inputs": {
+                    "statusCode": "@if(equals(actions('Read_Region').code, 'NotFound'), 404, 503)",
+                    "headers": {
+                      "Content-Type": "application/json"
+                    },
+                    "body": {
+                      "code": "@if(equals(actions('Read_Region').code, 'NotFound'), 'RegionNotFound', 'LookupUnavailable')",
+                      "message": "@if(equals(actions('Read_Region').code, 'NotFound'), 'No region lookup was found.', 'A lookup is temporarily unavailable.')"
+                    }
+                  },
+%{ if !show_sample_payloads ~}
+                  "runtimeConfiguration": {
+                    "secureData": {
+                      "properties": ["inputs"]
+                    }
+                  },
+%{ endif ~}
+                  "runAfter": {}
+                }
+              },
+              "else": {
+                "actions": {
+                  "Handle_Support_Read_Failure": {
+                    "type": "If",
+                    "expression": "@or(equals(actions('Read_Support_Tier').status, 'Failed'), equals(actions('Read_Support_Tier').status, 'TimedOut'))",
+                    "actions": {
+                      "Respond_Support_Read_Failure": {
+                        "type": "Response",
+                        "kind": "Http",
+                        "inputs": {
+                          "statusCode": "@if(equals(actions('Read_Support_Tier').code, 'NotFound'), 404, 503)",
+                          "headers": {
+                            "Content-Type": "application/json"
+                          },
+                          "body": {
+                            "code": "@if(equals(actions('Read_Support_Tier').code, 'NotFound'), 'SupportTierNotFound', 'LookupUnavailable')",
+                            "message": "@if(equals(actions('Read_Support_Tier').code, 'NotFound'), 'No support-tier lookup was found.', 'A lookup is temporarily unavailable.')"
+                          }
+                        },
+%{ if !show_sample_payloads ~}
+                        "runtimeConfiguration": {
+                          "secureData": {
+                            "properties": ["inputs"]
+                          }
+                        },
+%{ endif ~}
+                        "runAfter": {}
+                      }
+                    },
+                    "else": {
+                      "actions": {
+                        "Respond_Internal_Error": {
+                          "type": "Response",
+                          "kind": "Http",
+                          "inputs": {
+                            "statusCode": 500,
+                            "headers": {
+                              "Content-Type": "application/json"
+                            },
+                            "body": {
+                              "code": "InternalError",
+                              "message": "The request could not be processed."
+                            }
+                          },
+%{ if !show_sample_payloads ~}
+                          "runtimeConfiguration": {
+                            "secureData": {
+                              "properties": ["inputs"]
+                            }
+                          },
+%{ endif ~}
+                          "runAfter": {}
+                        }
+                      }
+                    },
+                    "runAfter": {}
+                  }
+                }
+              },
+              "runAfter": {}
+            }
+          }
+        },
+        "runAfter": {
+          "Process_Request": ["Failed", "TimedOut", "Skipped"]
+        }
+      }
+    },
+    "outputs": {}
+  }
+}

@@ -89,5 +89,12 @@ The core actions remain lightweight:
 - **Notification:** compose a customer message and emit telemetry.
 
 Do not add email, databases, or other paid dependencies to the core lab. Do not
-place connection strings or full event payloads in source, outputs, state, or
-run history.
+place connection strings or full sensitive event payloads in source, outputs,
+state, or run history.
+
+All three workflows follow the repository-wide
+[sample payload visibility](../../docs/implementation-standards.md#sample-payload-visibility)
+standard: `show_sample_payloads=true` by default in both tracks, making the
+sanitized teaching event visible in run history. Keep `false` available and
+require it before using real customer data. Telemetry should still contain
+status and correlation IDs, not full event bodies.

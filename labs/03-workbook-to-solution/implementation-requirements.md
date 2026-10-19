@@ -198,7 +198,13 @@ a working data path.
   workbook.
 - Test each processing tab's Input-to-Output mapping independently, then test
   that its published Output satisfies each downstream tab's Input expectations.
-- Do not log full payloads or sensitive field values.
+- Default `show_sample_payloads` to `true` for every workflow and temporary
+  helper, following the repository-wide
+  [sample payload visibility](../../docs/implementation-standards.md#sample-payload-visibility)
+  standard. Show only sanitized teaching fixtures in run history; retain
+  `false` and require it before processing real or sensitive data.
+- Keep telemetry focused on status and correlation IDs. Never log sensitive
+  field values or credentials.
 
 ### Reliability and validation
 
@@ -219,8 +225,8 @@ any fixtures intended for Git.
 The workbook alone is not a runtime specification. Do not recreate the removed
 `contracts/` folder. Validate Source helper publication,
 per-tab transformations, XRef misses, routing/fan-out, failed publication,
-duplicate delivery after failed settlement, and end-to-end correlation without
-logging full payloads.
+duplicate delivery after failed settlement, and end-to-end correlation using
+status and correlation IDs in telemetry rather than full payloads.
 
 ## Implementation sequence
 

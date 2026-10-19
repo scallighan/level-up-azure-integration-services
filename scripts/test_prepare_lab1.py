@@ -117,12 +117,26 @@ class SeedTests(unittest.TestCase):
             self.assertEqual(json.loads(upsert["item"]), document)
             self.assertEqual(upsert["partitionKey"], document["id"])
             self.assertTrue(upsert["isUpsert"])
+            self.assertNotIn("runtimeConfiguration", action)
             self.assertEqual(action["runAfter"], {previous: ["Succeeded"]} if previous else {})
             previous = name
         self.assertEqual(deployments[1], {
             "filesToDelete": [f"{requests.workflow_name}/workflow.json", f"{requests.workflow_name}/"]
         })
         self.assertIn("Seeded 9 lookup records.", output)
+
+    def test_seed_can_protect_every_action_when_sample_visibility_is_disabled(self):
+        requests = AzureRequests()
+        with patch.object(SEED, "az_json", return_value=SUBSCRIPTION), \
+                patch.object(SEED, "request", side_effect=requests), \
+                contextlib.redirect_stdout(io.StringIO()):
+            SEED.seed(FOUNDATION, DOCUMENTS, show_sample_payloads=False)
+        deployment = next(body for _, _, body in requests.calls if body and "files" in body)
+        actions = deployment["files"][f"{requests.workflow_name}/workflow.json"]["definition"]["actions"]
+        for action in actions.values():
+            self.assertEqual(action["runtimeConfiguration"], {
+                "secureData": {"properties": ["inputs", "outputs"]}
+            })
 
     def test_failed_seed_is_not_reported_as_success_and_still_removes_helper(self):
         requests = AzureRequests(status="Failed")
@@ -196,7 +210,19 @@ class SeedTests(unittest.TestCase):
                 ]), \
                 patch.object(SEED, "seed") as seed:
             self.assertEqual(SEED.main(), 0)
-        seed.assert_called_once_with(FOUNDATION, DOCUMENTS, keep_workflow=True)
+        seed.assert_called_once_with(
+            FOUNDATION, DOCUMENTS, keep_workflow=True, show_sample_payloads=True
+        )
+
+    def test_cli_can_disable_default_sample_visibility(self):
+        with patch.object(SEED.sys, "argv", ["prepare-lab1.py", "--no-show-sample-payloads"]), \
+                patch.object(Path, "read_text", side_effect=[
+                    json.dumps(REGIONS), json.dumps(SUPPORT_TIERS), json.dumps(FOUNDATION)
+                ]), patch.object(SEED, "seed") as seed:
+            self.assertEqual(SEED.main(), 0)
+        seed.assert_called_once_with(
+            FOUNDATION, DOCUMENTS, keep_workflow=False, show_sample_payloads=False
+        )
 
     def test_cli_rejects_invalid_seed_arrays_without_azure(self):
         for invalid in [{}, [], None]:

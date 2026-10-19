@@ -5,6 +5,12 @@ Services with GitHub Copilot. Favor clear teaching code over abstraction.
 
 Keep things clean, clear and concise. 
 
+Default `show_sample_payloads` to `true` for every workshop workflow, including
+temporary helpers and workflows generated for later labs, so public teaching
+inputs and outputs are visible in run history. Follow the
+[run-history standards](docs/implementation-standards.md#sample-payload-visibility).
+Keep `false` available and require it before processing real or sensitive data.
+
 Before proposing or making a change, read:
 
 1. [`docs/implementation-standards.md`](docs/implementation-standards.md);

@@ -164,7 +164,8 @@ do not let a later deployment replace the shared parent's settings.
 - Return only the nine contracted fields; do not expose the document ID or
   Cosmos metadata. This exercise transforms JSON, not Azure resources.
 - Inspect a run to prove both Cosmos reads occurred; do not accept hardcoded mappings.
-- Protect the callback URL and secure payloads in run history.
+- Protect the callback URL. Show public samples in run history by default;
+  require `show_sample_payloads=false` before using real or sensitive data.
 - Remove only the learner's workflow and unused connection during cleanup.
 
 ## Lab 2 coaching map
@@ -221,8 +222,8 @@ do not let a later deployment replace the shared parent's settings.
 - All three workflows are deployed to the selected Logic App Standard site.
 - Each workflow references only its assigned Service Bus subscription.
 - Connections use managed identity rather than a namespace connection string.
-- Full event payloads and sensitive customer data are not emitted to run
-  history.
+- All three workflows default `show_sample_payloads` to `true` for the
+  sanitized sample event. Sensitive customer data must use protected mode.
 - Retry and timeout behavior is explicit.
 
 ### Checkpoint 3: publish one event
@@ -308,10 +309,12 @@ an approved network path. Verify every upstream Output satisfies downstream
 Input and that a workflow completes Input only after Output publication.
 Include lookup misses and publication-success/settlement-failure duplicates.
 
-Use mocked external systems only. Require success, invalid input, timeout,
-transient failure, permanent failure, and correlation evidence without logging
-full payloads. Review deployment and cleanup previews; existing shared resources
-must remain untouched.
+Use mocked external systems only. Show sanitized fixtures in run history by
+default with `show_sample_payloads=true`; use protected mode for sensitive data.
+Require success, invalid input, timeout, transient failure, permanent failure,
+and correlation evidence using status and IDs in telemetry, not full payloads.
+Review deployment and cleanup previews; existing shared resources must remain
+untouched.
 
 ## Troubleshooting playbook
 

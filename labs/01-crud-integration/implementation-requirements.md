@@ -16,7 +16,7 @@ Both Bicep and Terraform learners must produce the same behavior.
 | Parent group, site, hosting, networking, storage, monitoring | Reference Lab 0; do not import, retag, replace, or manage these resources |
 | Cosmos DB | Use the existing private, Entra-only account and `workshop/items`, partition key `/id` |
 | Cosmos authorization | Reuse the site's existing container-scoped system-identity grant |
-| Workflow | Add only `region-lookup`, with an HTTP request trigger and synchronous JSON response |
+| Workflow | Add only `lab01-workflow`, with an HTTP request trigger and synchronous JSON response |
 | Connection | Reuse the seed script's `lab01Cosmos` built-in connection |
 | Website, API Management, new backend resources | None |
 
@@ -74,6 +74,10 @@ temporary workflow on success or failure. The `lab01Cosmos` entry remains
 for the learner. No callback URL or account key is needed by the seed script.
 Do not run simultaneous artifact deployments while seeding.
 
+The helper follows the repository-wide `show_sample_payloads=true` default.
+Omit data-action protection blocks so its public seed inputs/outputs are
+visible; `--no-show-sample-payloads` explicitly selects protected helper history.
+
 With `--keep-workflow`, retain the helper and its run history on success or
 failure instead. Disable only that helper using the
 `Workflows.<name>.FlowState=Disabled` app setting, merging without removing any
@@ -86,8 +90,10 @@ After debugging, remove the retained helper and its workflow-specific setting.
 ## Request, transformation, and response
 
 Treat `contracts/openapi.yaml` as the source of truth.
-`POST /region-lookup` describes the operation; the deployed workflow uses its
-HTTP trigger callback URL, not an API gateway route.
+`POST /region-lookup` describes the logical operation; the deployed workflow
+is named `lab01-workflow` and uses its HTTP trigger callback URL, not an API
+gateway route. Changing the workflow name changes its callback URL, not this
+logical contract path.
 
 1. Accept exactly the five fields defined in the contract. `requestId` and
    `workloadName` are nonempty strings, `instanceCount` is a positive integer,
@@ -144,15 +150,125 @@ Keep the response within the synchronous HTTP window; do not introduce polling
 or long-running work into this read-only transformation.
 
 Do not return `_rid`, `_self`, `_etag`, `_attachments`, `_ts`, connector
-diagnostics, failure bodies, or the document ID. Do not record full request
-or response payloads in run history; secure trigger and data-action inputs
-and outputs. Use run IDs for diagnosis, not payload logging.
+diagnostics, failure bodies, or the document ID. Show the public teaching
+payloads in run history by default. Before using real or sensitive data,
+disable sample visibility and use the supported secure-data settings below.
+Never record secrets or sensitive payloads in run history. Use run IDs for
+normal diagnosis.
+
+### Runtime validation guardrails
+
+Standard's `ParseJson` action rejects schemas containing `pattern` or
+`patternProperties` with `ActionSchemaNotSupported`, even for valid requests.
+A successful JSON/schema check or deployment does not detect this runtime
+restriction. Keep the patterns in OpenAPI, but do not copy them into
+`ParseJson` schemas or silently drop their validation.
+
+Use native workflow actions, in this order:
+
+1. `Validate_Request`: `ParseJson` with the contract's required fields, types,
+   lengths, integer minimum, and `additionalProperties: false`, omitting only
+   unsupported pattern keywords.
+2. `Lookup_Keys`: `Compose` the two validated strings into this object. Convert
+   the object with `xml()`; do not concatenate request text into XML.
+
+   ```json
+   {
+     "root": {
+       "programmaticName": "@body('Validate_Request')['programmaticName']",
+       "supportTier": "@body('Validate_Request')['supportTier']"
+     }
+   }
+   ```
+
+3. `Validate_Keys`: use these `ParseJson` inputs to enforce the first-letter
+   and allowed-character rules for both keys. Lengths were checked in step 1.
+   A false result must fail validation and reach the `400 InvalidRequest`
+   response before either Cosmos read.
+
+   ```json
+   {
+     "content": "@xpath(xml(outputs('Lookup_Keys')), 'boolean(contains(\"abcdefghijklmnopqrstuvwxyz\", substring(/root/programmaticName, 1, 1)) and string-length(translate(/root/programmaticName, \"abcdefghijklmnopqrstuvwxyz0123456789\", \"\")) = 0 and contains(\"abcdefghijklmnopqrstuvwxyz\", substring(/root/supportTier, 1, 1)) and string-length(translate(/root/supportTier, \"abcdefghijklmnopqrstuvwxyz0123456789\", \"\")) = 0)')",
+     "schema": {
+       "type": "boolean",
+       "enum": [true]
+     }
+   }
+   ```
+
+Validate lookup document types and required fields with `ParseJson` too,
+without patterns. Reject whitespace-only labels using native
+`not(empty(trim(...)))` checks and the same boolean/`enum: [true]` guard.
+Document-validation failures return `500 InternalError`, not `400`.
+Use trimming only to test a label; never mutate request or lookup values.
+Keep the response projection native so numeric fields do not pass through a
+JavaScript number conversion or string interpolation.
+
+Do not introduce `JavaScriptCode` just to implement these checks. The shared
+Windows host has failed inline-code validation with
+`Node worker did not start properly ('30' second timeout)` and `localhost:0`.
+The native approach avoids that worker dependency. Do not change host
+settings, identities, networking, or provision extra resources to work around it.
+
+### Supported run-history protection
+
+When `show_sample_payloads=false`, set
+`runtimeConfiguration.secureData.properties` according to the action type:
+
+| Trigger or action | Properties |
+|---|---|
+| Request trigger and Cosmos `ServiceProvider` reads | `["inputs", "outputs"]` |
+| `ParseJson`, `Compose`, and `Response` | `["inputs"]` |
+
+For the second row, securing inputs also hides outputs; these actions do not
+support a separate Secure Outputs setting. Set the protection explicitly on
+each downstream data action rather than assuming it propagates. Do not add
+secure-data settings to `Scope` or `If`.
+
+For both tracks, expose a boolean `show_sample_payloads` input defaulting to
+`true` so learners can inspect the committed public samples. Apply this choice
+consistently across the trigger and all data actions. With the option enabled,
+omit `secureData` and omit its enclosing
+`runtimeConfiguration` if that object would be empty. Null or empty
+`secureData.properties` arrays fail native runtime validation with
+`InvalidSecureDataConfiguration`; do not use them to disable protection.
+With the option disabled, restore the table above. Authentication, identities, network
+access, and authorization must remain unchanged in either mode.
+
+In Terraform, render the conditional security blocks with `templatefile`
+from `workflows/lab01-workflow/workflow.json.tftpl`; validate the rendered JSON,
+not the template as literal JSON. Never upload unexpanded template expressions.
+Bicep tooling must produce the same visible-by-default teaching behavior.
+Inspect a new run to verify visibility; changing the definition does not
+unhide previously secured history. Restore protection before using any real
+or sensitive payload. Never log callback URLs or dump full app settings or
+unrelated connection data, even in sample mode.
+
+### Known malformed-JSON boundary
+
+Malformed `application/json` is rejected by the HTTP trigger before a workflow
+run starts. The observed response is HTTP `400` with Azure's
+`{"error":{"code":"InvalidRequestContent","message":"..."}}` envelope, not
+the workflow's `InvalidRequest` envelope. An empty trigger schema does not
+prevent this platform-level parsing.
+
+The contract remains unchanged: its malformed-JSON envelope requirement is
+a known unmet limitation, not a passing workflow test. Report it explicitly.
+Correctly formed JSON with missing, invalid, or extra fields must still reach
+the workflow's contracted `400` response. Do not change the test's content type,
+weaken validation, or add a gateway to hide the limitation.
 
 ## Workflow artifacts and connection
 
 Deploy Standard artifacts through the site's `deployWorkflowArtifacts`
-operation. The files map contains `region-lookup/workflow.json`; preserve every
+operation. The files map contains `lab01-workflow/workflow.json`; preserve every
 other workflow. Do not `PUT` to `Microsoft.Web/sites/workflows`.
+
+When migrating an existing `region-lookup`, upload and verify `lab01-workflow`
+first. Retire only the old workflow's artifacts after learner approval and
+successful tests of the new endpoint. Do not assume Terraform action-state
+updates remove the old files. Warn that the old callback stops working and
+its run history may no longer be accessible through that workflow.
 
 The seed script creates this `serviceProviderConnections` entry in the shared
 `connections.json`:
@@ -218,8 +334,31 @@ Verify Lab 0's readiness first if it has changed. Before deploying, validate
 workflow/connection JSON and review the selected track's format/build/preview
 or fmt/validate/plan. The preview must have no foundation writes.
 
+### Native runtime readiness
+
+Artifact deployment success and `Healthy` from the ARM `/sites/.../workflows`
+file view do not prove that the native runtime compiled the workflow.
+After deployment, query the existing site's native management endpoint:
+
+```text
+GET {logic_app_id}/hostruntime/runtime/webhooks/workflow/api/management/workflows/lab01-workflow?api-version=2025-03-01
+```
+
+Check the response's `health.state`. Use a bounded registration wait, then
+require `Healthy` and confirm `Receive_Request` is registered before obtaining
+its callback URL and running HTTP tests. If it remains unhealthy, inspect
+`health.errorMessage` and action error codes without dumping secured payloads.
+Fix the workflow definition first; do not infer an RBAC or networking fault
+from a schema or inline-code compilation error.
+
+### Behavioral verification and cleanup
+
 Test every case in `contracts/test-cases.json`, compare the successful response
-with `sample-response.json`, and inspect a run to prove an actual Cosmos read.
+with `sample-response.json`, and inspect action statuses in a successful run
+to prove both actual Cosmos reads. Offline schema checks and mocked Terraform
+tests do not replace these live checks. Distinguish live-tested paths from
+offline-only failure-path checks; do not claim a tested outage response unless
+that path was exercised.
 A different seeded name must return its own display name and physical location.
 Change the support tier while keeping the region to prove the second lookup is
 independent. Change the request metadata to prove it passes through unchanged.
@@ -229,7 +368,7 @@ error path without weakening networking or RBAC.
 Retrieve the callback URL privately for the exercise only. Never commit,
 output in IaC, log, or persist it. There is no browser/CORS task in this lab.
 
-Cleanup removes `region-lookup` and only its unused connection entry. Verify
+Cleanup removes `lab01-workflow` and only its unused connection entry. Verify
 artifact removal explicitly; Terraform state destruction alone may leave
 uploaded files. Keep the sample documents until Lab 0 cleanup, and preserve
 all other labs' artifacts and the shared foundation.
