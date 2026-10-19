@@ -77,16 +77,17 @@ def validate_inputs(foundation, regions):
     ids = set()
     for region in regions:
         if not isinstance(region, dict) or set(region) != {
-            "id", "programmaticName", "physicalLocation"
+            "id", "programmaticName", "displayName", "physicalLocation"
         }:
-            raise ValueError("Each region needs only id, programmaticName, and physicalLocation.")
+            raise ValueError("Each region needs only id, programmaticName, displayName, and physicalLocation.")
         name = region["programmaticName"]
         if not isinstance(name, str) or not re.fullmatch(r"[a-z][a-z0-9]{1,39}", name):
             raise ValueError("Seed programmatic names must match the API contract.")
         if region["id"] != f"lab01-region-{name}" or region["id"] in ids:
             raise ValueError("Seed IDs must be unique and use the lab01-region- prefix.")
-        if not isinstance(region["physicalLocation"], str) or not region["physicalLocation"].strip():
-            raise ValueError("Each seeded physical location must be a nonempty string.")
+        for field in ["displayName", "physicalLocation"]:
+            if not isinstance(region[field], str) or not region[field].strip():
+                raise ValueError(f"Each seeded {field} must be a nonempty string.")
         ids.add(region["id"])
     return match[1]
 

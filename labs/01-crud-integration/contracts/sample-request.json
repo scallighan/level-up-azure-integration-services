@@ -1,3 +1,8 @@
 {
-  "programmaticName": "westus"
+  "requestId": "REQ-1042",
+  "workloadName": "inventory-api",
+  "instanceCount": 2,
+  "programmaticName": "westus",
+  "regionDisplayName": "unresolved",
+  "physicalLocation": "unresolved"
 }

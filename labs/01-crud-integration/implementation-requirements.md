@@ -26,8 +26,8 @@ keys, or grant the workstation additional Cosmos data-plane roles.
 
 ## Lookup data
 
-`contracts/regions.json` is a small teaching snapshot of the programmatic names
-and physical locations in Microsoft's
+`contracts/regions.json` is a small teaching snapshot of the programmatic names,
+region display names, and physical locations in Microsoft's
 [Azure regions list](https://learn.microsoft.com/en-us/azure/reliability/regions-list?tabs=all),
 checked on October 19, 2026. It is not a complete or live Azure region catalog.
 Use these public sample values, not customer system names or cross-reference data.
@@ -38,6 +38,7 @@ Each document has this shape:
 {
   "id": "lab01-region-westus",
   "programmaticName": "westus",
+  "displayName": "West US",
   "physicalLocation": "California"
 }
 ```
@@ -61,12 +62,29 @@ Treat `contracts/openapi.yaml` as the source of truth.
 `POST /region-lookup` describes the operation; the deployed workflow uses its
 HTTP trigger callback URL, not an API gateway route.
 
-1. Accept a JSON object with exactly one required string, `programmaticName`.
-   It must be 2-40 lowercase letters or digits, starting with a letter.
+1. Accept exactly the six fields defined in the contract. `requestId` and
+   `workloadName` are nonempty strings, `instanceCount` is a positive integer,
+   and the two incoming region labels are strings (placeholders may be empty).
+   `programmaticName` must be 2-40 lowercase letters or digits, starting with a letter.
    Do not silently trim, lowercase, substitute, or default invalid values.
 2. Read the matching document from Cosmos DB. This workflow is read-only.
-3. Return HTTP `200`, `Content-Type: application/json`, and exactly
-   `programmaticName` and `physicalLocation`.
+3. Return HTTP `200`, `Content-Type: application/json`, and the same six fields,
+   following this mapping:
+
+| Response field | Source |
+|---|---|
+| `requestId` | Copy from the request unchanged |
+| `workloadName` | Copy from the request unchanged |
+| `instanceCount` | Copy from the request as an integer, not a string |
+| `programmaticName` | Copy the validated lookup key unchanged |
+| `regionDisplayName` | Replace with the Cosmos document's `displayName` |
+| `physicalLocation` | Replace with the Cosmos document's `physicalLocation` |
+
+The incoming region labels are unverified: replace them even when they contain
+nonempty, incorrect values. Do not fall back to those values on a missing or
+failed lookup. A document missing a valid `displayName` or `physicalLocation`
+is an `InternalError`, not a successful partial response.
+This is a payload transformation; do not provision the requested workload.
 
 Return deliberate JSON errors containing only `code` and `message`:
 
@@ -125,7 +143,8 @@ Reference it using `connectionName: lab01Cosmos`. For `ReadDocument`,
 `inputs.parameters` contains `databaseId`, `containerId`, `itemId`, and
 `partitionKey`. Put `retryPolicy` under the action's `inputs`, not beside them.
 The built-in `ReadDocument` result contains the document as a JSON string in
-`content`. Parse that string before projecting the two response fields.
+`content`. Parse that string before using its two lookup values to transform
+the request. Project only the six contracted response fields.
 
 Do not replace the site's full settings or connection file. If an artifact
 deployment needs to update connections, read the current file and merge only
@@ -141,8 +160,10 @@ or fmt/validate/plan. The preview must have no foundation writes.
 
 Test every case in `contracts/test-cases.json`, compare the successful response
 with `sample-response.json`, and inspect a run to prove an actual Cosmos read.
-A different seeded name must return its own physical location. Check the
-unavailable-store error path without weakening networking or RBAC.
+A different seeded name must return its own display name and physical location.
+Change the request metadata to prove it passes through unchanged, and supply
+incorrect labels to prove Cosmos overwrites them. Check the unavailable-store
+error path without weakening networking or RBAC.
 
 Retrieve the callback URL privately for the exercise only. Never commit,
 output in IaC, log, or persist it. There is no browser/CORS task in this lab.

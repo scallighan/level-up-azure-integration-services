@@ -2,31 +2,37 @@
   {
     "id": "lab01-region-westus",
     "programmaticName": "westus",
+    "displayName": "West US",
     "physicalLocation": "California"
   },
   {
     "id": "lab01-region-eastus",
     "programmaticName": "eastus",
+    "displayName": "East US",
     "physicalLocation": "Virginia"
   },
   {
     "id": "lab01-region-centralus",
     "programmaticName": "centralus",
+    "displayName": "Central US",
     "physicalLocation": "Iowa"
   },
   {
     "id": "lab01-region-westeurope",
     "programmaticName": "westeurope",
+    "displayName": "West Europe",
     "physicalLocation": "Netherlands"
   },
   {
     "id": "lab01-region-uksouth",
     "programmaticName": "uksouth",
+    "displayName": "UK South",
     "physicalLocation": "London"
   },
   {
     "id": "lab01-region-southeastasia",
     "programmaticName": "southeastasia",
+    "displayName": "Southeast Asia",
     "physicalLocation": "Singapore"
   }
 ]

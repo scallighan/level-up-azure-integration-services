@@ -1,43 +1,151 @@
 [
   {
-    "name": "known region",
-    "request": {"programmaticName": "westus"},
+    "name": "preserve request values and resolve region labels",
+    "request": {
+      "requestId": "REQ-1042",
+      "workloadName": "inventory-api",
+      "instanceCount": 2,
+      "programmaticName": "westus",
+      "regionDisplayName": "unresolved",
+      "physicalLocation": "unresolved"
+    },
     "status": 200,
-    "response": {"programmaticName": "westus", "physicalLocation": "California"}
+    "response": {
+      "requestId": "REQ-1042",
+      "workloadName": "inventory-api",
+      "instanceCount": 2,
+      "programmaticName": "westus",
+      "regionDisplayName": "West US",
+      "physicalLocation": "California"
+    }
   },
   {
-    "name": "different lookup value",
-    "request": {"programmaticName": "westeurope"},
+    "name": "different lookup value and request details",
+    "request": {
+      "requestId": "REQ-1043",
+      "workloadName": "billing-api",
+      "instanceCount": 3,
+      "programmaticName": "westeurope",
+      "regionDisplayName": "unresolved",
+      "physicalLocation": "unresolved"
+    },
     "status": 200,
-    "response": {"programmaticName": "westeurope", "physicalLocation": "Netherlands"}
+    "response": {
+      "requestId": "REQ-1043",
+      "workloadName": "billing-api",
+      "instanceCount": 3,
+      "programmaticName": "westeurope",
+      "regionDisplayName": "West Europe",
+      "physicalLocation": "Netherlands"
+    }
+  },
+  {
+    "name": "replace incorrect labels without changing other values",
+    "request": {
+      "requestId": "REQ-8888",
+      "workloadName": "catalog-api",
+      "instanceCount": 5,
+      "programmaticName": "westus",
+      "regionDisplayName": "East US",
+      "physicalLocation": "Virginia"
+    },
+    "status": 200,
+    "response": {
+      "requestId": "REQ-8888",
+      "workloadName": "catalog-api",
+      "instanceCount": 5,
+      "programmaticName": "westus",
+      "regionDisplayName": "West US",
+      "physicalLocation": "California"
+    }
   },
   {
     "name": "unknown region",
-    "request": {"programmaticName": "notaregion"},
+    "request": {
+      "requestId": "REQ-1044",
+      "workloadName": "inventory-api",
+      "instanceCount": 2,
+      "programmaticName": "notaregion",
+      "regionDisplayName": "unresolved",
+      "physicalLocation": "unresolved"
+    },
     "status": 404,
     "errorCode": "RegionNotFound"
   },
   {
     "name": "missing programmatic name",
-    "request": {},
+    "request": {
+      "requestId": "REQ-1042",
+      "workloadName": "inventory-api",
+      "instanceCount": 2,
+      "regionDisplayName": "unresolved",
+      "physicalLocation": "unresolved"
+    },
     "status": 400,
     "errorCode": "InvalidRequest"
   },
   {
-    "name": "wrong value type",
-    "request": {"programmaticName": 42},
+    "name": "wrong region value type",
+    "request": {
+      "requestId": "REQ-1042",
+      "workloadName": "inventory-api",
+      "instanceCount": 2,
+      "programmaticName": 42,
+      "regionDisplayName": "unresolved",
+      "physicalLocation": "unresolved"
+    },
     "status": 400,
     "errorCode": "InvalidRequest"
   },
   {
     "name": "display name instead of programmatic name",
-    "request": {"programmaticName": "West US"},
+    "request": {
+      "requestId": "REQ-1042",
+      "workloadName": "inventory-api",
+      "instanceCount": 2,
+      "programmaticName": "West US",
+      "regionDisplayName": "unresolved",
+      "physicalLocation": "unresolved"
+    },
     "status": 400,
     "errorCode": "InvalidRequest"
   },
   {
     "name": "extra field",
-    "request": {"programmaticName": "westus", "extra": true},
+    "request": {
+      "requestId": "REQ-1042",
+      "workloadName": "inventory-api",
+      "instanceCount": 2,
+      "programmaticName": "westus",
+      "regionDisplayName": "unresolved",
+      "physicalLocation": "unresolved",
+      "extra": true
+    },
+    "status": 400,
+    "errorCode": "InvalidRequest"
+  },
+  {
+    "name": "missing pass-through field",
+    "request": {
+      "requestId": "REQ-1042",
+      "instanceCount": 2,
+      "programmaticName": "westus",
+      "regionDisplayName": "unresolved",
+      "physicalLocation": "unresolved"
+    },
+    "status": 400,
+    "errorCode": "InvalidRequest"
+  },
+  {
+    "name": "instance count must remain numeric",
+    "request": {
+      "requestId": "REQ-1042",
+      "workloadName": "inventory-api",
+      "instanceCount": "2",
+      "programmaticName": "westus",
+      "regionDisplayName": "unresolved",
+      "physicalLocation": "unresolved"
+    },
     "status": 400,
     "errorCode": "InvalidRequest"
   }

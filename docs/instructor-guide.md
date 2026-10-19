@@ -59,8 +59,9 @@ behavior should match even when implementation details differ.
 - The learner generates the lookup workflow from the short prompt, not a
   supplied complete solution. There is no CRUD API, website, or APIM task.
 - The Logic App identity, not a shared key, accesses Cosmos DB.
-- Requests for two seeded names return different physical locations; missing
-  mappings and invalid requests return deliberate errors.
+- Request metadata passes through unchanged; two seeded names produce different
+  lookup-derived display names and locations, replacing unverified input labels.
+  Missing mappings and invalid requests return deliberate errors.
 
 **Lab 2**
 

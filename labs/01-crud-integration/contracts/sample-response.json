@@ -1,4 +1,8 @@
 {
+  "requestId": "REQ-1042",
+  "workloadName": "inventory-api",
+  "instanceCount": 2,
   "programmaticName": "westus",
+  "regionDisplayName": "West US",
   "physicalLocation": "California"
 }

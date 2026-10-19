@@ -133,6 +133,7 @@ do not let a later deployment replace the shared parent's settings.
 - Check that only the six `lab01-region-*` records are upserted and the helper
   workflow is removed. Other workflows and connections must remain.
 - The sample is public Azure region data, not customer cross-reference content.
+  Each record includes a display name and physical location.
 
 ### Task 2: generate the workflow
 
@@ -147,11 +148,16 @@ do not let a later deployment replace the shared parent's settings.
 
 ### Tasks 3-4: test the transformation
 
-- `westus` returns `California`; `westeurope` returns `Netherlands`.
+- `westus` resolves to `West US` / `California`; `westeurope` resolves to
+  `West Europe` / `Netherlands`.
 - Only the seeded subset is supported. An unseeded name returns `404`, not a
   default location or a successful partial response.
 - Missing, invalid, or extra fields return the contracted `400` JSON error.
-- The response contains only `programmaticName` and `physicalLocation`.
+- Request ID, workload name, instance count, and programmatic name pass through
+  unchanged. Region display name and physical location are replaced from
+  Cosmos, even if the incoming labels contain incorrect values.
+- Return only the six contracted fields; do not expose the document ID or
+  Cosmos metadata. This exercise transforms JSON, not Azure resources.
 - Inspect a run to prove Cosmos was read; do not accept hardcoded mappings.
 - Protect the callback URL and secure payloads in run history.
 - Remove only the learner's workflow and unused connection during cleanup.

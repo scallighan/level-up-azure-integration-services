@@ -145,22 +145,38 @@ class SeedTests(unittest.TestCase):
             SEED.wait_for_completion("/runtime/seed", "seed")
         self.assertEqual(requests.calls[-1][:2], ("post", "/runtime/seed/runs/seed-run/cancel"))
 
+    def test_seed_rejects_missing_or_empty_region_labels_before_azure(self):
+        for field in ["displayName", "physicalLocation"]:
+            for value in [None, "", "   "]:
+                with self.subTest(field=field, value=value):
+                    invalid = copy.deepcopy(REGIONS)
+                    if value is None:
+                        del invalid[0][field]
+                    else:
+                        invalid[0][field] = value
+                    with patch.object(SEED, "az_json") as azure, self.assertRaises(ValueError):
+                        SEED.seed(FOUNDATION, invalid)
+                    azure.assert_not_called()
+
     def test_success_fixtures_match_the_seeded_lookup_data(self):
         contracts = SEED.REGIONS.parent
         by_name = {region["programmaticName"]: region for region in REGIONS}
-        for case in json.loads((contracts / "test-cases.json").read_text()):
+        cases = json.loads((contracts / "test-cases.json").read_text())
+        cases.append({
+            "name": "README sample", "status": 200,
+            "request": json.loads((contracts / "sample-request.json").read_text()),
+            "response": json.loads((contracts / "sample-response.json").read_text()),
+        })
+        for case in cases:
             if case["status"] != 200:
                 continue
             with self.subTest(case=case["name"]):
                 name = case["request"]["programmaticName"]
                 self.assertEqual(case["response"], {
-                    "programmaticName": name,
+                    **case["request"],
+                    "regionDisplayName": by_name[name]["displayName"],
                     "physicalLocation": by_name[name]["physicalLocation"],
                 })
-        sample = json.loads((contracts / "sample-response.json").read_text())
-        self.assertEqual(
-            sample["physicalLocation"], by_name[sample["programmaticName"]]["physicalLocation"]
-        )
 
 
 if __name__ == "__main__":
