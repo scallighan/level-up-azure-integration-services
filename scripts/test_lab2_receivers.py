@@ -1,156 +1,184 @@
-"""Render and check Lab 2 receiver artifacts without deploying anything."""
+"""Check Lab 2 contracts and receiver-run validation without generated solutions."""
 
+import copy
+import importlib.util
 import json
-import os
 from pathlib import Path
-import subprocess
 import unittest
+from unittest.mock import patch
+
+from jsonschema import Draft202012Validator, FormatChecker
 
 
-ROOT = Path(__file__).resolve().parent.parent
-TRACK = ROOT / "labs/02-topic-fanout/iac/terraform"
+SPEC = importlib.util.spec_from_file_location("lab2_receivers", Path(__file__).with_name("test-lab2.py"))
+LAB2 = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(LAB2)
+CONTRACTS = Path(__file__).resolve().parent.parent / "labs/02-topic-fanout/contracts"
+SPECIALISTS = {
+    "order.created": "order-created",
+    "order.cancelled": "order-cancelled",
+}
 
 
-def render(visible):
-    environment = {
-        **os.environ,
-        "TF_VAR_subscription_id": "00000000-0000-0000-0000-000000000001",
-        "TF_VAR_foundation_resource_group_name": "workshop",
-        "TF_VAR_location": "westus",
-        "TF_VAR_show_sample_payloads": str(visible).lower(),
-    }
-    result = subprocess.run(
-        ["terraform", f"-chdir={TRACK}", "console", "-no-color"],
-        input="jsonencode(local.receiver_workflows)\n", text=True,
-        capture_output=True, env=environment, timeout=90,
-    )
-    if result.returncode:
-        raise RuntimeError(f"Workflow rendering failed: {result.stderr}")
-    return json.loads(json.loads(result.stdout))
-
-
-def operations(definition):
-    yield from definition["triggers"].values()
-    for action in definition["actions"].values():
-        yield action
-        if "actions" in action:
-            yield from operations({"triggers": {}, "actions": action["actions"]})
-
-
-def settlement_path(actions, processing, complete="Succeeded", abandon="Succeeded"):
-    """Follow the rendered runAfter edges for processing/settlement outcomes."""
-    statuses = {"Process_message": processing}
-    for name, result in [
-        ("Complete_message", complete), ("Abandon_message", abandon), ("Fail_run", "Failed"),
-    ]:
-        enabled = all(statuses[parent] in allowed for parent, allowed in actions[name]["runAfter"].items())
-        statuses[name] = result if enabled else "Skipped"
-    return statuses
-
-
-class ReceiverTests(unittest.TestCase):
+class ContractTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.visible = render(True)
-        cls.protected = render(False)
+        cls.validators = {}
+        for name in ("event-envelope", "order-created", "order-cancelled"):
+            schema = json.loads((CONTRACTS / f"{name}.schema.json").read_text())
+            Draft202012Validator.check_schema(schema)
+            cls.validators[name] = Draft202012Validator(schema, format_checker=FormatChecker())
+        cls.samples = {
+            event_type: json.loads((CONTRACTS / f"sample-{workflow}.json").read_text())
+            for event_type, workflow in SPECIALISTS.items()
+        }
 
-    def test_exactly_three_independent_peek_lock_receivers_use_prepared_connection(self):
-        self.assertEqual(set(self.visible), {"audit", "fulfillment", "notification"})
-        for name, workflow in self.visible.items():
-            with self.subTest(workflow=name):
-                self.assertEqual(workflow["kind"], "Stateful")
-                definition = workflow["definition"]
-                trigger = definition["triggers"]["Receive_order"]
-                self.assertEqual(trigger["inputs"]["parameters"], {
-                    "topicName": "orders", "subscriptionName": name, "maxMessageBatchSize": 1,
-                })
-                self.assertEqual(trigger["splitOn"], "@triggerOutputs()?['body']")
-                self.assertIn("correlationId", trigger["splitOnConfiguration"]["correlation"]["clientTrackingId"])
-                self.assertNotIn("correlation", trigger)
-                service_operations = [
-                    operation["inputs"] for operation in operations(definition)
-                    if operation["type"] == "ServiceProvider"
-                ]
-                self.assertEqual({
-                    operation["serviceProviderConfiguration"]["operationId"]
-                    for operation in service_operations
-                }, {"peekLockTopicMessagesV2", "completeTopicMessageV2", "abandonTopicMessageV2"})
-                for operation in service_operations:
-                    self.assertEqual(operation["serviceProviderConfiguration"]["connectionName"], "lab02ServiceBus")
-                    self.assertEqual(operation["serviceProviderConfiguration"]["serviceProviderId"], "/serviceProviders/serviceBus")
-                    self.assertEqual(operation["parameters"]["subscriptionName"], name)
-                    if "lockToken" in operation["parameters"]:
-                        self.assertEqual(operation["parameters"]["lockToken"], "@triggerBody()?['lockToken']")
+    def test_samples_and_fresh_events_match_the_envelope_and_only_their_specialist(self):
+        for event_type, workflow in SPECIALISTS.items():
+            for event in (self.samples[event_type], LAB2.fresh_event(event_type, "ORD-portable-test")):
+                with self.subTest(event_type=event_type, event_id=event["eventId"]):
+                    self.validators["event-envelope"].validate(event)
+                    self.validators[workflow].validate(event)
+                    for other in set(SPECIALISTS.values()) - {workflow}:
+                        self.assertFalse(self.validators[other].is_valid(event))
 
-    def test_completion_requires_success_and_all_failure_paths_abandon_then_fail(self):
-        for name, workflow in self.visible.items():
-            actions = workflow["definition"]["actions"]
-            for processing in ("Succeeded", "Failed", "TimedOut"):
-                for complete in ("Succeeded", "Failed", "TimedOut"):
-                    for abandon in ("Succeeded", "Failed", "TimedOut"):
-                        with self.subTest(workflow=name, processing=processing, complete=complete, abandon=abandon):
-                            statuses = settlement_path(actions, processing, complete, abandon)
-                            if processing != "Succeeded":
-                                self.assertEqual(statuses["Complete_message"], "Skipped")
-                            if processing == "Succeeded" and complete == "Succeeded":
-                                self.assertEqual(statuses["Abandon_message"], "Skipped")
-                                self.assertEqual(statuses["Fail_run"], "Skipped")
-                            else:
-                                self.assertEqual(statuses["Abandon_message"], abandon)
-                                self.assertEqual(statuses["Fail_run"], "Failed")
-            for action in ("Complete_message", "Abandon_message"):
-                self.assertEqual(actions[action]["inputs"]["retryPolicy"], {
-                    "type": "fixed", "count": 2, "interval": "PT5S",
-                })
+    def test_audit_accepts_future_event_types_without_a_specialist_payload_shape(self):
+        event = copy.deepcopy(self.samples["order.created"])
+        event["eventType"] = "order.shipped"
+        event["data"] = {"shipmentId": "SHIP-1042"}
+        self.validators["event-envelope"].validate(event)
+        for workflow in SPECIALISTS.values():
+            self.assertFalse(self.validators[workflow].is_valid(event))
 
-    def test_visibility_protects_every_data_operation_and_never_control_actions(self):
-        for name in self.visible:
-            visible = list(operations(self.visible[name]["definition"]))
-            protected = list(operations(self.protected[name]["definition"]))
-            self.assertEqual(len(visible), len(protected))
-            for shown, hidden in zip(visible, protected):
-                self.assertNotIn("runtimeConfiguration", shown)
-                if hidden["type"] == "ServiceProvider":
-                    self.assertEqual(hidden["runtimeConfiguration"]["secureData"]["properties"], ["inputs", "outputs"])
-                elif hidden["type"] in ("ParseJson", "Compose"):
-                    self.assertEqual(hidden["runtimeConfiguration"]["secureData"]["properties"], ["inputs"])
-                else:
-                    self.assertNotIn("runtimeConfiguration", hidden)
-                self.assertNotIn("trackedProperties", hidden)
+    def test_order_lifecycle_samples_share_an_order_but_not_message_identifiers(self):
+        created, cancelled = (self.samples[event_type] for event_type in SPECIALISTS)
+        self.assertEqual(created["data"]["orderId"], cancelled["data"]["orderId"])
+        self.assertNotEqual(created["eventId"], cancelled["eventId"])
+        self.assertNotEqual(created["correlationId"], cancelled["correlationId"])
 
-    def test_lightweight_business_actions_and_identifier_only_telemetry_precede_completion(self):
-        for name, workflow in self.visible.items():
-            processing = workflow["definition"]["actions"]["Process_message"]["actions"]
-            self.assertEqual(processing[f"Process_{name}"]["type"], "Compose")
-            self.assertEqual(processing[f"Process_{name}"]["runAfter"], {"Validate_contract": ["Succeeded"]})
-            telemetry = processing["Emit_telemetry"]
-            self.assertEqual(telemetry["runAfter"], {f"Process_{name}": ["Succeeded"]})
-            self.assertEqual(set(telemetry["inputs"]), {"eventId", "correlationId", "subscription", "status"})
-            for expression in telemetry["trackedProperties"].values():
-                self.assertTrue(expression.startswith("@action().outputs."))
-            self.assertNotIn("recipient", self.visible["audit"]["definition"]["actions"]["Process_message"]["actions"]["Process_audit"]["inputs"])
-        fulfillment = self.visible["fulfillment"]["definition"]["actions"]["Process_message"]["actions"]["Process_fulfillment"]["inputs"]
-        notification = self.visible["notification"]["definition"]["actions"]["Process_message"]["actions"]["Process_notification"]["inputs"]
-        self.assertIn("orderId", fulfillment)
-        self.assertIn("recipient", notification)
-        self.assertIn("message", notification)
+    def test_specialists_reject_invalid_creation_and_cancellation_data(self):
+        for event_type, field, value in [
+            ("order.created", "total", 0),
+            ("order.created", "total", "149.95"),
+            ("order.created", "currency", "usd"),
+            ("order.cancelled", "reason", ""),
+            ("order.cancelled", "orderId", "x" * 51),
+        ]:
+            event = copy.deepcopy(self.samples[event_type])
+            event["data"][field] = value
+            with self.subTest(event_type=event_type, field=field):
+                self.assertFalse(self.validators[SPECIALISTS[event_type]].is_valid(event))
+        for event_type, field in [
+            ("order.created", "customerId"), ("order.cancelled", "reason"),
+        ]:
+            event = copy.deepcopy(self.samples[event_type])
+            del event["data"][field]
+            with self.subTest(event_type=event_type, missing=field):
+                self.assertFalse(self.validators[SPECIALISTS[event_type]].is_valid(event))
 
-    def test_contract_schema_and_metadata_validation_gate_every_business_action(self):
-        contract = json.loads((ROOT / "labs/02-topic-fanout/contracts/order-created.schema.json").read_text())
-        for workflow in self.visible.values():
-            processing = workflow["definition"]["actions"]["Process_message"]["actions"]
-            schema = processing["Parse_event"]["inputs"]["schema"]
-            self.assertEqual(schema["required"], contract["required"])
-            self.assertFalse(schema["additionalProperties"])
-            self.assertEqual(schema["properties"]["eventType"]["enum"], ["order.created"])
-            self.assertEqual(schema["properties"]["schemaVersion"]["enum"], ["1.0"])
-            self.assertNotIn("pattern", json.dumps(schema))
-            validation = processing["Validate_contract"]["inputs"]
-            self.assertEqual(validation["schema"], {"type": "boolean", "enum": [True]})
-            for field in ("contentType", "messageId", "correlationId", "eventType", "schemaVersion"):
-                self.assertIn(f"['{field}']", validation["content"])
-            self.assertIn("greater(body('Parse_event')['data']['total'], 0)", validation["content"])
-            self.assertIn("ticks(body('Parse_event')['occurredAt'])", validation["content"])
+    def test_invalid_metadata_and_unexpected_envelope_fields_are_rejected(self):
+        for field, value in [
+            ("eventId", "not-a-uuid"),
+            ("correlationId", "not-a-uuid"),
+            ("occurredAt", "not-a-timestamp"),
+            ("schemaVersion", "2.0"),
+            ("unexpected", "extra"),
+        ]:
+            event = {**self.samples["order.created"], field: value}
+            with self.subTest(field=field):
+                for validator in (self.validators["event-envelope"], self.validators["order-created"]):
+                    self.assertFalse(validator.is_valid(event))
+
+
+class ReceiverRunTests(unittest.TestCase):
+    def setUp(self):
+        self.event = json.loads((CONTRACTS / "sample-order-created.json").read_text())
+        self.run = {"name": "run-1", "properties": {"status": "Succeeded"}}
+
+    def actions(self, specialist):
+        names = ["Process_message", "Complete_message"]
+        if specialist:
+            names.extend(["Read_order", "Verify_order"])
+        return [
+            {"name": name, "properties": {"status": "Succeeded"}}
+            for name in names
+        ]
+
+    def test_specialists_require_processing_read_back_verification_and_completion(self):
+        for event_type, workflow in SPECIALISTS.items():
+            event = {**self.event, "eventType": event_type}
+            actions = self.actions(specialist=True)
+            with self.subTest(workflow=workflow), patch.object(LAB2, "arm_get", return_value={"value": actions}):
+                self.assertTrue(LAB2.check_run("/runtime", self.run, event, workflow))
+            for name in ("Process_message", "Complete_message", "Read_order", "Verify_order"):
+                for status in ("Failed", "Skipped", "TimedOut"):
+                    failed = copy.deepcopy(actions)
+                    next(action for action in failed if action["name"] == name)["properties"]["status"] = status
+                    with self.subTest(workflow=workflow, action=name, status=status), \
+                            patch.object(LAB2, "arm_get", return_value={"value": failed}), \
+                            self.assertRaisesRegex(RuntimeError, name):
+                        LAB2.check_run("/runtime", self.run, event, workflow)
+
+    def test_audit_requires_processing_and_completion_but_no_cosmos_actions(self):
+        actions = self.actions(specialist=False)
+        with patch.object(LAB2, "arm_get", return_value={"value": actions}) as get:
+            self.assertTrue(LAB2.check_run("/runtime", self.run, self.event, "audit"))
+            get.assert_called_once_with("/runtime/runs/run-1/actions")
+        for name in ("Process_message", "Complete_message"):
+            missing = [action for action in actions if action["name"] != name]
+            with self.subTest(missing=name), patch.object(LAB2, "arm_get", return_value={"value": missing}), \
+                    self.assertRaisesRegex(RuntimeError, name):
+                LAB2.check_run("/runtime", self.run, self.event, "audit")
+
+    def test_nested_cosmos_actions_are_checked_without_fetching_payload_links(self):
+        paths = []
+
+        def response(path):
+            paths.append(path)
+            if path == "/runtime/runs/run-1/actions":
+                return {"value": self.actions(specialist=False)}
+            if path in ("/runtime/runs/run-1/actions/Read_order", "/runtime/runs/run-1/actions/Verify_order"):
+                return {"properties": {
+                    "status": "Succeeded", "outputsLink": {"uri": "https://example.invalid/private-payload"},
+                }}
+            self.fail(f"Unexpected action or payload request: {path}")
+
+        with patch.object(LAB2, "arm_get", side_effect=response), patch.object(LAB2, "urlopen") as fetch:
+            self.assertTrue(LAB2.check_run("/runtime", self.run, self.event, "order-created"))
+            fetch.assert_not_called()
+        self.assertEqual(len(paths), 3)
+
+    def test_failed_or_active_runs_cannot_be_reported_as_success(self):
+        for status in ("Running", "Waiting", "Accepted"):
+            run = {"name": "run-1", "properties": {"status": status}}
+            with self.subTest(status=status), patch.object(LAB2, "arm_get") as get:
+                self.assertFalse(LAB2.check_run("/runtime", run, self.event, "order-created"))
+                get.assert_not_called()
+        for status in ("Failed", "TimedOut", "Cancelled"):
+            run = {"name": "run-1", "properties": {"status": status}}
+            with self.subTest(status=status), \
+                    patch.object(LAB2, "arm_get", return_value={"value": self.actions(specialist=True)}), \
+                    self.assertRaisesRegex(RuntimeError, f"finished {status}"):
+                LAB2.check_run("/runtime", run, self.event, "order-created")
+
+    def test_telemetry_must_match_the_event_when_visible_but_is_optional_in_protected_history(self):
+        actions = self.actions(specialist=True)
+        with patch.object(LAB2, "arm_get", return_value={"value": actions}):
+            self.assertTrue(LAB2.check_run("/runtime", self.run, self.event, "order-created"))
+        telemetry = {"name": "Emit_telemetry", "properties": {
+            "status": "Succeeded", "trackedProperties": {
+                "eventId": self.event["eventId"], "correlationId": self.event["correlationId"],
+            },
+        }}
+        actions.append(telemetry)
+        with patch.object(LAB2, "arm_get", return_value={"value": actions}):
+            self.assertTrue(LAB2.check_run("/runtime", self.run, self.event, "order-created"))
+        for field in ("eventId", "correlationId"):
+            invalid = copy.deepcopy(actions)
+            invalid[-1]["properties"]["trackedProperties"][field] = "different"
+            with self.subTest(field=field), patch.object(LAB2, "arm_get", return_value={"value": invalid}), \
+                    self.assertRaisesRegex(RuntimeError, "does not match"):
+                LAB2.check_run("/runtime", self.run, self.event, "order-created")
 
 
 if __name__ == "__main__":

@@ -110,54 +110,6 @@ class SmokeTests(unittest.TestCase):
             self.assertNotIn("private-token", str(error.exception))
             send.assert_called_once()
 
-    def test_run_success_requires_processing_and_settlement_not_just_run_status(self):
-        event = self.event()
-        run = {"name": "run-1", "properties": {"status": "Succeeded"}}
-        actions = [
-            {"name": "Process_message", "properties": {"status": "Succeeded"}},
-            {"name": "Complete_message", "properties": {"status": "Succeeded"}},
-            {"name": "Read_order", "properties": {"status": "Succeeded"}},
-            {"name": "Verify_order", "properties": {"status": "Succeeded"}},
-            {"name": "Emit_telemetry", "properties": {
-                "status": "Succeeded", "trackedProperties": {
-                    "eventId": event["eventId"], "correlationId": event["correlationId"],
-                },
-            }},
-        ]
-        with patch.object(SMOKE, "arm_get", return_value={"value": actions}):
-            self.assertTrue(SMOKE.check_run("/runtime", run, event, "order-created"))
-        failed = copy.deepcopy(actions)
-        failed[1]["properties"]["status"] = "Skipped"
-        with patch.object(SMOKE, "arm_get", return_value={"value": failed}), \
-                self.assertRaisesRegex(RuntimeError, "Complete_message"):
-            SMOKE.check_run("/runtime", run, event, "order-created")
-        actions[-1]["properties"]["trackedProperties"]["eventId"] = "wrong-event"
-        with patch.object(SMOKE, "arm_get", return_value={"value": actions}), \
-                self.assertRaisesRegex(RuntimeError, "does not match"):
-            SMOKE.check_run("/runtime", run, event, "order-created")
-
-    def test_specialists_require_successful_cosmos_read_back_and_assertion(self):
-        run = {"name": "run-1", "properties": {"status": "Succeeded"}}
-        top_level = {"value": [
-            {"name": name, "properties": {"status": "Succeeded"}}
-            for name in ("Process_message", "Complete_message")
-        ]}
-        for failed in (None, "Read_order", "Verify_order"):
-            def response(path):
-                if path.endswith("/actions"):
-                    return top_level
-                return {"properties": {"status": "Failed" if path.endswith(f"/{failed}") else "Succeeded"}}
-
-            with self.subTest(failed=failed), patch.object(SMOKE, "arm_get", side_effect=response):
-                if failed:
-                    with self.assertRaisesRegex(RuntimeError, failed):
-                        SMOKE.check_run("/runtime", run, self.event(), "order-created")
-                else:
-                    self.assertTrue(SMOKE.check_run("/runtime", run, self.event(), "order-created"))
-        with patch.object(SMOKE, "arm_get", return_value=top_level) as get:
-            self.assertTrue(SMOKE.check_run("/runtime", run, self.event(), "audit"))
-            get.assert_called_once()
-
     def test_wait_matches_only_fresh_correlation_and_checks_the_routing_matrix(self):
         for event_type, specialist in SMOKE.EVENT_WORKFLOWS.items():
             event = self.event(event_type)

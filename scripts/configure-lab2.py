@@ -12,8 +12,11 @@ import tempfile
 
 
 CONNECTION_NAME = "lab02ServiceBus"
-SUBSCRIPTIONS = ("audit", "fulfillment", "notification")
-FILTER = "eventType = 'order.created'"
+RULES = {
+    "audit": ("all-events", "1 = 1"),
+    "order-created": ("order-created", "eventType = 'order.created'"),
+    "order-cancelled": ("order-cancelled", "eventType = 'order.cancelled'"),
+}
 
 
 class MissingConnectionsFile(RuntimeError):
@@ -83,26 +86,31 @@ def merge_connection(connections, fqdn, remove=False):
 def remove_defaults(namespace_id):
     topic_id = f"{namespace_id}/topics/orders"
     subscriptions = request("get", f"{topic_id}/subscriptions", api_version="2024-01-01")
-    if {item["name"].split("/")[-1] for item in subscriptions["value"]} != set(SUBSCRIPTIONS):
-        raise ValueError("orders must contain exactly audit, fulfillment, and notification before configuring it.")
-    for name in SUBSCRIPTIONS:
+    if {item["name"].split("/")[-1] for item in subscriptions["value"]} != set(RULES):
+        raise ValueError("orders must contain exactly audit, order-created, and order-cancelled before configuring it.")
+    validated = []
+    for name, (rule_name, expression) in RULES.items():
         rules_id = f"{topic_id}/subscriptions/{name}/rules"
         rules = request("get", rules_id, api_version="2024-01-01")["value"]
         by_name = {rule["name"].split("/")[-1]: rule for rule in rules}
-        selected = by_name.get("order-created", {}).get("properties", {})
+        selected = by_name.get(rule_name, {}).get("properties", {})
         if (
-            set(by_name) - {"$Default", "order-created"}
+            set(by_name) - {"$Default", rule_name}
             or selected.get("filterType") != "SqlFilter"
-            or selected.get("sqlFilter", {}).get("sqlExpression") != FILTER
+            or re.sub(
+                r"\s*=\s*", "=", (selected.get("sqlFilter") or {}).get("sqlExpression") or "",
+            ).strip() != expression.replace(" = ", "=")
             or (selected.get("action") or {}).get("sqlExpression")
         ):
-            raise ValueError(f"{name} must have the expected order-created SQL rule and no unrelated rules.")
-        if "$Default" in by_name:
+            raise ValueError(f"{name} must have the expected {rule_name} SQL rule ({expression}) and no unrelated rules.")
+        validated.append((name, rules_id, rule_name, "$Default" in by_name))
+    for name, rules_id, rule_name, has_default in validated:
+        if has_default:
             request("delete", f"{rules_id}/$Default", api_version="2024-01-01")
         remaining = request("get", rules_id, api_version="2024-01-01")["value"]
-        if [rule["name"].split("/")[-1] for rule in remaining] != ["order-created"]:
+        if [rule["name"].split("/")[-1] for rule in remaining] != [rule_name]:
             raise RuntimeError(f"{name} rules did not converge; receiver grants must not be added.")
-        print(f"{name}: order-created filter verified; $Default absent.")
+        print(f"{name}: {rule_name} filter verified; $Default absent.")
 
 
 def configure(action, site_id, namespace_id, fqdn):

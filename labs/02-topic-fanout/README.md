@@ -144,6 +144,23 @@ properties `eventType` matching the selected sample, `schemaVersion=1.0`, and
 catch-all behavior, send a valid common envelope with a new event type:
 only audit should run, with no Cosmos changes.
 
+### Offline Python checks
+
+For contributor checks, use a Python virtual environment and run from the
+repository root:
+
+```bash
+python3 -m pip install -r scripts/requirements-test.txt
+python3 -m unittest scripts/test_configure_lab2.py scripts/test_lab2_receivers.py scripts/test_lab2_smoke.py
+```
+
+These tests validate the committed event contracts, broker configuration
+helper, routing checks, and required receiver-run assertions. They need no
+Azure login, Terraform, or generated workflow files. The `jsonschema` package
+is test-only; the live smoke helper still uses the Python standard library
+and Azure CLI. Offline checks do not validate a learner's generated workflow
+definitions or prove Cosmos persistence; run the live helper after deployment.
+
 ## Task 4: prove failure isolation
 
 After successfully creating a fresh order, ask Copilot for a controlled

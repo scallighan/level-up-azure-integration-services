@@ -18,9 +18,17 @@ GROUP = f"/subscriptions/{SUBSCRIPTION}/resourceGroups/workshop"
 SITE = f"{GROUP}/providers/Microsoft.Web/sites/site"
 NAMESPACE = f"{GROUP}/providers/Microsoft.ServiceBus/namespaces/bus"
 FQDN = "bus.servicebus.windows.net"
+EXPECTED_RULES = {
+    "audit": ("all-events", "1 = 1"),
+    "order-created": ("order-created", "eventType = 'order.created'"),
+    "order-cancelled": ("order-cancelled", "eventType = 'order.cancelled'"),
+}
 EXISTING = {
     "managedApiConnections": {"otherApi": {"connection": {"id": "keep"}}},
-    "serviceProviderConnections": {"lab01Cosmos": {"displayName": "Keep me"}},
+    "serviceProviderConnections": {
+        "lab01Cosmos": {"displayName": "Keep Lab 1"},
+        "lab02Cosmos": {"displayName": "Keep Lab 2 Cosmos"},
+    },
 }
 
 
@@ -29,15 +37,16 @@ class AzureRequests:
         self.connections = copy.deepcopy(connections)
         self.missing = missing
         self.calls = []
+        self.subscriptions = list(EXPECTED_RULES)
         self.rules = {
             name: [
                 {"name": "$Default", "properties": {"filterType": "SqlFilter", "sqlFilter": {"sqlExpression": "1=1"}}},
-                {"name": "order-created", "properties": {
-                    "filterType": "SqlFilter", "sqlFilter": {"sqlExpression": LAB2.FILTER},
+                {"name": rule_name, "properties": {
+                    "filterType": "SqlFilter", "sqlFilter": {"sqlExpression": expression},
                     "action": {"compatibilityLevel": 20, "sqlExpression": None},
                 }},
             ]
-            for name in LAB2.SUBSCRIPTIONS
+            for name, (rule_name, expression) in EXPECTED_RULES.items()
         }
 
     def __call__(self, method, path, body=None, api_version=None):
@@ -53,7 +62,7 @@ class AzureRequests:
             self.missing = False
             return None
         if path.endswith("/topics/orders/subscriptions"):
-            return {"value": [{"name": name} for name in LAB2.SUBSCRIPTIONS]}
+            return {"value": [{"name": name} for name in self.subscriptions]}
         if "/topics/orders/subscriptions/" in path:
             name = path.split("/subscriptions/")[-1].split("/")[0]
             if method == "delete" and path.endswith("/rules/$Default"):
@@ -83,7 +92,12 @@ class ConfigurationTests(unittest.TestCase):
         self.assertEqual(azure.connections["managedApiConnections"], EXISTING["managedApiConnections"])
         self.assertEqual(azure.connections["serviceProviderConnections"]["lab01Cosmos"],
                          EXISTING["serviceProviderConnections"]["lab01Cosmos"])
+        self.assertEqual(azure.connections["serviceProviderConnections"]["lab02Cosmos"],
+                         EXISTING["serviceProviderConnections"]["lab02Cosmos"])
         self.assertEqual(sum(method == "delete" for method, _, _ in azure.calls), 3)
+        for name, (rule_name, expression) in EXPECTED_RULES.items():
+            self.assertEqual([rule["name"] for rule in azure.rules[name]], [rule_name])
+            self.assertEqual(azure.rules[name][0]["properties"]["sqlFilter"]["sqlExpression"], expression)
         before = len(azure.calls)
         self.run_configuration(azure)
         self.assertFalse(any(method == "delete" or path.endswith("/deployWorkflowArtifacts")
@@ -123,20 +137,56 @@ class ConfigurationTests(unittest.TestCase):
                 self.assertEqual(len(azure.calls), 1)
 
     def test_bad_filter_or_unrelated_rule_prevents_default_deletion(self):
-        for rules in [
-            [{"name": "$Default", "properties": {}}],
-            [{"name": "order-created", "properties": {
-                "filterType": "SqlFilter", "sqlFilter": {"sqlExpression": "1=1"},
-            }}],
-            [{"name": "unexpected", "properties": {}}],
+        for name in EXPECTED_RULES:
+            for invalid in ("missing", "wrong-event", "extra-rule", "rule-action", "wrong-filter-type"):
+                with self.subTest(subscription=name, invalid=invalid):
+                    azure = AzureRequests()
+                    if invalid == "missing":
+                        azure.rules[name].pop()
+                    elif invalid == "wrong-event":
+                        azure.rules[name][-1]["properties"]["sqlFilter"]["sqlExpression"] = (
+                            "eventType = 'order.created'" if name == "audit" else "1 = 1"
+                        )
+                    elif invalid == "extra-rule":
+                        azure.rules[name].append({"name": "unexpected", "properties": {}})
+                    elif invalid == "wrong-filter-type":
+                        azure.rules[name][-1]["properties"]["filterType"] = "CorrelationFilter"
+                    else:
+                        azure.rules[name][-1]["properties"]["action"]["sqlExpression"] = "SET eventType = 'changed'"
+                    with self.assertRaisesRegex(ValueError, f"{name} must have the expected"):
+                        self.run_configuration(azure)
+                    self.assertFalse(any(method == "delete" or path.endswith("/deployWorkflowArtifacts")
+                                         for method, path, _ in azure.calls))
+
+    def test_filters_accept_compact_sql_and_existing_named_rules_without_defaults(self):
+        azure = AzureRequests()
+        for rules in azure.rules.values():
+            rules.pop(0)
+            expression = rules[0]["properties"]["sqlFilter"]["sqlExpression"]
+            rules[0]["properties"]["sqlFilter"]["sqlExpression"] = expression.replace(" = ", "=")
+        self.run_configuration(azure)
+        self.assertFalse(any(method == "delete" for method, _, _ in azure.calls))
+
+    def test_swapped_specialist_filters_fail_before_any_mutation(self):
+        azure = AzureRequests()
+        azure.rules["order-created"][-1]["properties"]["sqlFilter"]["sqlExpression"] = "eventType = 'order.cancelled'"
+        with self.assertRaisesRegex(ValueError, "order-created"):
+            self.run_configuration(azure)
+        self.assertFalse(any(method == "delete" or path.endswith("/deployWorkflowArtifacts")
+                             for method, path, _ in azure.calls))
+
+    def test_legacy_or_extra_subscriptions_are_rejected_without_writes(self):
+        for subscriptions in [
+            ["audit", "fulfillment", "notification"],
+            ["audit", "order-created"],
+            [*EXPECTED_RULES, "extra"],
         ]:
-            with self.subTest(rules=rules):
-                azure = AzureRequests()
-                azure.rules["audit"] = rules
-                with self.assertRaisesRegex(ValueError, "expected order-created"):
-                    self.run_configuration(azure)
-                self.assertFalse(any(method == "delete" or path.endswith("/deployWorkflowArtifacts")
-                                     for method, path, _ in azure.calls))
+            azure = AzureRequests()
+            azure.subscriptions = subscriptions
+            with self.subTest(subscriptions=subscriptions), self.assertRaisesRegex(ValueError, "exactly audit"):
+                self.run_configuration(azure)
+            self.assertFalse(any(method == "delete" or path.endswith("/deployWorkflowArtifacts")
+                                 for method, path, _ in azure.calls))
 
     def test_authorization_failure_does_not_become_an_empty_connection_file(self):
         with self.assertRaisesRegex(RuntimeError, "Forbidden"):
