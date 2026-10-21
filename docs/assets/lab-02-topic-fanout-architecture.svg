@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1160 610" role="img" aria-labelledby="title description">
-  <title id="title">Lab 2 Service Bus topic fan-out architecture</title>
-  <desc id="description">Service Bus Explorer publishes an order-created event to the orders topic. Audit, fulfillment, and notification subscriptions deliver independent copies to three workflows in one Logic App Standard site. Each workflow sends telemetry to Application Insights.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1390 660" role="img" aria-labelledby="title description">
+  <title id="title">Lab 2 event routing and Cosmos order lifecycle</title>
+  <desc id="description">The Python helper publishes order.created, waits for processing, then publishes order.cancelled. Audit receives all event types. Two filtered subscriptions deliver only their assigned type to workflows that create and cancel an order in a new orders container in the existing private Cosmos database. All three workflows share the Lab 0 Logic App Standard site.</desc>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M 0 0 L 10 5 L 0 10 z" fill="#2563eb"/>
@@ -11,43 +11,55 @@
       .site { fill: #faf5ff; stroke: #7c3aed; stroke-width: 2; rx: 14; }
       .workflow { fill: #f5f3ff; stroke: #7c3aed; stroke-width: 2; rx: 9; }
       .monitor { fill: #fff7ed; stroke: #ea580c; stroke-width: 2; rx: 10; }
+      .data { fill: #ecfdf5; stroke: #059669; stroke-width: 2; rx: 10; }
       .label { fill: #111827; font: 600 16px system-ui, sans-serif; text-anchor: middle; }
       .site-label { fill: #5b21b6; font: 700 17px system-ui, sans-serif; text-anchor: middle; }
       .edge { fill: none; stroke: #2563eb; stroke-width: 2.4; marker-end: url(#arrow); }
       .telemetry { fill: none; stroke: #ea580c; stroke-width: 2.3; marker-end: url(#arrow); }
+      .persistence { fill: none; stroke: #059669; stroke-width: 2.3; marker-end: url(#arrow); }
       .edge-label { fill: #374151; font: 14px system-ui, sans-serif; text-anchor: middle; }
     </style>
   </defs>
 
   <rect class="box" x="35" y="255" width="190" height="70"/>
-  <text class="label" x="130" y="286">Service Bus</text>
-  <text class="label" x="130" y="310">Explorer</text>
+  <text class="label" x="130" y="286">Python helper</text>
+  <text class="edge-label" x="130" y="310">create, then cancel</text>
 
   <rect class="box" x="300" y="255" width="170" height="70"/>
   <text class="label" x="385" y="297">orders topic</text>
 
   <rect class="subscription" x="535" y="90" width="210" height="65"/>
-  <text class="label" x="640" y="129">audit subscription</text>
+  <text class="label" x="640" y="116">audit</text>
+  <text class="edge-label" x="640" y="140">all event types: 1 = 1</text>
   <rect class="subscription" x="535" y="255" width="210" height="65"/>
-  <text class="label" x="640" y="294">fulfillment subscription</text>
+  <text class="label" x="640" y="281">order-created</text>
+  <text class="edge-label" x="640" y="305">only order.created</text>
   <rect class="subscription" x="535" y="420" width="210" height="65"/>
-  <text class="label" x="640" y="459">notification subscription</text>
+  <text class="label" x="640" y="446">order-cancelled</text>
+  <text class="edge-label" x="640" y="470">only order.cancelled</text>
 
-  <rect class="site" x="805" y="40" width="320" height="500"/>
+  <rect class="site" x="805" y="40" width="320" height="480"/>
   <text class="site-label" x="965" y="72">One Logic App Standard site</text>
 
   <rect class="workflow" x="850" y="95" width="230" height="65"/>
   <text class="label" x="965" y="134">Audit workflow</text>
   <rect class="workflow" x="850" y="245" width="230" height="65"/>
-  <text class="label" x="965" y="284">Fulfillment workflow</text>
+  <text class="label" x="965" y="273">Order-created workflow</text>
+  <text class="edge-label" x="965" y="296">Create + verify order</text>
   <rect class="workflow" x="850" y="395" width="230" height="65"/>
-  <text class="label" x="965" y="434">Notification workflow</text>
+  <text class="label" x="965" y="423">Order-cancelled workflow</text>
+  <text class="edge-label" x="965" y="446">Read, cancel + verify order</text>
 
-  <rect class="monitor" x="830" y="545" width="270" height="55"/>
-  <text class="label" x="965" y="579">Application Insights</text>
+  <rect class="data" x="1170" y="280" width="195" height="125"/>
+  <text class="label" x="1267" y="309">Private Cosmos DB</text>
+  <text class="edge-label" x="1267" y="337">Existing database</text>
+  <text class="edge-label" x="1267" y="360">New orders container</text>
+  <text class="edge-label" x="1267" y="385">Partition key: /id</text>
+
+  <rect class="monitor" x="830" y="565" width="270" height="55"/>
+  <text class="label" x="965" y="599">Application Insights</text>
 
   <path class="edge" d="M 225 290 H 300"/>
-  <text class="edge-label" x="263" y="274">order.created</text>
   <path class="edge" d="M 470 290 C 495 290, 500 122, 535 122"/>
   <path class="edge" d="M 470 290 H 535"/>
   <path class="edge" d="M 470 290 C 495 290, 500 452, 535 452"/>
@@ -55,7 +67,10 @@
   <path class="edge" d="M 745 287 H 850"/>
   <path class="edge" d="M 745 452 H 850"/>
 
-  <path class="telemetry" d="M 965 160 V 545"/>
-  <path class="telemetry" d="M 965 310 V 545"/>
-  <path class="telemetry" d="M 965 460 V 545"/>
+  <path class="persistence" d="M 1080 278 H 1140 V 315 H 1170"/>
+  <path class="persistence" d="M 1080 428 H 1140 V 375 H 1170"/>
+  <path class="telemetry" d="M 850 127 H 825 V 548 H 870 V 565"/>
+  <path class="telemetry" d="M 850 278 H 815 V 556 H 920 V 565"/>
+  <path class="telemetry" d="M 965 460 V 565"/>
+  <text class="edge-label" x="525" y="625">Two known events: four copies. Future event types: audit only.</text>
 </svg>

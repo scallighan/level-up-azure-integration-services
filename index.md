@@ -31,8 +31,8 @@ contract-first, evidence-driven workflow with GitHub Copilot.
   </article>
   <article class="workshop-card">
     <span class="step-number">2</span>
-    <h3>Lab 2: build event fan-out</h3>
-    <p>Add a topic, subscriptions, and three workflows to Lab 0's Service Bus namespace and Logic App.</p>
+    <h3>Lab 2: route events and persist orders</h3>
+    <p>Audit every event type, then route creation and cancellation to two workflows that maintain an order in Cosmos DB.</p>
     <a href="{{ '/labs/02-topic-fanout/' | relative_url }}">Open Lab 2</a>
   </article>
   <article class="workshop-card">

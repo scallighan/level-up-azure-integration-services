@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Publish the public Lab 2 sample with Azure CLI login and verify fan-out."""
+"""Publish a public order lifecycle and verify Lab 2 routing and persistence checks."""
 
 import argparse
 from datetime import datetime, timezone
@@ -15,8 +15,17 @@ import uuid
 
 
 ROOT = Path(__file__).resolve().parent.parent
-SAMPLE = ROOT / "labs/02-topic-fanout/contracts/sample-order-created.json"
-WORKFLOWS = ("audit", "fulfillment", "notification")
+CONTRACTS = ROOT / "labs/02-topic-fanout/contracts"
+EVENT_WORKFLOWS = {
+    "order.created": "order-created",
+    "order.cancelled": "order-cancelled",
+}
+WORKFLOWS = ("audit", *EVENT_WORKFLOWS.values())
+RULES = {
+    "audit": ("all-events", "1 = 1"),
+    "order-created": ("order-created", "eventType = 'order.created'"),
+    "order-cancelled": ("order-cancelled", "eventType = 'order.cancelled'"),
+}
 SENDER_ROLE = "69a216fc-b8fb-44d8-bc22-1f3c2cd27a39"
 ARM = "https://management.azure.com"
 API_VERSION = "2025-03-01"
@@ -92,12 +101,42 @@ def sender_access(topic_id, principal):
     print("Current user has Data Sender access on the workshop namespace or orders topic.")
 
 
-def fresh_event():
-    event = json.loads(SAMPLE.read_text())
+def fresh_event(event_type, order_id):
+    sample = f"sample-{event_type.replace('.', '-')}.json"
+    event = json.loads((CONTRACTS / sample).read_text())
     event["eventId"] = str(uuid.uuid4())
     event["correlationId"] = str(uuid.uuid4())
     event["occurredAt"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    event["data"]["orderId"] = order_id
     return event
+
+
+def ready_rules(foundation):
+    arguments = [
+        "--resource-group", foundation["resource_group_name"],
+        "--namespace-name", foundation["service_bus_namespace_name"],
+        "--topic-name", "orders",
+    ]
+    subscriptions = az_json(["servicebus", "topic", "subscription", "list", *arguments])
+    if {subscription["name"] for subscription in subscriptions} != set(WORKFLOWS):
+        raise RuntimeError("Expected exactly audit, order-created, and order-cancelled subscriptions. Nothing was published.")
+    for name, (rule_name, expression) in RULES.items():
+        rules = az_json([
+            "servicebus", "topic", "subscription", "rule", "list",
+            *arguments, "--subscription-name", name,
+        ])
+        if (
+            len(rules) != 1
+            or rules[0]["name"] != rule_name
+            or rules[0].get("filterType") != "SqlFilter"
+            or re.sub(
+                r"\s*=\s*", "=", (rules[0].get("sqlFilter") or {}).get("sqlExpression") or "",
+            ).strip() != expression.replace(" = ", "=")
+            or (rules[0].get("action") or {}).get("sqlExpression")
+        ):
+            raise RuntimeError(
+                f"{name} must have only the {rule_name} SQL rule ({expression}), with no rule action or $Default. Nothing was published."
+            )
 
 
 def publish(fqdn, event):
@@ -154,7 +193,7 @@ def ready_workflows(site_id):
             raise RuntimeError(f"{name}/Receive_order is disabled; nothing was published.")
 
 
-def check_run(runtime, run, event):
+def check_run(runtime, run, event, workflow):
     properties = run["properties"]
     status = properties["status"]
     if status in ("Running", "Waiting", "Accepted"):
@@ -167,7 +206,13 @@ def check_run(runtime, run, event):
             if action["status"] in ("Failed", "TimedOut")
         )
         raise RuntimeError(f"Run {run['name']} finished {status}; failed actions: {failed or 'inspect run history'}.")
-    for name in ("Process_message", "Complete_message"):
+    required = ["Process_message", "Complete_message"]
+    if workflow != "audit":
+        required.extend(["Read_order", "Verify_order"])
+    for name in required:
+        if name not in by_name and name in ("Read_order", "Verify_order"):
+            action = arm_get(f"{runtime}/runs/{run['name']}/actions/{name}")
+            by_name[name] = action["properties"]
         if by_name.get(name, {}).get("status") != "Succeeded":
             raise RuntimeError(f"Run {run['name']} did not successfully execute {name}.")
     telemetry = by_name.get("Emit_telemetry", {}).get("trackedProperties")
@@ -179,31 +224,39 @@ def check_run(runtime, run, event):
     return True
 
 
-def wait_for_fanout(site_id, event, timeout):
+def wait_for_fanout(site_id, event, timeout, observation_seconds=10):
     deadline = time.monotonic() + timeout
+    expected = {"audit", EVENT_WORKFLOWS[event["eventType"]]}
     succeeded = set()
+    settled_at = None
     while time.monotonic() < deadline:
         for name in WORKFLOWS:
-            if name in succeeded:
-                continue
             runtime = f"{site_id}/hostruntime/runtime/webhooks/workflow/api/management/workflows/{name}"
             runs = arm_get(f"{runtime}/runs?$top=100")["value"]
             matching = [
                 run for run in runs
                 if run["properties"].get("correlation", {}).get("clientTrackingId") == event["correlationId"]
             ]
+            if matching and name not in expected:
+                raise RuntimeError(
+                    f"Incorrect routing: {name} received {event['eventType']} (correlation {event['correlationId']}). Check subscription rules."
+                )
             if len(matching) > 1:
                 raise RuntimeError(f"{name} has multiple runs for this correlation ID; inspect redeliveries rather than reporting exactly-once success.")
-            if matching and check_run(runtime, matching[0], event):
-                print(f"{name}: Succeeded; processing and message completion verified (run {matching[0]['name']}).", flush=True)
+            if matching and name not in succeeded and check_run(runtime, matching[0], event, name):
+                detail = "audit processing" if name == "audit" else "processing and Cosmos read-back assertion"
+                print(f"{name}: Succeeded; {detail} and message completion verified (run {matching[0]['name']}).", flush=True)
                 succeeded.add(name)
-        if len(succeeded) == len(WORKFLOWS):
-            print("PASS: all three subscriptions processed the published correlation ID and completed their copies.")
-            return
+        if succeeded == expected:
+            if settled_at is None:
+                settled_at = time.monotonic()
+            if time.monotonic() - settled_at >= observation_seconds:
+                print(f"PASS: {event['eventType']} reached only audit and {EVENT_WORKFLOWS[event['eventType']]} during the observation window.")
+                return
         time.sleep(5)
-    pending = ", ".join(name for name in WORKFLOWS if name not in succeeded)
+    pending = ", ".join(name for name in WORKFLOWS if name in expected - succeeded)
     raise TimeoutError(
-        f"Timed out waiting for {pending}. Inspect this correlation ID, receiver RBAC, and dead-letter counts before publishing another event."
+        f"Timed out waiting for {pending or 'the routing observation window'}. Inspect this correlation ID, scoped RBAC, and dead-letter counts before publishing another event."
     )
 
 
@@ -218,12 +271,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("handoff", nargs="?", type=Path, default=ROOT / "foundation.deployment.json")
     parser.add_argument("--dry-run", action="store_true", help="Show identifiers and predicted counts without contacting Azure or changing access.")
-    parser.add_argument("--timeout", type=positive_seconds, default=180, help="Seconds to wait for correlated runs (default: 180).")
+    parser.add_argument("--timeout", type=positive_seconds, default=180, help="Seconds per event for correlated runs and routing observation (default: 180).")
     args = parser.parse_args()
     try:
         foundation = json.loads(args.handoff.read_text())
         subscription, topic_id = validate_handoff(foundation)
-        event = fresh_event()
+        order_id = f"ORD-{uuid.uuid4()}"
         if args.dry_run:
             print("Dry run: no Azure requests, permission changes, or messages.")
         else:
@@ -231,14 +284,19 @@ def main():
             if foundation.get("publisher_principal_id", principal).casefold() != principal.casefold():
                 raise ValueError("The current Azure user differs from the publisher selected in Lab 0; sign in as that user or repeat Lab 0 setup and deployment.")
             ready_workflows(foundation["logic_app_id"])
+            ready_rules(foundation)
             sender_access(topic_id, principal)
-        print(f"EventId: {event['eventId']}\nCorrelationId: {event['correlationId']}", flush=True)
-        print("Expected: 1 topic publication, 3 subscription copies, 1 successful run per workflow, 0 new dead letters.", flush=True)
-        if args.dry_run:
-            return 0
-        publish(foundation["service_bus_fqdn"], event)
-        print("Published once; waiting for correlated workflow runs...", flush=True)
-        wait_for_fanout(foundation["logic_app_id"], event, args.timeout)
+        print(f"OrderId: {order_id}", flush=True)
+        print("Expected: 2 publications, 4 subscription copies/runs (audit twice, each specialist once); created then cancelled.", flush=True)
+        for event_type, workflow in EVENT_WORKFLOWS.items():
+            event = fresh_event(event_type, order_id)
+            print(f"{event_type}\nEventId: {event['eventId']}\nCorrelationId: {event['correlationId']}", flush=True)
+            print(f"Expected receivers: audit, {workflow}; no run in the other specialist.", flush=True)
+            if args.dry_run:
+                continue
+            publish(foundation["service_bus_fqdn"], event)
+            print("Published once; waiting for correlated processing, persistence checks, and routing observation...", flush=True)
+            wait_for_fanout(foundation["logic_app_id"], event, args.timeout)
     except (OSError, ValueError, KeyError, TypeError, RuntimeError, EOFError, subprocess.TimeoutExpired) as error:
         print(f"Lab 2 test failed: {error}", file=sys.stderr)
         return 1

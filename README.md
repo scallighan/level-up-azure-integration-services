@@ -9,8 +9,8 @@ Participants build the same solutions with either **Bicep** or **Terraform**:
 
 1. An HTTP-triggered Logic App that looks up an Azure region and a synthetic
    support tier in Cosmos DB and enriches a JSON request with both sets of details.
-2. An event fan-out solution using an Azure Service Bus topic and three Logic
-   App subscribers.
+2. An event-routing solution with a catch-all audit workflow and two
+   event-specific workflows that create and cancel Cosmos DB orders.
 3. An optional workbook-driven capstone that turns payload and transformation
    evidence into an approved Azure Integration Services solution.
 
@@ -26,7 +26,7 @@ and test results remain the source of truth.
 | Lab 0: shared Azure foundation | 30-45 min | Tools verified and shared infrastructure deployed |
 | Lab 1: lookup and transform | 60 min | Cosmos lookup enriches an HTTP JSON payload |
 | Break | 15 min | |
-| Lab 2: topic fan-out | 75 min | One event independently processed by three workflows |
+| Lab 2: event routing | 75 min | Audit all events and route creation/cancellation to Cosmos-backed workflows |
 | Optional Lab 3 capstone | 90-150 min | Workbook evidence becomes an approved design and implementation |
 | Review and cleanup | 30 min | IaC reviewed, resources removed, takeaways captured |
 
@@ -60,7 +60,7 @@ docs/
 labs/
   00-foundation/               Ready-to-deploy Bicep/Terraform shared infrastructure
   01-crud-integration/          Region lookup lab, seed data, and API contract
-  02-topic-fanout/              Lab tasks, requirements, and event contract
+  02-topic-fanout/              Lab tasks, requirements, and event contracts
   03-workbook-to-solution/      Local design plans and implementation loop
 scripts/                        Local workshop checks
 ```

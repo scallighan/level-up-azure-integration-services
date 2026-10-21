@@ -1,0 +1,11 @@
+{
+  "eventId": "ce8d732f-3f14-4e71-87ad-9579249468be",
+  "eventType": "order.cancelled",
+  "schemaVersion": "1.0",
+  "occurredAt": "2026-08-18T19:05:00Z",
+  "correlationId": "31a4ed03-1993-4ac4-9275-d296fd73b668",
+  "data": {
+    "orderId": "ORD-10042",
+    "reason": "Customer requested cancellation"
+  }
+}

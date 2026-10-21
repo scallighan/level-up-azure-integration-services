@@ -96,8 +96,9 @@ omits any of these responsibilities:
 - the reference host settings and resource dependencies.
 
 The user-assigned identity is for host storage. The system-assigned identity is
-for the lab workload: Cosmos DB in Lab 1 and the assigned Service Bus
-subscription in Lab 2. Lab 3 derives workload roles from the approved design
+for the lab workload: Cosmos DB in Lab 1, and the assigned Service Bus
+subscription plus the `orders` Cosmos container in Lab 2.
+Lab 3 derives workload roles from the approved design
 and keeps each role at the narrowest individual resource scope.
 
 Lab 0 owns the single shared foundation, including Cosmos and the Service Bus
@@ -106,8 +107,9 @@ creates a workshop group. Existing group metadata and unrelated resources must
 stay untouched, including during cleanup. Verify the explicit handoff before
 later labs; never infer a new-foundation mode or silently migrate learner state.
 
-Lab 2 adds three independently deployable workflows in that site and three
-subscription-scoped receiver grants. Stop namespace/topic receiver grants.
+Lab 2 adds three independently deployable workflows in that site, three
+subscription-scoped receiver grants, and a Cosmos contributor grant scoped
+only to its new `orders` container. Stop namespace/topic receiver grants.
 The publishing student reuses Lab 0's namespace-scoped Data Sender grant with
 Entra authentication. This workshop convenience does not broaden workflow
 receiver scopes; recommend entity-scoped publishers for production.
@@ -183,7 +185,7 @@ do not let a later deployment replace the shared parent's settings.
 **Coach checks**
 
 - Explicit references identify the integration subnet, host storage,
-  host identity, WS1 plan, monitoring, site, and namespace.
+  host identity, WS1 plan, monitoring, site, namespace, and Cosmos account/database.
 - The preview never modifies, imports, retags, replaces, or deletes reused
   resources.
 
@@ -192,21 +194,26 @@ do not let a later deployment replace the shared parent's settings.
 **Learner should explain**
 
 - Why Service Bus Standard is required for topics.
-- How one published message becomes three independent subscription copies.
+- How each known event reaches audit and one specialist, while a future event
+  type reaches audit only.
 - How `MessageId`, duplicate detection, lock duration, maximum delivery count,
   and TTL interact.
 - Why one site identity needs three subscription-scoped roles and why namespace
   scope is too broad.
+- Why a separate container and container-scoped Cosmos grant protect Lab 1 data.
 
 **Coach checks**
 
 - The topic is `orders`.
-- Subscriptions are exactly `audit`, `fulfillment`, and `notification`.
-- `$Default` is removed before the `eventType = 'order.created'` SQL rule is
-  added.
+- Subscriptions are exactly `audit`, `order-created`, and `order-cancelled`.
+- Named SQL rules are `1 = 1` for audit, `eventType = 'order.created'` for
+  creation, and `eventType = 'order.cancelled'` for cancellation. Add the named
+  rule before removing `$Default`; each subscription retains exactly one rule.
 - Required tags are `workshop=agentic-ais` and `lab=02`.
 - The selected Logic App Standard site is part of the resolved foundation.
 - Its system identity has one receiver assignment per subscription.
+- The new `orders` NoSQL container uses `/id`, with a container-scoped Cosmos
+  contributor grant; existing `items`, networking, and throughput are unchanged.
 - No workflow definition is present yet.
 
 ### Checkpoint 2: isolated receiver workflows
@@ -224,23 +231,38 @@ do not let a later deployment replace the shared parent's settings.
 - All three workflows are deployed to the selected Logic App Standard site.
 - Each workflow references only its assigned Service Bus subscription.
 - Connections use managed identity rather than a namespace connection string.
+- Audit accepts the common envelope for any event type; specialists validate
+  their own contracts and never discard unrelated events after receipt.
+- Creation persists the actual order; cancellation reads and updates it while
+  preserving original fields. Both read back and assert the stored result.
+- Duplicate creation cannot reset a cancelled order. Missing-order cancellation
+  fails and retries. Cross-subscription ordering is not guaranteed.
 - All three workflows default `show_sample_payloads` to `true` for the
   sanitized sample event. Sensitive customer data must use protected mode.
 - Retry and timeout behavior is explicit.
 
-### Checkpoint 3: publish one event
+### Checkpoint 3: route two event types
 
-Before sending, ask the learner to predict active message counts and workflow
-runs. Check `ContentType`, `MessageId`, `CorrelationId`, `eventType`, and
-`schemaVersion`. All three workflows should process one copy with the same
-event and correlation IDs.
+Run `python3 scripts/test-lab2.py`. Predict the routing matrix before sending:
+creation reaches audit and order-created, then cancellation reaches audit and
+order-cancelled. Expect two publications, four copies, and no cross-routed
+specialist runs. The helper waits for creation before publishing cancellation
+and verifies persisted-state assertions, not just provisioning or run status.
+The bounded observation window is not a proof against every possible late run.
+Check the exact broker rules too.
+
+Check `ContentType`, `MessageId`, `CorrelationId`, `eventType`, and
+`schemaVersion`. Both events use the same fresh order ID but different event
+and correlation IDs. Confirm `created` then `cancelled` state without changing
+customer/order fields. Send an unfamiliar event with a valid envelope to prove
+only audit receives it. No workstation Cosmos grant or public access is needed.
 
 ### Checkpoint 4: failure isolation
 
-Allow only the notification processing scope to fail. Confirm audit and
-fulfillment complete, notification delivery count increases independently, and
-only the notification copy reaches its dead-letter queue. Ensure the deliberate
-failure is reverted.
+Create an order, then fail only cancellation processing before its Cosmos
+mutation. Audit must complete, creation must not receive the cancellation,
+and only the cancellation copy must retry and dead-letter. The order stays
+created. Ensure the deliberate failure is reverted.
 
 Do not suggest automatically replaying dead-letter messages. Ask how a replay
 tool would preserve diagnostics and identifiers while preventing an infinite

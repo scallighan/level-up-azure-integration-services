@@ -89,16 +89,19 @@ All later labs require the explicit non-secret `foundation` output saved as
 inferring names, importing resources, or creating fallback foundations.
 Keep shared resource tags `lab=00`; later labs own only their additions.
 
-Audit, fulfillment, and notification remain independently deployable
+Audit, order-created, and order-cancelled remain independently deployable
 workflows in the same site. Its system identity retains Lab 0's container-scoped
-Cosmos grant and gains three Lab 2 subscription-scoped receiver roles. Explain
+Cosmos grant and gains three Lab 2 subscription-scoped receiver roles plus a
+Cosmos contributor grant scoped only to Lab 2's new `orders` container in the
+existing database. Lab 2 must not change `items` or parent throughput. Explain
 this shared-identity cost tradeoff: workflows are not isolated by identity.
 The host identity stays storage-only.
 
 The shared app-level `connections.json` must preserve every other lab's
 connection entry. Artifact deployment must not erase unrelated workflows.
 Later labs must not manage the parent site or replace its full app settings.
-Cleanup removes only owned artifacts, messaging children, and grants; remove
+Cleanup removes only owned artifacts, messaging children, the Lab 2 container,
+and grants; remove
 those before Lab 0's foundation. Never delete an existing parent group.
 
 The shared foundation does not change peek-lock, completion, retry, or

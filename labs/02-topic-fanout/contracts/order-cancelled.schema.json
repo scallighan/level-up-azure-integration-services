@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://workshop.example/schemas/order-cancelled.schema.json",
+  "title": "Order cancelled event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["eventId", "eventType", "schemaVersion", "occurredAt", "correlationId", "data"],
+  "properties": {
+    "eventId": {"type": "string", "format": "uuid"},
+    "eventType": {"type": "string", "const": "order.cancelled"},
+    "schemaVersion": {"type": "string", "const": "1.0"},
+    "occurredAt": {"type": "string", "format": "date-time"},
+    "correlationId": {"type": "string", "format": "uuid"},
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["orderId", "reason"],
+      "properties": {
+        "orderId": {"type": "string", "minLength": 1, "maxLength": 50},
+        "reason": {"type": "string", "minLength": 1, "maxLength": 256}
+      }
+    }
+  }
+}

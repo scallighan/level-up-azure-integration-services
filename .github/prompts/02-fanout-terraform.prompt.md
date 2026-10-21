@@ -7,7 +7,7 @@ Read `AGENTS.md`, `.github/copilot-instructions.md`,
 `docs/logic-app-standard-baseline.md`, the current files under
 `https://github.com/scallighan/logic-app-doc-processing/tree/main/terraform`,
 `labs/02-topic-fanout/README.md`,
-`labs/02-topic-fanout/implementation-requirements.md`, and both files in
+`labs/02-topic-fanout/implementation-requirements.md`, and all files in
 `labs/02-topic-fanout/contracts/`.
 
 Also read `labs/00-foundation/implementation-requirements.md` and the local
@@ -37,15 +37,21 @@ Create the path-local `AGENTS.md` with concise instructions that:
 
 - identify this directory as the Lab 2 Terraform track;
 - require the repository instructions, implementation standards, Lab 2 README,
-  implementation requirements, both event contracts, Logic App Standard
+  implementation requirements, all event contracts and samples, Logic App Standard
   baseline, and matching Terraform reference before changes;
 - keep each learner request bounded to the named lab step or task;
 - require explicit Lab 0 references using data sources or handoff IDs, never
   imports, remote state, or managed foundation resource blocks;
+- reference the existing Cosmos account/database; own only Lab 2's new
+  `orders` container, never the existing `items` container or parent throughput;
 - preserve shared-resource tags, parent group/site/namespace ownership,
   other labs' workflow artifacts, and app-level connection entries;
 - preserve the host-storage user-assigned identity and subscription-scoped
   Service Bus receiver system-assigned identity boundary;
+- scope new Cosmos data-plane access to the `orders` container, preserving
+  the existing `items` grant; use `audit` for all events and distinct
+  `order-created` / `order-cancelled` subscription filters and workflows;
+- keep generated definitions/templates in the ignored lab `workflows/` folder;
 - use the ignored root `.env` for stable, non-secret learner inputs, map them to
   exported `TF_VAR_*` values, and keep `.env.example` as the variable-name
   template so commands do not repeat `-var` arguments;

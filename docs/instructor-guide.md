@@ -28,7 +28,7 @@ ladder, troubleshooting guidance, and cleanup sign-off criteria.
 | 0:00 | Lab 0 and architecture overview | Deploy the reviewed shared foundation, not generated infrastructure |
 | 0:45 | Lab 1 and context demonstration | Seed a lookup table, then generate a synchronous transformation |
 | 1:45 | Break | Compare request and response contracts |
-| 2:00 | Lab 2 | Asynchronous fan-out and independent failure |
+| 2:00 | Lab 2 | Catch-all auditing, event-type routing, and persisted order lifecycle |
 | 3:15 | Cross-track review | Compare Bicep and Terraform resource graphs |
 | 3:30 | Cleanup and discussion | Remove lab additions before the shared foundation |
 | Optional extension | Lab 3, 90-150 minutes | Design from workbook evidence |
@@ -66,11 +66,16 @@ behavior should match even when implementation details differ.
 
 **Lab 2**
 
-- Lab 0's site and namespace are existing references, not Lab 2-owned parents.
+- Lab 0's site, namespace, and Cosmos account/database remain existing references.
 - The publishing student reuses Lab 0's namespace-scoped Entra Data Sender
   grant; workflow receiver grants remain subscription-scoped.
-- One topic has three subscriptions with explicit filters.
-- Each workflow uses its own subscription.
+- One topic has a catch-all audit subscription and two distinct event-type filters.
+- Each workflow uses its own subscription: audit handles both event types,
+  order-created persists an order, and order-cancelled updates that same order.
+- Lab 2 owns only its `orders` container and container-scoped Cosmos grant;
+  the existing `items` container and Lab 1 data stay unchanged.
+- The test sends creation then cancellation: two events, four expected runs,
+  and a verified `created` to `cancelled` state transition.
 - A workflow failure does not prevent the other subscriptions from processing.
 - Duplicate handling and dead-letter behavior are discussed before testing.
 
