@@ -33,6 +33,10 @@ if command == "az":
             sys.exit(1)
     if args[0] == "login":
         Path(os.environ["LOGIN_MARKER"]).touch()
+    elif args[:2] == ["account", "show"] and "--query" in args:
+        print(os.environ.get("PRINCIPAL_TYPE", "user"))
+    elif args[:3] == ["ad", "signed-in-user", "show"]:
+        print(os.environ.get("PUBLISHER_ID", "00000000-0000-0000-0000-000000000003"))
     elif args[:2] == ["appservice", "list-locations"]:
         print("West US")
     elif args[0] == "rest":
@@ -78,6 +82,7 @@ class FoundationTests(unittest.TestCase):
             "WORKSHOP_PREFIX": "demo",
             "EXISTING_RESOURCE_GROUP_NAME": group,
             "FOUNDATION_RESOURCE_GROUP_NAME": "later-lab-group",
+            "WORKSHOP_PUBLISHER_PRINCIPAL_ID": "00000000-0000-0000-0000-000000000003",
         }.items():
             content = content.replace(f'{name}=""', f'{name}="{value}"')
         (self.root / ".env").write_text(content)
@@ -101,11 +106,12 @@ class FoundationTests(unittest.TestCase):
     def test_setup_creates_config_and_checks_both_tracks_without_deploying(self):
         for track in ["bicep", "terraform"]:
             with self.subTest(track=track):
-                result = self.run_helper("setup", track, "subscription-demo\ndemo\n\n\n")
+                result = self.run_helper("setup", track, "subscription-demo\ndemo\n\n\ny\n")
                 self.assertEqual(result.returncode, 0, result.stderr)
                 config = (self.root / ".env").read_text()
                 self.assertIn("WORKSHOP_PREFIX=demo", config)
                 self.assertIn("AZURE_LOCATION=westus", config)
+                self.assertIn("WORKSHOP_PUBLISHER_PRINCIPAL_ID=00000000-0000-0000-0000-000000000003", config)
                 registrations = [
                     call for call in self.commands()
                     if call["args"][:2] == ["provider", "register"]
@@ -119,7 +125,7 @@ class FoundationTests(unittest.TestCase):
 
     def test_setup_preserves_existing_group_and_later_settings(self):
         self.write_config("existing-group")
-        result = self.run_helper("setup", answers="\n\n\n\n")
+        result = self.run_helper("setup", answers="\n\n\n\ny\n")
         self.assertEqual(result.returncode, 0, result.stderr)
         config = (self.root / ".env").read_text()
         self.assertIn("EXISTING_RESOURCE_GROUP_NAME=existing-group", config)
@@ -131,7 +137,7 @@ class FoundationTests(unittest.TestCase):
 
     def test_setup_logs_in_when_needed(self):
         self.write_config()
-        result = self.run_helper("setup", answers="\n\n\n\n", NEEDS_LOGIN="1")
+        result = self.run_helper("setup", answers="\n\n\n\ny\n", NEEDS_LOGIN="1")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertTrue(any(call["args"][0] == "login" for call in self.commands()))
 
@@ -152,7 +158,7 @@ class FoundationTests(unittest.TestCase):
                         if line.split("=", 1)[0] not in missing_keys
                     ))
                     result = self.run_helper(
-                        "setup", track, "subscription-demo\ndemo\nwestus\nexisting-group\n"
+                        "setup", track, "subscription-demo\ndemo\nwestus\nexisting-group\ny\n"
                     )
                     self.assertEqual(result.returncode, 0, result.stderr)
                     self.assertIn(
@@ -214,6 +220,7 @@ class FoundationTests(unittest.TestCase):
                     preview = next(call for call in calls if "what-if" in call["args"])
                     self.assertIn("existingResourceGroupName=existing-group", preview["args"])
                     self.assertIn("prefix=demo", preview["args"])
+                    self.assertIn("publisherPrincipalId=00000000-0000-0000-0000-000000000003", preview["args"])
                 else:
                     terraform = [call for call in calls if call["command"] == "terraform"]
                     self.assertEqual(
@@ -221,6 +228,10 @@ class FoundationTests(unittest.TestCase):
                         ["init", "fmt", "validate", "plan"],
                     )
                     self.assertEqual(terraform[-1]["inputs"]["TF_VAR_prefix"], "demo")
+                    self.assertEqual(
+                        terraform[-1]["inputs"]["TF_VAR_publisher_principal_id"],
+                        "00000000-0000-0000-0000-000000000003",
+                    )
                     self.assertEqual(
                         terraform[-1]["inputs"]["TF_VAR_existing_resource_group_name"],
                         "existing-group",
@@ -275,6 +286,38 @@ class FoundationTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("lowercase alphanumeric prefix", result.stderr)
         self.assertEqual(self.commands(), [])
+
+    def test_publisher_decline_preserves_config_and_stops_before_registration(self):
+        self.write_config()
+        before = (self.root / ".env").read_text()
+        result = self.run_helper("setup", answers="\n\n\n\nn\n")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Publisher selection cancelled", result.stderr)
+        self.assertEqual((self.root / ".env").read_text(), before)
+        self.assertFalse(any("register" in call["args"] for call in self.commands()))
+
+    def test_setup_rejects_application_login_or_invalid_user_object_id(self):
+        self.write_config()
+        for settings in [{"PRINCIPAL_TYPE": "servicePrincipal"}, {"PUBLISHER_ID": "not-a-uuid"}]:
+            with self.subTest(settings=settings):
+                result = self.run_helper("setup", answers="\n\n\n\ny\n", **settings)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertFalse(any("register" in call["args"] for call in self.commands()))
+
+    def test_missing_publisher_requires_setup_before_preview_or_deploy(self):
+        self.write_config()
+        config = self.root / ".env"
+        config.write_text(config.read_text().replace(
+            'WORKSHOP_PUBLISHER_PRINCIPAL_ID="00000000-0000-0000-0000-000000000003"',
+            'WORKSHOP_PUBLISHER_PRINCIPAL_ID=""',
+        ))
+        for action in ("preview", "deploy"):
+            result = self.run_helper(action)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("Missing publisher user selection", result.stderr)
+            self.assertFalse(any(
+                call["args"][:1] == ["deployment"] for call in self.commands()
+            ))
 
 
 if __name__ == "__main__":

@@ -67,7 +67,8 @@ behavior should match even when implementation details differ.
 **Lab 2**
 
 - Lab 0's site and namespace are existing references, not Lab 2-owned parents.
-- The publishing student has topic-scoped Entra Data Sender access.
+- The publishing student reuses Lab 0's namespace-scoped Entra Data Sender
+  grant; workflow receiver grants remain subscription-scoped.
 - One topic has three subscriptions with explicit filters.
 - Each workflow uses its own subscription.
 - A workflow failure does not prevent the other subscriptions from processing.

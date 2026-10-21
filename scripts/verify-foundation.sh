@@ -18,7 +18,7 @@ require() {
 
 foundation="$(jq -e 'select(type == "object")' "$handoff")"
 require "$foundation" '
-  [.resource_group_name, .location, .virtual_network_id, .integration_subnet_id,
+  [.resource_group_name, .location, .publisher_principal_id, .virtual_network_id, .integration_subnet_id,
    .private_endpoint_subnet_id, .host_storage_id, .host_storage_identity_id,
    .service_plan_id, .logic_app_id, .logic_app_name, .logic_app_principal_id,
    .cosmos_account_id, .cosmos_account_name, .cosmos_account_endpoint,
@@ -170,6 +170,16 @@ require "$bus" '
   .sku.name == "Standard" and .properties.disableLocalAuth == true and
   .properties.minimumTlsVersion == "1.2" and .properties.publicNetworkAccess == "Enabled"
 ' "Service Bus Standard with Entra-only authorization"
+
+echo "Checking student publisher access..."
+publisher_roles="$(az role assignment list --scope "$bus_id" -o json)"
+require "$publisher_roles" '
+  any(.[]; (.principalId | ascii_downcase) == ($principal | ascii_downcase) and
+    .principalType == "User" and
+    (.scope | ascii_downcase) == ($namespace | ascii_downcase) and
+    (.roleDefinitionId | endswith("/69a216fc-b8fb-44d8-bc22-1f3c2cd27a39")))
+' "confirmed student user Data Sender at namespace scope" \
+  --arg principal "$(jq -r .publisher_principal_id <<<"$foundation")" --arg namespace "$bus_id"
 
 echo "Checking Application Insights and monitoring workspace..."
 insights="$(az resource show --ids "$insights_id" --api-version 2020-02-02 -o json)"

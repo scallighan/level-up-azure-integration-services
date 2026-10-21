@@ -256,6 +256,15 @@ resource "azurerm_private_endpoint" "cosmos" {
   }
 }
 
+resource "azurerm_role_assignment" "publisher" {
+  name               = uuidv5("url", "${azurerm_servicebus_namespace.foundation.id}/${var.publisher_principal_id}/service-bus-sender")
+  scope              = azurerm_servicebus_namespace.foundation.id
+  role_definition_id = "/subscriptions/${var.subscription_id}/providers/Microsoft.Authorization/roleDefinitions/69a216fc-b8fb-44d8-bc22-1f3c2cd27a39"
+  principal_id       = var.publisher_principal_id
+  principal_type     = "User"
+  description        = "Lab 0 student publisher; namespace-scoped workshop access."
+}
+
 resource "azurerm_servicebus_namespace" "foundation" {
   name                          = "sb-${local.stem}-${local.suffix}"
   resource_group_name           = local.resource_group_name

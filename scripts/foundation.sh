@@ -33,6 +33,7 @@ AZURE_SUBSCRIPTION_ID=""
 WORKSHOP_PREFIX=""
 AZURE_LOCATION=""
 EXISTING_RESOURCE_GROUP_NAME=""
+WORKSHOP_PUBLISHER_PRINCIPAL_ID=""
 set -a
 source .env
 set +a
@@ -76,6 +77,22 @@ if [[ -n "$EXISTING_RESOURCE_GROUP_NAME" ]]; then
 fi
 
 if [[ "$action" == "setup" ]]; then
+  if [[ "$(az account show --query user.type --output tsv)" != "user" ]]; then
+    echo "Lab 0 setup requires the student's az login user, not an application or managed identity." >&2
+    exit 1
+  fi
+  WORKSHOP_PUBLISHER_PRINCIPAL_ID="$(az ad signed-in-user show --query id --output tsv)"
+  if [[ ! "$WORKSHOP_PUBLISHER_PRINCIPAL_ID" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$ ]]; then
+    echo "Could not resolve the signed-in user's Microsoft Entra object ID." >&2
+    exit 1
+  fi
+  echo "Publisher user: $WORKSHOP_PUBLISHER_PRINCIPAL_ID"
+  echo "Lab 0 will grant this user Data Sender on its Service Bus namespace (all workshop topics and queues)."
+  read -r -p "Confirm this user and namespace-wide publishing access [y/N]: " answer
+  if [[ ! "$answer" =~ ^([yY]|[yY][eE][sS])$ ]]; then
+    echo "Publisher selection cancelled; .env and role assignments were not changed." >&2
+    exit 1
+  fi
   bash scripts/check-prereqs.sh "$track" "$AZURE_LOCATION"
   for provider in Microsoft.Network Microsoft.Storage Microsoft.ManagedIdentity \
     Microsoft.Web Microsoft.DocumentDB Microsoft.ServiceBus Microsoft.Insights \
@@ -88,25 +105,36 @@ if [[ "$action" == "setup" ]]; then
   printf -v FOUNDATION_CONFIG_WORKSHOP_PREFIX '%q' "$WORKSHOP_PREFIX"
   printf -v FOUNDATION_CONFIG_AZURE_LOCATION '%q' "$AZURE_LOCATION"
   printf -v FOUNDATION_CONFIG_EXISTING_RESOURCE_GROUP_NAME '%q' "$EXISTING_RESOURCE_GROUP_NAME"
+  printf -v FOUNDATION_CONFIG_WORKSHOP_PUBLISHER_PRINCIPAL_ID '%q' "$WORKSHOP_PUBLISHER_PRINCIPAL_ID"
   export FOUNDATION_CONFIG_AZURE_SUBSCRIPTION_ID FOUNDATION_CONFIG_WORKSHOP_PREFIX \
-    FOUNDATION_CONFIG_AZURE_LOCATION FOUNDATION_CONFIG_EXISTING_RESOURCE_GROUP_NAME
+    FOUNDATION_CONFIG_AZURE_LOCATION FOUNDATION_CONFIG_EXISTING_RESOURCE_GROUP_NAME \
+    FOUNDATION_CONFIG_WORKSHOP_PUBLISHER_PRINCIPAL_ID
   temporary_file="$(mktemp "$root/.env.XXXXXX")"
   awk '
     BEGIN {
-      count = split("AZURE_SUBSCRIPTION_ID WORKSHOP_PREFIX AZURE_LOCATION EXISTING_RESOURCE_GROUP_NAME", keys, " ")
+      count = split("AZURE_SUBSCRIPTION_ID WORKSHOP_PREFIX AZURE_LOCATION EXISTING_RESOURCE_GROUP_NAME WORKSHOP_PUBLISHER_PRINCIPAL_ID", keys, " ")
       for (i = 1; i <= count; i++)
         print keys[i] "=" ENVIRON["FOUNDATION_CONFIG_" keys[i]]
     }
-    /^(AZURE_SUBSCRIPTION_ID|WORKSHOP_PREFIX|AZURE_LOCATION|EXISTING_RESOURCE_GROUP_NAME)=/ {
+    /^(AZURE_SUBSCRIPTION_ID|WORKSHOP_PREFIX|AZURE_LOCATION|EXISTING_RESOURCE_GROUP_NAME|WORKSHOP_PUBLISHER_PRINCIPAL_ID)=/ {
       next
     }
     { print }
   ' .env > "$temporary_file"
+  if ! grep -q '^TF_VAR_publisher_principal_id=' "$temporary_file"; then
+    printf '\nTF_VAR_publisher_principal_id="$WORKSHOP_PUBLISHER_PRINCIPAL_ID"\n' >> "$temporary_file"
+  fi
   mv -- "$temporary_file" .env
   temporary_file=""
   echo "Setup saved in .env. Next: $0 preview $track"
   exit 0
 fi
+
+if [[ ! "$WORKSHOP_PUBLISHER_PRINCIPAL_ID" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$ ]]; then
+  echo "Missing publisher user selection. Run $0 setup $track and confirm the current Azure user." >&2
+  exit 1
+fi
+export TF_VAR_publisher_principal_id="$WORKSHOP_PUBLISHER_PRINCIPAL_ID"
 
 if [[ "$track" == "bicep" ]]; then
   deployment=(az deployment sub)
@@ -115,6 +143,7 @@ if [[ "$track" == "bicep" ]]; then
     --template-file labs/00-foundation/iac/bicep/main.bicep
     --parameters "prefix=$WORKSHOP_PREFIX" "location=$AZURE_LOCATION"
     "existingResourceGroupName=$EXISTING_RESOURCE_GROUP_NAME"
+    "publisherPrincipalId=$WORKSHOP_PUBLISHER_PRINCIPAL_ID"
   )
   if [[ "$action" == "preview" ]]; then
     az bicep format --file labs/00-foundation/iac/bicep/main.bicep

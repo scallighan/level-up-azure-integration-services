@@ -48,10 +48,12 @@ Preserve other labs' workflow artifacts, app settings, and `connections.json`
 entries. Add only the Service Bus connection entry needed here. Never expose
 credentials or observability connection strings as outputs.
 
-For publishing tests, the student's Entra principal needs a separate
-topic-scoped Data Sender grant. Parameterize and confirm the student principal;
-do not grant the site sender access merely to run this manual test. Track this
-grant as Lab 2-owned and remove it during cleanup.
+For publishing tests, reuse the signed-in student's namespace-scoped Data
+Sender grant owned by Lab 0. Lab 0 resolves and confirms that user; the test
+helper must not create roles or grant the site sender access. Namespace-wide
+student publishing is an explicit workshop convenience, not a production
+least-privilege recommendation. Keep all three workflow receiver grants
+subscription-scoped.
 
 ## Implementation sequence
 
@@ -67,9 +69,11 @@ tracks:
 2. Add only the audit, fulfillment, and notification workflow definitions and
    their message-processing behavior.
 
-Destroying Lab 2 must remove only its messaging children, grants, and artifacts.
+Destroying Lab 2 must remove only its messaging children, receiver grants, and
+artifacts.
 The Lab 0 resource group, namespace, hosting, monitoring, and parent site remain
-untouched. Explicitly remove uploaded workflows and unused connection entries;
+untouched, including the Lab 0 student sender grant. Explicitly remove uploaded
+workflows and unused connection entries;
 Terraform action-state destruction alone may not remove deployed artifacts.
 
 ## Message processing

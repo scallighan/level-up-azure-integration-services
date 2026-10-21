@@ -39,7 +39,10 @@ From the repository root, choose one track:
 
 Enter your subscription, prefix, region, and optional existing resource group.
 A blank group creates a workshop group; an existing group remains yours.
-Setup saves `.env`, checks tools/access/quota, and registers providers.
+Setup resolves your current `az login` user's object ID and asks you to confirm
+namespace-wide Service Bus publishing access. It saves that selection in `.env`,
+checks tools/access/quota, and registers providers. Application and managed
+identity logins are not accepted for student selection.
 
 ## 2. Preview
 
@@ -57,6 +60,10 @@ Setup saves `.env`, checks tools/access/quota, and registers providers.
 
 Review the changes before deploying. Only the foundation may be created;
 existing group metadata and unrelated resources must remain untouched.
+The selected user receives **Azure Service Bus Data Sender** on the workshop
+namespace, covering all its topics and queues. Neither Logic App identity
+receives sender access. This is a workshop convenience; production publishers
+should use narrower entity-scoped grants.
 
 ## 3. Deploy
 
@@ -75,6 +82,13 @@ existing group metadata and unrelated resources must remain untouched.
 Keep the same track and inputs throughout the workshop. The helper saves
 `foundation.deployment.json`; copy its `resource_group_name` into
 `FOUNDATION_RESOURCE_GROUP_NAME` in `.env`. Keep both files local.
+The handoff also records `publisher_principal_id`. Role propagation can take
+several minutes before publishing works.
+
+For an existing foundation without the publisher grant, repeat setup, preview,
+and deployment using the **same track, subscription, prefix, region, and group**.
+Review the preview: the intended addition is the user sender grant, not a second
+foundation. Setup alone does not create role assignments.
 
 ## 4. Check
 

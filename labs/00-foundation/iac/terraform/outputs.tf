@@ -3,6 +3,7 @@ output "foundation" {
   value = {
     resource_group_name        = local.resource_group_name
     resource_group_created     = var.existing_resource_group_name == ""
+    publisher_principal_id     = var.publisher_principal_id
     location                   = var.location
     virtual_network_id         = azurerm_virtual_network.foundation.id
     integration_subnet_id      = azurerm_subnet.foundation["logic-app"].id

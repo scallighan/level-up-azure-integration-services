@@ -11,9 +11,36 @@ mock_provider "azurerm" {
 mock_provider "azapi" {}
 
 variables {
-  subscription_id = "00000000-0000-0000-0000-000000000001"
-  prefix          = "student"
-  location        = "westus"
+  subscription_id        = "00000000-0000-0000-0000-000000000001"
+  prefix                 = "student"
+  location               = "westus"
+  publisher_principal_id = "00000000-0000-0000-0000-000000000003"
+}
+
+run "student_sender_is_user_scoped_to_namespace" {
+  command = plan
+
+  plan_options {
+    target = [azurerm_role_assignment.publisher]
+  }
+
+  override_resource {
+    target          = azurerm_servicebus_namespace.foundation
+    override_during = plan
+    values = {
+      id = "/subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/student-existing/providers/Microsoft.ServiceBus/namespaces/student"
+    }
+  }
+
+  assert {
+    condition = (
+      azurerm_role_assignment.publisher.scope == azurerm_servicebus_namespace.foundation.id &&
+      azurerm_role_assignment.publisher.principal_id == var.publisher_principal_id &&
+      azurerm_role_assignment.publisher.principal_type == "User" &&
+      endswith(azurerm_role_assignment.publisher.role_definition_id, "/69a216fc-b8fb-44d8-bc22-1f3c2cd27a39")
+    )
+    error_message = "Grant only the selected student user Data Sender on the foundation namespace."
+  }
 }
 
 run "create_group_when_no_existing_name" {
@@ -22,6 +49,11 @@ run "create_group_when_no_existing_name" {
   assert {
     condition     = length(azurerm_resource_group.foundation) == 1 && length(data.azurerm_resource_group.existing) == 0 && output.foundation.resource_group_created
     error_message = "An empty existing name must create exactly one workshop-owned group."
+  }
+
+  assert {
+    condition     = output.foundation.publisher_principal_id == var.publisher_principal_id
+    error_message = "The handoff must identify the confirmed student publisher."
   }
 
   assert {

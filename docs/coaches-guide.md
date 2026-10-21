@@ -108,8 +108,10 @@ later labs; never infer a new-foundation mode or silently migrate learner state.
 
 Lab 2 adds three independently deployable workflows in that site and three
 subscription-scoped receiver grants. Stop namespace/topic receiver grants.
-The publishing student separately needs topic-scoped sender access with Entra
-authentication. Preserve other labs' app-level connection entries and workflows;
+The publishing student reuses Lab 0's namespace-scoped Data Sender grant with
+Entra authentication. This workshop convenience does not broaden workflow
+receiver scopes; recommend entity-scoped publishers for production.
+Preserve other labs' app-level connection entries and workflows;
 do not let a later deployment replace the shared parent's settings.
 
 ## Lab 0 coaching map

@@ -34,6 +34,7 @@ HANDOFF = {
     "private_endpoint_subnet_id": f"{IDS['virtual_network_id']}/subnets/snet-private-endpoints",
     "logic_app_name": "site",
     "logic_app_principal_id": "00000000-0000-0000-0000-000000000002",
+    "publisher_principal_id": "00000000-0000-0000-0000-000000000003",
     "cosmos_account_name": "cosmos",
     "cosmos_account_endpoint": "https://cosmos.documents.azure.com:443/",
     "cosmos_database_name": "workshop",
@@ -51,6 +52,16 @@ def azure_response(args):
     if args[:3] == ["role", "assignment", "list"]:
         if "--all" in args and "--scope" in args:
             raise AssertionError("Azure CLI rejects --all combined with --scope")
+        if args[args.index("--scope") + 1] == IDS["service_bus_namespace_id"]:
+            case = os.environ["FAKE_AZ_CASE"]
+            if case == "missing-publisher":
+                return []
+            return [{
+                "principalId": HANDOFF["publisher_principal_id"],
+                "principalType": "ServicePrincipal" if case == "wrong-publisher-type" else "User",
+                "scope": ROOT if case == "broad-publisher" else IDS["service_bus_namespace_id"],
+                "roleDefinitionId": "/roles/69a216fc-b8fb-44d8-bc22-1f3c2cd27a39",
+            }]
         return [
             {"principalId": "host-principal", "scope": IDS["host_storage_id"],
              "roleDefinitionId": f"/roles/{role}"}
@@ -201,6 +212,13 @@ class ReadinessTests(unittest.TestCase):
         result = self.run_check("public-cosmos")
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("private serverless Cosmos", result.stderr)
+
+    def test_publisher_must_be_a_user_with_namespace_scoped_sender_grant(self):
+        for case in ("missing-publisher", "wrong-publisher-type", "broad-publisher"):
+            with self.subTest(case=case):
+                result = self.run_check(case)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("confirmed student user Data Sender at namespace scope", result.stderr)
 
     def test_identity_resource_id_casing_is_accepted(self):
         result = self.run_check("identity-id-casing")

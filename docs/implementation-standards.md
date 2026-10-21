@@ -12,6 +12,9 @@ runtime behavior.
 - Make one bounded change at a time and explain the intended resource graph
   before editing.
 - Favor clear teaching code over abstraction.
+- Keep generated workflow definitions and templates local under each lab's
+  ignored `workflows/` folder. Do not commit these learner solutions; keep
+  contracts, sample data, and implementation requirements in source control.
 - Keep Bicep and Terraform tracks behaviorally equivalent. Equivalent means the
   same resource responsibilities, identity boundaries, API or event contracts,
   tags, and non-secret outputs; syntax does not need to mirror line by line.
@@ -39,6 +42,10 @@ runtime behavior.
   source control.
 - Do not expose secrets through Bicep or Terraform outputs.
 - Use workflow managed identity for Azure data-plane access.
+- Lab 0 confirms the signed-in student user and grants Service Bus Data Sender
+  at namespace scope for workshop publishing. This convenience applies only
+  to the student, never either Logic App identity; production publishers
+  should use entity-scoped grants.
 - Do not emit secrets or full sensitive payloads to Logic App run history.
 
 ## Sample payload visibility

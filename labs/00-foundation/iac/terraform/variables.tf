@@ -18,6 +18,16 @@ variable "prefix" {
   }
 }
 
+variable "publisher_principal_id" {
+  description = "Confirmed signed-in student user object ID; receives namespace-scoped Service Bus Data Sender."
+  type        = string
+
+  validation {
+    condition     = can(regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$", var.publisher_principal_id))
+    error_message = "publisher_principal_id must be the confirmed student's Microsoft Entra object UUID."
+  }
+}
+
 variable "location" {
   description = "Azure region with available Windows WS1 quota."
   type        = string

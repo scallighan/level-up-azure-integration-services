@@ -52,6 +52,9 @@ terraform.rc
 **/*.parameters.local.json
 *.deployment.json
 
+# Learner-generated workflow solutions stay local
+/labs/*/workflows/
+
 # Local GitHub Pages build artifacts
 _site/
 .jekyll-cache/

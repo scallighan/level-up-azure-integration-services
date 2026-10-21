@@ -2,6 +2,7 @@ param prefix string
 param location string
 param tags object
 param resourceGroupCreated bool
+param publisherPrincipalId string
 
 var suffix = take(uniqueString(subscription().subscriptionId, prefix, 'lab00'), 8)
 var stem = '${prefix}-lab00'
@@ -335,6 +336,20 @@ resource serviceBus 'Microsoft.ServiceBus/namespaces@2024-01-01' = {
   }
 }
 
+resource publisherRbac 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(serviceBus.id, publisherPrincipalId, '69a216fc-b8fb-44d8-bc22-1f3c2cd27a39')
+  scope: serviceBus
+  properties: {
+    roleDefinitionId: subscriptionResourceId(
+      'Microsoft.Authorization/roleDefinitions',
+      '69a216fc-b8fb-44d8-bc22-1f3c2cd27a39'
+    )
+    principalId: publisherPrincipalId
+    principalType: 'User'
+    description: 'Lab 0 student publisher; namespace-scoped workshop access.'
+  }
+}
+
 resource site 'Microsoft.Web/sites@2025-03-01' = {
   name: 'la-${stem}-${suffix}'
   location: location
@@ -403,6 +418,7 @@ resource cosmosRbac 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments@20
 output foundation object = {
   resource_group_name: resourceGroup().name
   resource_group_created: resourceGroupCreated
+  publisher_principal_id: publisherPrincipalId
   location: location
   virtual_network_id: vnet.id
   integration_subnet_id: vnet.properties.subnets[3].id

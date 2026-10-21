@@ -5,15 +5,17 @@ Terraform deployments create the same shared infrastructure. Learners configure,
 review, and deploy this code rather than asking Copilot to regenerate it.
 
 Keep the learner setup Azure-only: Bash, Azure CLI, jq, and the selected IaC
-tool. Require only subscription, prefix, region, and optional existing group.
+tool. Ask for subscription, prefix, region, and optional existing group, then
+resolve and confirm the current signed-in student user's object ID.
 Check WS1 quota in that selected region, not a global region scan. GitHub CLI
 authentication, an editor/Copilot session, frontend settings, and APIM inputs
 are not prerequisites for this deployment.
 
 Keep setup, preview, and deployment commands in `scripts/foundation.sh`;
 the README invokes its actions rather than duplicating shell logic. Setup
-prompts for the four inputs, preserves later-lab `.env` settings, checks access
-and quota, and registers providers. Preview never deploys. Deployment preserves
+prompts for the four inputs and publisher confirmation, preserves later-lab
+`.env` settings, checks access and quota, and registers providers. Preview never
+deploys. Deployment preserves
 Terraform confirmation and saves the non-secret handoff only after success.
 
 Read this file with the [README](README.md), [implementation standards](../../docs/implementation-standards.md),
@@ -37,6 +39,7 @@ Lab 2's event contract is implemented later, not in this foundation.
 | Cosmos connectivity | `Sql` private endpoint, `privatelink.documents.azure.com`, VNet link, zone group |
 | Cosmos RBAC | Site system identity: built-in data contributor scoped to `workshop/items` |
 | Service Bus | Standard namespace, TLS 1.2, local/SAS authentication disabled, public endpoint |
+| Student publisher RBAC | Confirmed Azure user: Azure Service Bus Data Sender at namespace scope; no sender role for either Logic App identity |
 | Monitoring | Dedicated 30-day Log Analytics workspace, workspace-based Application Insights, site telemetry setting |
 
 All taggable new resources use `workshop=agentic-ais`, `lab=00`. Do not retag
@@ -82,8 +85,9 @@ production private networking, not substituted into this cost-sensitive lab.
 ## Inputs and handoff
 
 Both tracks accept subscription, prefix, location, and optional existing parent
-group. Use a 3-12 character lowercase alphanumeric prefix starting with a letter
-and a region identifier such as `westus`. Keep inputs in ignored root `.env`.
+group, plus the publisher user object ID resolved by setup. Use a 3-12 character
+lowercase alphanumeric prefix starting with a letter and a region identifier
+such as `westus`. Keep inputs in ignored root `.env`.
 Global names have deterministic, track-specific safe suffixes; switching tracks
 does not adopt or import an existing deployment.
 
@@ -95,8 +99,24 @@ or credentials may be outputs. Save it locally as `foundation.deployment.json`
 for explicit later-lab references; never depend on Terraform remote state from
 another lab.
 
-Lab 0 owns the foundation and container-scoped Cosmos grant. Lab 1 adds
-lookup data and workflow artifacts. Lab 2 adds topics/subscriptions/rules,
+During setup, require a user login, resolve `az ad signed-in-user show`, display
+the object ID and namespace-wide scope, and require explicit confirmation.
+Persist it as `WORKSHOP_PUBLISHER_PRINCIPAL_ID` and pass the
+`publisher_principal_id` Terraform / `publisherPrincipalId` Bicep parameter.
+Preview and deployment reuse the saved selection; they do not silently switch
+publishers when the CLI login changes. Missing publisher selection requires
+setup again. Record `publisher_principal_id` in the non-secret handoff.
+
+Lab 0 owns this deterministic namespace-scoped Data Sender assignment. It
+allows the student to publish to workshop entities created in later labs
+without granting additional roles. This intentionally trades entity-level
+publisher isolation for workshop convenience; recommend entity-scoped grants
+for production. It grants neither receiver nor management permissions, and
+must never target the site or host-storage identity.
+
+Lab 0 owns the foundation, namespace-scoped student sender grant, and
+container-scoped Cosmos grant. Lab 1 adds lookup data and workflow artifacts.
+Lab 2 adds topics/subscriptions/rules,
 subscription-scoped receiver roles, and workflow artifacts to the existing
 namespace/site. Lab 3 references the same foundation and adds only approved
 flow-specific entities, grants, artifacts, and dependencies. No later lab
@@ -112,7 +132,8 @@ Format/build/what-if Bicep; fmt/validate/plan Terraform. Preview both new-group
 and existing-group paths. Existing mode must contain no resource-group writes.
 Provisioning checks must confirm identities, WS1, private endpoint approvals,
 DNS records/links, disabled storage/Cosmos public access and local auth,
-Cosmos role scope, Service Bus SKU/auth, and monitoring wiring.
+Cosmos role scope, Service Bus SKU/auth, the confirmed user publisher grant at
+namespace scope, and monitoring wiring.
 Later labs prove actual data access and telemetry with workflow tests.
 
 ## Cleanup

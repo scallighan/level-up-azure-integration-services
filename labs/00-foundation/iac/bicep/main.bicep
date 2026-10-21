@@ -11,6 +11,11 @@ param location string = 'westus'
 @description('Existing resource group in this subscription; leave empty to create a workshop group.')
 param existingResourceGroupName string = ''
 
+@description('Confirmed signed-in student user object ID; receives namespace-scoped Service Bus Data Sender.')
+@minLength(36)
+@maxLength(36)
+param publisherPrincipalId string
+
 var resourceGroupName = empty(existingResourceGroupName)
   ? 'rg-${prefix}-lab00-${toLower(replace(location, ' ', ''))}'
   : existingResourceGroupName
@@ -33,6 +38,7 @@ module resources 'resources.bicep' = {
     location: location
     tags: tags
     resourceGroupCreated: empty(existingResourceGroupName)
+    publisherPrincipalId: publisherPrincipalId
   }
   dependsOn: [foundation]
 }

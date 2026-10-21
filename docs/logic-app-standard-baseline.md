@@ -66,6 +66,9 @@ Logic App's system-assigned identity for lab workload access:
 
 - Lab 0 grants its Logic App system identity only the required Cosmos DB
   data-plane access.
+- Separately, Lab 0 grants the confirmed signed-in student user Service Bus
+  Data Sender at namespace scope for workshop publishing. Neither Logic App
+  identity receives this role.
 - Lab 2 grants the selected Logic App system identity receiver access
   separately at each required Service Bus subscription scope, never at
   namespace or topic scope.

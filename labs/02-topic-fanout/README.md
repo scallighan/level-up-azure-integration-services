@@ -68,15 +68,36 @@ Keep the actions lightweight and do not change infrastructure or grants.
 
 ## Task 3: publish and trace
 
-Ask Copilot to predict the message counts, then send the sample once through
-the `orders` topic's **Service Bus Explorer** using Entra authentication.
-Confirm a separate **topic-scoped Data Sender** grant for your student
-principal; do not enable SAS or grant namespace-wide access.
+After deploying Tasks 1 and 2, run from the repository root:
 
-Set `ContentType=application/json`, `MessageId` to `eventId`, and
-`CorrelationId` to the body's `correlationId`. Add application properties
-`eventType=order.created`, `schemaVersion=1.0`, and the same `correlationId`.
-All three workflows must run once with the same event and correlation IDs.
+```bash
+set -a; source .env; set +a
+python3 scripts/test-lab2.py
+```
+
+The helper uses your current `az login` **user** and reuses the namespace-scoped
+**Data Sender** grant created by Lab 0. It creates no grants and never changes
+the site's permissions or enables SAS. If access is missing, repeat Lab 0
+setup, preview, and deployment with the original foundation inputs.
+RBAC propagation can take several minutes.
+
+It sends the public sample once with fresh event/correlation IDs and timestamp,
+sets the required broker/application properties, and checks matching runs and
+successful message completion in `audit`, `fulfillment`, and `notification`.
+Expect **one publication, three copies, and one successful run per workflow**.
+Only statuses and identifiers are printed; no tokens or event bodies.
+Existing payload-visibility settings remain unchanged.
+
+Use `python3 scripts/test-lab2.py --dry-run` to preview without Azure requests.
+The live test waits up to 180 seconds (`--timeout 300` extends this).
+Failures exit nonzero with diagnostics. If a send's outcome is uncertain,
+inspect the printed correlation ID before rerunning: each invocation creates
+a new event rather than retrying the previous one.
+
+Service Bus Explorer remains an optional alternative. Set
+`ContentType=application/json`, `MessageId=eventId`, and the broker
+`CorrelationId` to the body's `correlationId`; add string application
+properties `eventType=order.created`, `schemaVersion=1.0`, and `correlationId`.
 
 ## Task 4: prove failure isolation
 
@@ -87,7 +108,8 @@ dead-letters its copy. Revert the deliberate failure.
 
 ## Cleanup
 
-Remove only Lab 2's topic and children, sender/receiver grants, workflows, and
+Remove only Lab 2's topic and children, receiver grants, workflows, and
 unused connection entry. Verify uploaded artifacts are removed even after
 Terraform destroy. Preserve Lab 0's group, namespace, site, and other labs'
-artifacts ([ownership details](implementation-requirements.md#implementation-sequence)).
+artifacts, including the Lab 0 student sender grant
+([ownership details](implementation-requirements.md#implementation-sequence)).
