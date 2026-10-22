@@ -244,18 +244,22 @@ do not let a later deployment replace the shared parent's settings.
 ### Checkpoint 3: route two event types
 
 Run `python3 scripts/test-lab2.py`. Predict the routing matrix before sending:
-creation reaches audit and order-created, then cancellation reaches audit and
-order-cancelled. Expect two publications, four copies, and no cross-routed
-specialist runs. The helper waits for creation before publishing cancellation
-and verifies persisted-state assertions, not just provisioning or run status.
+each of three creations reaches audit and order-created, then one cancellation
+reaches audit and order-cancelled. Expect four publications and eight copies
+(four audit, three creation, one cancellation), with no cross-routed specialist
+runs. The helper waits for all three creations before cancelling only the first
+order. It verifies persisted-state assertions, not just provisioning or run
+status.
 The bounded observation window is not a proof against every possible late run.
 Check the exact broker rules too.
 
 Check `ContentType`, `MessageId`, `CorrelationId`, `eventType`, and
-`schemaVersion`. Both events use the same fresh order ID but different event
-and correlation IDs. Confirm `created` then `cancelled` state without changing
-customer/order fields. Send an unfamiliar event with a valid envelope to prove
-only audit receives it. No workstation Cosmos grant or public access is needed.
+`schemaVersion`. The three creations use distinct order IDs, and cancellation
+reuses only the first order ID. All four events use fresh event and correlation
+IDs. Confirm that the first order becomes `cancelled` without changing
+customer/order fields and the other two stay `created`.
+Send an unfamiliar event with a valid envelope to prove only audit receives it.
+No workstation Cosmos grant or public access is needed.
 
 ### Checkpoint 4: failure isolation
 

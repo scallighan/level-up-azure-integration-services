@@ -53,6 +53,12 @@ DNS, and site VNet integration. Explain the container's request-unit/storage
 cost and preserve the account/database throughput model; do not provision a
 new Cosmos account or change parent throughput.
 
+Configure the `orders` container's indexing policy explicitly: consistent
+indexing, included path `/*`, and excluded path `/"_etag"/?`, following the
+[shared Cosmos standards](../../docs/implementation-standards.md#cosmos-db)
+in both IaC tracks. Include this in Task 1 so a later workflow-only plan
+does not add an unrelated indexing-policy update.
+
 Add one Cosmos DB Built-in Data Contributor data-plane assignment for the
 site's system identity, scoped only to the new `orders` container. Preserve
 the existing `items` grant. Do not grant account/database-wide Cosmos access,
@@ -87,6 +93,16 @@ subscription-scoped.
 
 ## Implementation sequence
 
+Use the Bicep or Terraform track selected in Lab 0. The starter generates files
+only; review the generated artifacts and deployment preview before approving
+deployment. Follow the repository-wide validation requirements for the chosen
+track.
+
+Reuse the ignored `.env` and `foundation.deployment.json`, setting
+`FOUNDATION_RESOURCE_GROUP_NAME` from the handoff. Run
+`bash scripts/verify-foundation.sh foundation.deployment.json` before adding
+Lab 2 resources; reference verification must produce no managed-resource changes.
+
 Keep infrastructure provisioning separate from workflow behavior in both IaC
 tracks:
 
@@ -98,6 +114,10 @@ tracks:
    identity. Do not add workflow definitions.
 2. Add only `audit`, `order-created`, and `order-cancelled` workflow definitions
    and their message-processing behavior.
+
+Keep generated workflow definitions and templates local under the lab's ignored
+`workflows/` folder. Do not commit these learner solutions; students generate
+their own workflows from the requirements and contracts.
 
 Destroying Lab 2 must remove only its messaging children, four scoped grants,
 `orders` Cosmos container and its lab sample documents, and workflow artifacts.
@@ -181,10 +201,12 @@ status and correlation IDs, not full event bodies.
 
 ## Routing and persistence checks
 
-Run `python3 scripts/test-lab2.py` after deploying both tasks. It sends a fresh
-order creation, waits for audit and creation success, then sends cancellation
-for the same fresh order and waits for audit and cancellation success.
+Run `python3 scripts/test-lab2.py` after deploying both tasks. It creates three
+fresh orders, waiting for audit and creation success for each, then cancels only
+the first order and waits for audit and cancellation success. The other two
+orders remain `created`.
 Each publication has its own event ID and correlation ID.
+Generate a fresh timestamp for each event as well.
 
 | Event type | Audit | Order-created | Order-cancelled | Persisted state |
 |---|---|---|---|---|
@@ -193,12 +215,84 @@ Each publication has its own event ID and correlation ID.
 
 The helper preflights the exact broker rules, checks successful processing,
 specialist read-back assertions, and completion, and watches for incorrectly
-routed runs during a bounded observation window. Two publications produce
-four expected subscription copies/runs, not six. Runtime observation cannot
-prove the permanent absence of a late run; rule inspection establishes the
-intended routing configuration.
+routed runs during a bounded observation window. Four publications produce
+eight expected subscription copies/runs: four audit, three creation, and one
+cancellation. Runtime observation cannot prove the permanent absence of a late
+run; rule inspection establishes the intended routing configuration.
+
+### Helper options and troubleshooting
+
+The helper uses Python 3, the Azure CLI, and the current `az login` user. Reuse
+the namespace-scoped Data Sender grant owned by Lab 0; the helper never creates
+grants, enables SAS, changes site permissions, or changes workflow definitions.
+If publishing access is missing, repeat Lab 0 setup, preview, and deployment
+with the original foundation inputs. RBAC propagation can take several minutes.
+
+Preview identifiers and expected counts without Azure requests:
+
+```bash
+python3 scripts/test-lab2.py --dry-run
+```
+
+The default timeout is 180 seconds per event. To allow 300 seconds per event:
+
+```bash
+python3 scripts/test-lab2.py --timeout 300
+```
+
+After expected runs finish, the helper observes for incorrect routing for
+10 seconds. It checks successful processing, specialist `Read_order` and
+`Verify_order` assertions, and message completion without connecting the
+workstation to private Cosmos. The legacy fulfillment/notification workflows
+do not satisfy the revised preflight.
+
+Failures exit nonzero with diagnostics. If a send's outcome is uncertain,
+inspect the printed correlation ID before rerunning: each invocation creates
+three fresh orders rather than retrying the previous batch. Do not
+automatically resend an event whose publication outcome is uncertain.
+
+Only statuses and identifiers are printed, never tokens, event bodies, or
+linked action payloads. Existing payload-visibility settings remain unchanged.
+
+### Manual publishing and additional cases
+
+Service Bus Explorer is an optional alternative. Use the
+[creation sample](contracts/sample-order-created.json) and
+[cancellation sample](contracts/sample-order-cancelled.json).
+Set `ContentType=application/json`, `MessageId=eventId`, and the broker
+`CorrelationId` to the body's `correlationId`. Add string application properties
+`eventType` matching the sample, `schemaVersion=1.0`, and `correlationId`.
+Send cancellation only after creation succeeds.
 
 Also test an unfamiliar event type with a valid common envelope: only audit
 should receive it. A valid specialist event with a mismatched broker event
 type must fail validation without writing to Cosmos. Exercise same-event
 redelivery and missing-order cancellation without weakening RBAC or networking.
+
+### Offline contributor checks
+
+Use a Python virtual environment and run from the repository root:
+
+```bash
+python3 -m pip install -r scripts/requirements-test.txt
+python3 -m unittest scripts/test_configure_lab2.py scripts/test_lab2_receivers.py scripts/test_lab2_smoke.py
+```
+
+These tests validate the committed event contracts, broker configuration helper,
+routing checks, and required receiver-run assertions. They need no Azure login,
+Terraform, or generated workflow files. The `jsonschema` package is test-only;
+the live smoke helper uses the Python standard library and Azure CLI.
+Offline checks do not validate generated workflow definitions or prove Cosmos
+persistence; run the live helper after deployment.
+
+## Failure-isolation exercise
+
+After successfully creating a fresh order, ask Copilot for a controlled
+`order-cancelled` processing failure before any Cosmos mutation, expected
+delivery counts, and an exact revert. Publish cancellation for that order.
+Audit must complete independently; only the cancellation copy retries and
+eventually dead-letters. The creation workflow must not receive cancellation,
+and the document must remain `created`. Revert the deliberate failure.
+
+Also discuss cancellation arriving before creation and replay after the
+broker's duplicate-detection window.

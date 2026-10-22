@@ -11,6 +11,11 @@ inputs and outputs are visible in run history. Follow the
 [run-history standards](docs/implementation-standards.md#sample-payload-visibility).
 Keep `false` available and require it before processing real or sensitive data.
 
+For workshop-owned Cosmos NoSQL containers, explicitly configure consistent
+indexing, include `/*`, and exclude `/"_etag"/?` as described in the
+[implementation standards](docs/implementation-standards.md#cosmos-db).
+Keep both IaC tracks equivalent; later labs must not change shared containers.
+
 Before proposing or making a change, read:
 
 1. [`docs/implementation-standards.md`](docs/implementation-standards.md);

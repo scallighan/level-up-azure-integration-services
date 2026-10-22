@@ -18,6 +18,7 @@ GROUP = f"/subscriptions/{SUBSCRIPTION}/resourceGroups/workshop"
 SITE = f"{GROUP}/providers/Microsoft.Web/sites/site"
 NAMESPACE = f"{GROUP}/providers/Microsoft.ServiceBus/namespaces/bus"
 FQDN = "bus.servicebus.windows.net"
+COSMOS_ENDPOINT = "https://workshopcosmos.documents.azure.com:443/"
 EXPECTED_RULES = {
     "audit": ("all-events", "1 = 1"),
     "order-created": ("order-created", "eventType = 'order.created'"),
@@ -74,11 +75,60 @@ class AzureRequests:
 
 
 class ConfigurationTests(unittest.TestCase):
-    def run_configuration(self, requests, action="configure"):
+    def run_configuration(self, requests, action="configure", *, cosmos_endpoint=None):
         with patch.object(LAB2, "az_json", return_value=SUBSCRIPTION), \
                 patch.object(LAB2, "request", side_effect=requests), \
                 contextlib.redirect_stdout(io.StringIO()):
-            LAB2.configure(action, SITE, NAMESPACE, FQDN)
+            LAB2.configure(action, SITE, NAMESPACE, FQDN, cosmos_endpoint=cosmos_endpoint)
+
+    def test_both_managed_identity_connections_merge_without_replacing_lab1_or_managed_entries(self):
+        existing = copy.deepcopy(EXISTING)
+        del existing["serviceProviderConnections"]["lab02Cosmos"]
+        azure = AzureRequests(connections=existing)
+        self.run_configuration(azure, cosmos_endpoint=COSMOS_ENDPOINT)
+        providers = azure.connections["serviceProviderConnections"]
+        self.assertEqual(providers["lab02Cosmos"]["parameterSetName"], "ManagedServiceIdentity")
+        self.assertEqual(providers["lab02Cosmos"]["parameterValues"], {
+            "accountURI": COSMOS_ENDPOINT, "authProvider": {"Type": "ManagedServiceIdentity"},
+        })
+        self.assertEqual(providers["lab02Cosmos"]["serviceProvider"]["id"], "/serviceProviders/AzureCosmosDB")
+        self.assertNotIn("authProvider", providers["lab02Cosmos"])
+        self.assertEqual(providers["lab02ServiceBus"], LAB2.connection(FQDN))
+        self.assertEqual(providers["lab01Cosmos"], existing["serviceProviderConnections"]["lab01Cosmos"])
+        self.assertEqual(azure.connections["managedApiConnections"], existing["managedApiConnections"])
+        azure.calls.clear()
+        self.run_configuration(azure, cosmos_endpoint=COSMOS_ENDPOINT)
+        self.assertFalse(any(path.endswith("/deployWorkflowArtifacts") for _, path, _ in azure.calls))
+        azure.calls.clear()
+        self.run_configuration(azure, action="remove", cosmos_endpoint=COSMOS_ENDPOINT)
+        self.assertEqual(azure.connections, existing)
+        self.assertFalse(any("/topics/" in path for _, path, _ in azure.calls))
+
+    def test_conflicting_cosmos_connection_is_rejected_before_rule_or_connection_writes(self):
+        for action in ("configure", "remove"):
+            azure = AzureRequests()
+            with self.subTest(action=action), self.assertRaisesRegex(ValueError, "lab02Cosmos.*different definition"):
+                self.run_configuration(azure, action, cosmos_endpoint=COSMOS_ENDPOINT)
+            self.assertEqual(len(azure.calls), 1)
+
+    def test_both_connections_can_be_created_on_an_empty_site(self):
+        azure = AzureRequests(connections={}, missing=True)
+        self.run_configuration(azure, cosmos_endpoint=COSMOS_ENDPOINT)
+        self.assertEqual(azure.connections, {
+            "serviceProviderConnections": {
+                "lab02ServiceBus": LAB2.connection(FQDN),
+                "lab02Cosmos": LAB2.cosmos_connection(COSMOS_ENDPOINT),
+            },
+        })
+
+    def test_invalid_cosmos_endpoint_is_rejected_without_azure_requests(self):
+        for endpoint in ("http://workshopcosmos.documents.azure.com/", "https://example.com/", ""):
+            with self.subTest(endpoint=endpoint), patch.object(LAB2, "az_json") as azure, \
+                    patch.object(LAB2, "request") as request, \
+                    self.assertRaisesRegex(ValueError, "HTTPS Cosmos account endpoint"):
+                LAB2.configure("configure", SITE, NAMESPACE, FQDN, cosmos_endpoint=endpoint)
+            azure.assert_not_called()
+            request.assert_not_called()
 
     def test_configuration_preserves_other_connections_and_is_idempotent(self):
         azure = AzureRequests()

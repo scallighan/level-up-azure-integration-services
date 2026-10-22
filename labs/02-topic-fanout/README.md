@@ -9,7 +9,8 @@ Use one topic and three workflows to demonstrate catch-all auditing and
 event-type routing. Create an order in Cosmos DB with `order.created`, then
 mark it cancelled with `order.cancelled`.
 
-**Time:** 75 minutes. **Required:** [Lab 0](../00-foundation/README.md), not Lab 1.
+**Time:** 75 minutes. **Required:** [Lab 0](../00-foundation/README.md),
+Python 3, and the same Azure CLI session. Lab 1 is not required.
 
 ![An audit workflow receives all events while two filtered workflows create and cancel Cosmos orders](../../docs/assets/lab-02-topic-fanout-architecture.svg)
 
@@ -19,34 +20,17 @@ mark it cancelled with `order.cancelled`.
 | `order-created` | Only `order.created` | Create an order document |
 | `order-cancelled` | Only `order.cancelled` | Mark an existing order cancelled |
 
-The broker filters before delivery; specialists do not receive and discard
-other event types. Lab 2 owns a new `orders` NoSQL container in Lab 0's Cosmos
-database, separate from Lab 1 lookup data. Lab 1 is still not a prerequisite.
-
 ## Start
 
-Read the [implementation requirements](implementation-requirements.md),
-[common event envelope](contracts/event-envelope.schema.json), and both event
-contracts and samples: [creation](contracts/order-created.schema.json),
-[creation sample](contracts/sample-order-created.json),
-[cancellation](contracts/order-cancelled.schema.json), and
-[cancellation sample](contracts/sample-order-cancelled.json).
-Initialize one track with the
+Keep the Bicep or Terraform track you chose in Lab 0. Initialize it with the
 [Bicep starter](https://github.com/scallighan/level-up-azure-integration-services/blob/main/.github/prompts/02-fanout-bicep.prompt.md)
 or [Terraform starter](https://github.com/scallighan/level-up-azure-integration-services/blob/main/.github/prompts/02-fanout-terraform.prompt.md)
 ([how to invoke](../../docs/copilot-working-agreement.md#invoking-workshop-prompt-files)).
-The starter creates files only; use the prompts below one at a time.
+Use the prompts below one at a time.
 
-Reuse `.env` and `foundation.deployment.json`; set
-`FOUNDATION_RESOURCE_GROUP_NAME` from the handoff.
-
-```bash
-set -a; source .env; set +a
-```
-
-For each change, have Copilot explain the resource graph, identities, files,
-and checks before approval. Run Bicep format/build/what-if or Terraform
-fmt/validate/plan; review the preview and artifact files before deploying.
+Review the generated files and deployment preview before approving each change.
+The [implementation requirements](implementation-requirements.md) contain the
+contracts, broker configuration, permissions, and message-processing details.
 
 ## Step 0: reference the foundation
 
@@ -58,44 +42,26 @@ Do not change the foundation or add messaging, roles, connections, or workflows.
 ```
 
 Run `bash scripts/verify-foundation.sh foundation.deployment.json`.
-This step must produce no managed-resource changes.
 
 ## Task 1: add the messaging infrastructure
 
 ```text
-Add the orders topic and audit/order-created/order-cancelled subscriptions.
-Use one catch-all rule for audit and distinct event-type rules for the others.
-Add the orders Cosmos container in the existing database, managed-identity
-Service Bus and Cosmos connections, three subscription-scoped receiver grants,
-and one new-container-scoped Cosmos contributor grant for the site's system
-identity. Follow the Lab 2 requirements. Preserve all shared resources,
-existing grants, and connection entries. Do not add workflow definitions.
+Build the Lab 2 messaging and Cosmos resources. Follow
+labs/02-topic-fanout/implementation-requirements.md.
+Reuse Lab 0 and preserve existing resources, grants, and connections.
+Do not add workflow definitions. Show the files and checks before deploying.
 ```
-
-Check exactly three subscriptions and one named rule each: audit uses
-`1 = 1`, creation uses `eventType = 'order.created'`, and cancellation uses
-`eventType = 'order.cancelled'`. Remove `$Default` after adding the named rules.
-Check duplicate detection, subscription-scoped receiver grants, and an
-`orders` container with partition key `/id` and its own scoped Cosmos grant.
-No changes to the existing `items` container or parent throughput are allowed.
 
 ## Task 2: add the receivers
 
 ```text
-Add only audit, order-created, and order-cancelled workflows, each receiving
-from its assigned subscription. Audit all event types using the common
-envelope. Create a Cosmos order for order.created and mark that existing
-order cancelled for order.cancelled. Follow the Lab 2 contracts, idempotency,
-read-back verification, and action-naming requirements. Use managed identity
-and peek-lock, complete only after processing and persistence checks succeed,
-and preserve retries and dead lettering. Do not change infrastructure or grants.
+Build audit, order-created, and order-cancelled workflows for Lab 2.
+Follow labs/02-topic-fanout/implementation-requirements.md and its event contracts.
+Audit all event types. Create orders on order.created and cancel existing
+orders on order.cancelled. Reuse Lab 0 and the existing connections.
+Do not change infrastructure or grants. Show the files and checks before
+deploying.
 ```
-
-Keep generated definitions/templates in the ignored local `workflows/`
-folder; students generate their own solution rather than copying one from Git.
-Use the same order ID as document ID and partition key. Do not let a repeated
-creation overwrite a cancellation. Cancellation of a missing order must fail
-and retry, not invent a partial document.
 
 ## Task 3: publish and trace
 
@@ -106,77 +72,31 @@ set -a; source .env; set +a
 python3 scripts/test-lab2.py
 ```
 
-The helper uses your current `az login` **user** and reuses the namespace-scoped
-**Data Sender** grant created by Lab 0. It creates no grants and never changes
-the site's permissions or enables SAS. If access is missing, repeat Lab 0
-setup, preview, and deployment with the original foundation inputs.
-RBAC propagation can take several minutes.
+The helper creates three fresh orders, verifies each creation, then cancels
+only the first. Expect **four publications and eight workflow runs**:
 
-It sends a creation for a fresh order ID, waits for audit and creation
-processing, then sends cancellation for that same order. Each event gets fresh
-event/correlation IDs and a timestamp. It checks broker rules, matching runs,
-successful Cosmos read-back assertions, and message completion, without
-connecting the workstation to private Cosmos.
+| Workflow | Expected runs |
+|---|---|
+| `audit` | 4 |
+| `order-created` | 3 |
+| `order-cancelled` | 1 |
 
-Expect **two publications and four copies/runs**: audit runs twice, creation
-once, and cancellation once. The unrelated specialist must not run for each
-event. The helper observes for incorrect routing for 10 seconds after expected
-runs finish; the rule checks also detect catch-all specialist filters.
-The order must transition from `created` to `cancelled`, preserving its
-original customer/order fields.
+Two orders remain `created`; the first becomes `cancelled`. Use the printed
+correlation IDs to follow the runs in the Azure portal.
 
-Only statuses and identifiers are printed; no tokens, event bodies, or linked
-action payloads. Existing payload-visibility settings remain unchanged.
-
-Use `python3 scripts/test-lab2.py --dry-run` to preview without Azure requests.
-The live test waits up to 180 seconds (`--timeout 300` extends this).
-Failures exit nonzero with diagnostics. If a send's outcome is uncertain,
-inspect the printed correlation ID before rerunning: each invocation creates
-a fresh order lifecycle rather than retrying the previous one. The helper
-does not change workflow definitions or create infrastructure/roles; the old
-fulfillment/notification solution will not pass the revised preflight.
-
-Service Bus Explorer remains an optional alternative. Set
-`ContentType=application/json`, `MessageId=eventId`, and the broker
-`CorrelationId` to the body's `correlationId`; add string application
-properties `eventType` matching the selected sample, `schemaVersion=1.0`, and
-`correlationId`. Send cancellation only after creation succeeds. To demonstrate
-catch-all behavior, send a valid common envelope with a new event type:
-only audit should run, with no Cosmos changes.
-
-### Offline Python checks
-
-For contributor checks, use a Python virtual environment and run from the
-repository root:
-
-```bash
-python3 -m pip install -r scripts/requirements-test.txt
-python3 -m unittest scripts/test_configure_lab2.py scripts/test_lab2_receivers.py scripts/test_lab2_smoke.py
-```
-
-These tests validate the committed event contracts, broker configuration
-helper, routing checks, and required receiver-run assertions. They need no
-Azure login, Terraform, or generated workflow files. The `jsonschema` package
-is test-only; the live smoke helper still uses the Python standard library
-and Azure CLI. Offline checks do not validate a learner's generated workflow
-definitions or prove Cosmos persistence; run the live helper after deployment.
+See the [test-helper reference](implementation-requirements.md#helper-options-and-troubleshooting)
+for options and troubleshooting.
 
 ## Task 4: prove failure isolation
 
-After successfully creating a fresh order, ask Copilot for a controlled
-`order-cancelled` processing failure before any Cosmos mutation, expected
-delivery counts, and an exact revert. Publish cancellation for that order.
-Audit must complete independently; only the cancellation copy retries and
-eventually dead-letters. The creation workflow must not receive cancellation,
-and the document must remain `created`. Revert the deliberate failure.
-Also discuss cancellation arriving before creation and replay after the
-broker's duplicate-detection window.
+Ask Copilot for a controlled failure in cancellation processing and an exact
+revert. Publish cancellation for a newly created order.
+
+Confirm audit still succeeds while cancellation retries and eventually
+dead-letters. The order should stay `created`. Restore the workflow afterward.
 
 ## Cleanup
 
-Remove only Lab 2's topic and children, four scoped grants, `orders` Cosmos
-container and its lab documents, workflows, and unused `lab02ServiceBus` /
-`lab02Cosmos` connection entries. Verify uploaded artifacts are removed even after
-Terraform destroy. Preserve Lab 0's group, namespace, site, and other labs'
-artifacts, including the Lab 0 student sender grant
-([ownership details](implementation-requirements.md#implementation-sequence)).
+Remove only Lab 2's resources and workflow artifacts. Preserve Lab 0 and other
+labs' workflows and connections. Follow the
+[cleanup ownership requirements](implementation-requirements.md#implementation-sequence).

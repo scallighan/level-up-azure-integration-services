@@ -74,8 +74,9 @@ behavior should match even when implementation details differ.
   order-created persists an order, and order-cancelled updates that same order.
 - Lab 2 owns only its `orders` container and container-scoped Cosmos grant;
   the existing `items` container and Lab 1 data stay unchanged.
-- The test sends creation then cancellation: two events, four expected runs,
-  and a verified `created` to `cancelled` state transition.
+- The test creates three fresh orders, then cancels only the first: four events
+  and eight expected runs (four audit, three creation, one cancellation).
+  Two orders stay `created`; the first transitions to `cancelled`.
 - A workflow failure does not prevent the other subscriptions from processing.
 - Duplicate handling and dead-letter behavior are discussed before testing.
 

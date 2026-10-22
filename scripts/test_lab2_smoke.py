@@ -199,49 +199,68 @@ class SmokeTests(unittest.TestCase):
             SMOKE.wait_for_fanout(SITE, event, 10)
         self.assertNotIn("PASS", output.getvalue())
 
-    def test_creation_is_verified_before_cancellation_is_sent_and_failures_stop_the_test(self):
-        for creation_fails in (False, True):
+    def test_three_creations_are_verified_before_cancelling_only_the_first_and_failures_stop_the_test(self):
+        samples = [
+            (SMOKE.CONTRACTS / "sample-order-created.json").read_text(),
+        ] * 3 + [(SMOKE.CONTRACTS / "sample-order-cancelled.json").read_text()]
+        event_types = ["order.created"] * 3 + ["order.cancelled"]
+        for failure_index in (None, 0, 1, 2, 3):
             calls = []
-            events = [self.event(), self.event("order.cancelled")]
             def wait(site, event, timeout):
-                calls.append(("wait", event["eventType"]))
-                if creation_fails:
-                    raise RuntimeError("creation did not persist")
+                calls.append(("wait", event))
+                if failure_index is not None and len(calls) == 2 * (failure_index + 1):
+                    raise RuntimeError("order processing did not persist")
 
-            with self.subTest(creation_fails=creation_fails), \
+            with self.subTest(failure_index=failure_index), \
                     patch.object(SMOKE.sys, "argv", ["test-lab2.py"]), \
-                    patch.object(Path, "read_text", return_value=json.dumps(FOUNDATION)), \
-                    patch.object(SMOKE, "fresh_event", side_effect=events) as fresh, \
+                    patch.object(Path, "read_text", side_effect=[json.dumps(FOUNDATION), *samples]), \
                     patch.object(SMOKE, "signed_in_user", return_value=PRINCIPAL), \
                     patch.object(SMOKE, "ready_workflows"), \
                     patch.object(SMOKE, "ready_rules"), \
                     patch.object(SMOKE, "sender_access"), \
-                    patch.object(SMOKE, "publish", side_effect=lambda fqdn, event: calls.append(("send", event["eventType"]))), \
+                    patch.object(SMOKE, "publish", side_effect=lambda fqdn, event: calls.append(("send", event))), \
                     patch.object(SMOKE, "wait_for_fanout", side_effect=wait), \
                     contextlib.redirect_stdout(io.StringIO()), \
                     contextlib.redirect_stderr(io.StringIO()):
-                self.assertEqual(SMOKE.main(), 1 if creation_fails else 0)
-                self.assertTrue(all(
-                    call.args[1] == fresh.call_args_list[0].args[1]
-                    for call in fresh.call_args_list
-                ))
-            expected = [("send", "order.created"), ("wait", "order.created")]
-            if not creation_fails:
-                expected.extend([("send", "order.cancelled"), ("wait", "order.cancelled")])
-            self.assertEqual(calls, expected)
+                self.assertEqual(SMOKE.main(), 0 if failure_index is None else 1)
+            expected_types = event_types if failure_index is None else event_types[:failure_index + 1]
+            self.assertEqual(
+                [(action, event["eventType"]) for action, event in calls],
+                [(action, event_type) for event_type in expected_types for action in ("send", "wait")],
+            )
+            sent = [event for action, event in calls if action == "send"]
+            for index, event in enumerate(sent):
+                self.assertEqual(calls[2 * index + 1], ("wait", event))
+            self.assertEqual(len({event["eventId"] for event in sent}), len(sent))
+            self.assertEqual(len({event["correlationId"] for event in sent}), len(sent))
+            created_ids = [event["data"]["orderId"] for event in sent if event["eventType"] == "order.created"]
+            self.assertEqual(len(set(created_ids)), min(3, len(sent)))
+            if len(sent) == 4:
+                self.assertEqual(sent[-1]["data"]["orderId"], created_ids[0])
+                self.assertNotIn(sent[-1]["data"]["orderId"], created_ids[1:])
 
     def test_dry_run_never_contacts_azure(self):
+        samples = [
+            (SMOKE.CONTRACTS / "sample-order-created.json").read_text(),
+        ] * 3 + [(SMOKE.CONTRACTS / "sample-order-cancelled.json").read_text()]
+        output = io.StringIO()
         with patch.object(SMOKE.sys, "argv", ["test-lab2.py", "--dry-run"]), \
-                patch.object(Path, "read_text", side_effect=[
-                    json.dumps(FOUNDATION),
-                    (SMOKE.CONTRACTS / "sample-order-created.json").read_text(),
-                    (SMOKE.CONTRACTS / "sample-order-cancelled.json").read_text(),
-                ]), patch.object(SMOKE, "az_json") as azure, \
+                patch.object(Path, "read_text", side_effect=[json.dumps(FOUNDATION), *samples]), \
+                patch.object(SMOKE, "az_json") as azure, \
                 patch.object(SMOKE, "urlopen") as send, \
-                contextlib.redirect_stdout(io.StringIO()):
+                patch.object(SMOKE, "wait_for_fanout") as wait, \
+                contextlib.redirect_stdout(output):
             self.assertEqual(SMOKE.main(), 0)
             azure.assert_not_called()
             send.assert_not_called()
+            wait.assert_not_called()
+        lines = output.getvalue().splitlines()
+        self.assertEqual(lines.count("order.created"), 3)
+        self.assertEqual(lines.count("order.cancelled"), 1)
+        order_ids = [line.removeprefix("OrderId: ") for line in lines if line.startswith("OrderId: ")]
+        self.assertEqual(len(set(order_ids[:3])), 3)
+        self.assertEqual(order_ids[3:], order_ids[:1])
+        self.assertIn("4 publications, 8 subscription copies/runs", output.getvalue())
 
 
 if __name__ == "__main__":

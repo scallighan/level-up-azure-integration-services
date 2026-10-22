@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Publish a public order lifecycle and verify Lab 2 routing and persistence checks."""
+"""Create three public orders, cancel one, and verify Lab 2 routing and persistence checks."""
 
 import argparse
 from datetime import datetime, timezone
@@ -276,7 +276,7 @@ def main():
     try:
         foundation = json.loads(args.handoff.read_text())
         subscription, topic_id = validate_handoff(foundation)
-        order_id = f"ORD-{uuid.uuid4()}"
+        order_ids = [f"ORD-{uuid.uuid4()}" for _ in range(3)]
         if args.dry_run:
             print("Dry run: no Azure requests, permission changes, or messages.")
         else:
@@ -286,11 +286,13 @@ def main():
             ready_workflows(foundation["logic_app_id"])
             ready_rules(foundation)
             sender_access(topic_id, principal)
-        print(f"OrderId: {order_id}", flush=True)
-        print("Expected: 2 publications, 4 subscription copies/runs (audit twice, each specialist once); created then cancelled.", flush=True)
-        for event_type, workflow in EVENT_WORKFLOWS.items():
+        print("Expected: 4 publications, 8 subscription copies/runs (audit 4, order-created 3, order-cancelled 1); two orders stay created, the first is cancelled.", flush=True)
+        scenario = [("order.created", order_id) for order_id in order_ids]
+        scenario.append(("order.cancelled", order_ids[0]))
+        for event_type, order_id in scenario:
             event = fresh_event(event_type, order_id)
-            print(f"{event_type}\nEventId: {event['eventId']}\nCorrelationId: {event['correlationId']}", flush=True)
+            workflow = EVENT_WORKFLOWS[event_type]
+            print(f"{event_type}\nOrderId: {order_id}\nEventId: {event['eventId']}\nCorrelationId: {event['correlationId']}", flush=True)
             print(f"Expected receivers: audit, {workflow}; no run in the other specialist.", flush=True)
             if args.dry_run:
                 continue

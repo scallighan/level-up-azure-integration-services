@@ -86,6 +86,31 @@ implementation under
 - In Service Bus workflows, complete a message only after successful
   processing and preserve dead-letter behavior for repeated failures.
 
+## Cosmos DB
+
+For every workshop-owned NoSQL container, explicitly configure consistent
+indexing with the included path `/*` and excluded path `/"_etag"/?`.
+Keep this policy equivalent in Bicep and Terraform rather than relying on
+service defaults, so later plans do not introduce an `_etag` indexing-policy
+change during an unrelated task. Terraform must include:
+
+```hcl
+indexing_policy {
+  indexing_mode = "consistent"
+  included_path {
+    path = "/*"
+  }
+  excluded_path {
+    path = "/\"_etag\"/?"
+  }
+}
+```
+
+Apply this policy when creating the container in its owning lab. Later labs
+must not change shared containers to reconcile drift. An existing deployment
+without this exclusion needs a separately reviewed update by its owning lab;
+documentation alone does not change deployed resources.
+
 ## Service Bus
 - Specifically for these labs only use a Standard SKU service bus for cost concerns. Mention that for production Premium would be the recommended way to go.
 
