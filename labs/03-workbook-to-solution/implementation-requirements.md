@@ -99,6 +99,9 @@ identity scopes, costs, ownership, and operational behavior with the learner.
 Use a short decision summary; reference the baseline rather than repeating it.
 Approval of the Task 1 summary does not authorize unresolved technical choices
 or deployment. Keep any implementation notes in ignored `plans/`.
+Record confirmed choices and approvals there so resumed runs can reuse them;
+ask again only for missing, conflicting, or materially changed choices. Still
+review and obtain approval for the actual deployment preview before applying.
 
 ### Service Bus handoffs and Source helpers
 
@@ -124,7 +127,16 @@ Service Bus is required for communication between processing tabs in this lab:
   document dependencies and invocation; use Microsoft Entra authentication;
   and set content type, message ID, and correlation ID. Report send failures
   explicitly and never print credentials or full payloads.
-- Give the helper's operator only sender access to the approved ingress queue.
+- Include an Azure-free dry run and an observe-only mode that accepts an
+  existing correlation ID. Print IDs before sending; never automatically resend
+  after a timeout or uncertain acceptance. For custom fixtures, require explicit
+  confirmation of sanitized public data or verify protected history in every
+  participating workflow before accepting sensitive data.
+- Scope any new operator sender grant to the approved ingress queue. Lab 0 may
+  already grant the student namespace-wide Data Sender as a workshop convenience;
+  explicitly confirm and record that exception before reusing it. Do not add a
+  broader grant, revoke existing access outside this task, or describe effective
+  access as queue-only when the inherited namespace grant remains.
   Confirm network reachability from its execution environment without enabling
   public access merely to run the helper. Give the Logic App system identity
   receiver access to its input entities and sender access to its output topics.
@@ -227,6 +239,50 @@ The workbook alone is not a runtime specification. Do not recreate the removed
 per-tab transformations, XRef misses, routing/fan-out, failed publication,
 duplicate delivery after failed settlement, and end-to-end correlation using
 status and correlation IDs in telemetry rather than full payloads.
+
+### Repeatable implementation
+
+- Before generation, check for owned-name collisions and conflicting connection
+  definitions. Reuse verified repository patterns before researching new APIs;
+  do not modify another lab's hashed deployment helper. Keep credentials and
+  unrelated connection values out of IaC state, plans, and console output.
+- For built-in Service Bus, use the V2 peek-lock and settlement operations:
+  `peekLockQueueMessagesV2` / `peekLockTopicMessagesV2`,
+  `completeQueueMessageV2` / `completeTopicMessageV2`, and the corresponding
+  `abandonQueueMessageV2` / `abandonTopicMessageV2`. Use lower-camel-case message
+  fields and put correlation under `splitOnConfiguration.correlation`.
+  `sendMessage` takes `entityName` and a nested `message` containing
+  `contentData`, `contentType`, `messageId`, `correlationId`, and `userProperties`.
+  Use serialized JSON for JSON Output; do not add base64 encoding by assumption.
+  Verify any different operation against current primary documentation or a
+  working reference rather than guessing provider metadata routes.
+- Keep workload connections on the system identity; do not select the
+  host-storage user-assigned identity. Merge only owned connection entries,
+  reject conflicting definitions, and read back the result. Validate every
+  intended named routing rule before deleting any owned subscription's `$Default`.
+- Test actual rendered definitions in both visible and protected modes, not just
+  a separate reimplementation of the transformations. For Terraform conditionals
+  with differently shaped objects, encode each branch separately and decode the
+  selected JSON rather than forcing incompatible object types. A successful
+  `terraform validate` does not replace rendering with concrete inputs.
+- Offline Terraform console rendering must use isolated temporary state and
+  check stderr and decoded output, not just exit status. Never run console and
+  plan/apply concurrently against the same state or bypass an active state lock.
+- The generic 2016 workflow JSON schema does not recognize Standard's
+  `ServiceProvider` operations. Report that coverage limit; do not change valid
+  Standard operations or weaken schemas to make the check pass. Combine focused
+  definition checks with postdeployment runtime health and correlated live runs.
+- Azure CLI REST helpers must preserve existing query parameters when adding
+  `api-version` (for example, run-history `$top`). Follow bounded pagination,
+  validate continuation destinations, and distinguish a missing connection file
+  from authorization, network, and other errors.
+- Review helper/provisioner side effects as well as native preview counts.
+  Save predeployment hashes of unrelated workflow artifacts and connection
+  entries, never their secret values. After approved deployment, compare them,
+  check owned workflow health, run the sanitized Source helper, verify
+  transformation/publication/completion action statuses and broker counts, and
+  run a final drift preview. Record IDs/statuses and unexercised cases in `plans/`;
+  offline failure-path checks are not evidence of live failure injection.
 
 ## Implementation sequence
 
